@@ -273,6 +273,9 @@ contract TestTokenSale is Ownable, TokenHolder {
             revert();
         }
 
+        uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
+        issueTokens(unallocatedTokensPoolAddress, tokensLeftInSale);
+
         // transfer ownership of the trustee to the trusteeManagerAddress
         self.requestVestingTrusteeOwnershipTransfer(trusteeManagerAddress);
 
