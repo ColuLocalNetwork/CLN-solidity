@@ -18,12 +18,12 @@ contract Ownable {
 
     /// @dev Reverts if called by any account other than the owner.
     modifier onlyOwner() {
-        require(msg.sender == owner)
+        require(msg.sender == owner);
         _;
     }
 
     modifier onlyOwnerCandidate() {
-        require(msg.sender == newOwnerCandidate)
+        require(msg.sender == newOwnerCandidate);
         _;
     }
 

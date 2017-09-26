@@ -15,62 +15,65 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
     // Using same decimal value as ETH (makes ETH-TTT conversion much easier).
     uint8 public constant decimals = 18;
 
-    // States whether creating more tokens is allowed or not.
+    // States whether tokens transfers allowed or not.
     // Used during token sale.
-    bool public isMinting = true;
+    bool public isTransferable = false;
 
-    event MintingEnded();
+    event TokensTransferable();
 
-    modifier onlyDuringMinting() {
-        require(isMinting)
+    modifier transferable() {
+        require(isTransferable);
         _;
     }
 
-    modifier onlyAfterMinting() {
-        require(!isMinting)
+    modifier notTransferable() {
+        require(!isTransferable);
         _;
     }
 
-    /// @dev Mint TTT tokens.
-    /// @param _to address Address to send minted TTT to.
-    /// @param _amount uint256 Amount of TTT tokens to mint.
-    function mint(address _to, uint256 _amount) external onlyOwner onlyDuringMinting {
-        totalSupply = totalSupply.add(_amount);
-        balances[_to] = balances[_to].add(_amount);
-
-        Transfer(0x0, _to, _amount);
+    /// @dev The TestToken create all tokens and gives them to the owner.
+    function TestToken(uint256 _totalSupply) {
+        totalSupply = _totalSupply;
+        balances[msg.sender] = totalSupply;
     }
 
     /// @dev End minting mode.
-    function endMinting() external onlyOwner {
-        if (isMinting == false) {
+    function makeTokensTransferable() external onlyOwner {
+        if (isTransferable) {
             return;
         }
 
-        isMinting = false;
+        isTransferable = true;
 
-        MintingEnded();
+        TokensTransferable();
     }
 
-    /// @dev Same ERC20 behavior, but reverts if still minting.
+    /// @dev Same ERC20 behavior, but reverts if not transferable.
     /// @param _spender address The address which will spend the funds.
     /// @param _value uint256 The amount of tokens to be spent.
-    function approve(address _spender, uint256 _value) public onlyAfterMinting returns (bool) {
+    function approve(address _spender, uint256 _value) public transferable returns (bool) {
         return super.approve(_spender, _value);
     }
 
-    /// @dev Same ERC20 behavior, but reverts if still minting.
+    /// @dev Same ERC20 behavior, but reverts if not transferable.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
-    function transfer(address _to, uint256 _value) public onlyAfterMinting returns (bool) {
+    function transfer(address _to, uint256 _value) public transferable returns (bool) {
         return super.transfer(_to, _value);
     }
 
-    /// @dev Same ERC20 behavior, but reverts if still minting.
+    /// @dev Same ERC20 behavior, but reverts if not transferable.
     /// @param _from address The address which you want to send tokens from.
     /// @param _to address The address which you want to transfer to.
     /// @param _value uint256 the amount of tokens to be transferred.
-    function transferFrom(address _from, address _to, uint256 _value) public onlyAfterMinting returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) public transferable returns (bool) {
         return super.transferFrom(_from, _to, _value);
+    }
+
+    /// @dev Same ERC20 behavior, but for owner transters during the token sale.
+    /// @param _to address The address to transfer to.
+    /// @param _value uint256 The amount to be transferred.
+    function ownerTransfer(address _to, uint256 _value) public onlyOwner notTransferable returns (bool) {
+        return super.transfer(_to, _value);
     }
 }
