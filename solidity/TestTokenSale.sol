@@ -27,7 +27,6 @@ contract TestTokenSale is Ownable, TokenHolder {
     address public futureDevelopmentPoolAddress;
     address public stakeholdersPoolAddress;
     address public unallocatedTokensPoolAddress;
-    address public trusteeManagerAddress;
 
     // Test token decimals.
     // Using same decimal value as ETH (makes ETH-TEST conversion much easier).
@@ -132,21 +131,18 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
     /// @param _stakeHoldersPoolAddress address The address of the stakeholders pool.
     /// @param _unallocatedTokensPoolAddress address The address of the unallocated tokens pool.
-    /// @param _trusteeManagerAddress address The address trustee manager.
     /// @param _startTime uint256 The start time of the token sale.
     function TestTokenSale(address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _stakeholdersPoolAddress,
         address _unallocatedTokensPoolAddress,
-        address _trusteeManagerAddress,
         uint256 _startTime) {
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
         require(_futureDevelopmentPoolAddress != address(0));
         require(_stakeholdersPoolAddress != address(0));
         require(_unallocatedTokensPoolAddress != address(0));
-        require(_trusteeManagerAddress != address(0));
         require(_startTime > now);
 
         // Deploy new TestToken contract.
@@ -159,6 +155,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         communityPoolAddress = _communityPoolAddress;
         futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
         stakeholdersPoolAddress = _stakeholdersPoolAddress;
+        unallocatedTokensPoolAddress = _unallocatedTokensPoolAddress;
         startTime = _startTime;
         endTime = startTime + SALE_DURATION;
 
@@ -277,9 +274,6 @@ contract TestTokenSale is Ownable, TokenHolder {
         if (tokensLeftInSale > 0) {
             issueTokens(unallocatedTokensPoolAddress, tokensLeftInSale);
         }
-
-        // transfer ownership of the trustee to the trusteeManagerAddress
-        self.requestVestingTrusteeOwnershipTransfer(trusteeManagerAddress);
 
         // Finish minting.
         test.makeTokensTransferable();
