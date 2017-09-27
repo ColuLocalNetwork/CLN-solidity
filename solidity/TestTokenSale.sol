@@ -166,9 +166,16 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @dev allocate pools tokens.
     function allocatePoolsTokens() private onlyOwner {
         // Issue the remaining 55% token to designated pools.
-        test.ownerTransfer(communityPoolAddress, COMMUNITY_POOL);
-        test.ownerTransfer(futureDevelopmentPoolAddress, FUTURE_DEVELOPMENT_POOL);
-        test.ownerTransfer(stakeholdersPoolAddress, STAKEHOLDERS_POOL);
+
+        issueTokens(communityPoolAddress, COMMUNITY_POOL);
+
+        // Future Development Pool is locked for 3 years.
+        issueTokens(trustee, FUTURE_DEVELOPMENT_POOL);
+        trustee.grant(futureDevelopmentPoolAddress, FUTURE_DEVELOPMENT_POOL, endTime, endTime.add(3 years),
+            endTime.add(3 years), 1 days, false);
+        
+        // stakeholdersPoolAddress will create its own vesting trusts.
+        issueTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL);
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
@@ -190,8 +197,8 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 tokenSold = weiToParticipate.mul(discountedTokensPerEth);
 
         issueTokens(trustee, tokenSold);
-        trustee.grant(_recipient, tokenSold, now.add(plan.startOffset), now.add(plan.cliffOffset),
-            now.add(plan.endOffset), plan.installmentLength, false);
+        trustee.grant(_recipient, tokenSold, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
+            endTime.add(plan.endOffset), plan.installmentLength, false);
     }
 
     /// @dev Add a list of participants to a capped participation tier.
