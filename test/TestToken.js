@@ -1,217 +1,167 @@
-var TestToken = artifacts.require("./TestToken.sol");
+const TestToken = artifacts.require("./TestToken.sol");
 
-var expectRevert = require('./helpers/expectRevert');
+const expectRevert = require('./helpers/expectRevert');
 
 contract('TestToken', function (accounts) {
   
-  var initialTokens = 1000000000
-  var owner = accounts[0]
-  var account2 = accounts[1];
-  var account3 = accounts[2];
-  var allowance = 100;
-  var amount = 10;
+  const initialTokens = 1000000000
+  const owner = accounts[0]
+  const account2 = accounts[1];
+  const account3 = accounts[2];
+  const allowance = 100;
+  const amount = 10;
 
-  var token
+  let token;
 
-  before(function () {
-    return TestToken.new(initialTokens).then(function (instance) {
-      token = instance
-    })
+  before(async () => {
+    token = await TestToken.new(initialTokens)
   })
 
-  it("account 0 (owner) should have initial tokens.", function () {
-    return token.balanceOf(owner).then(function (balance) {
-      assert.equal(balance.valueOf(), initialTokens, initialTokens + " wasn't in the first account");
-    });
+  it("account 0 (owner) should have initial tokens.", async () => {
+    balance = await token.balanceOf(owner)
+    assert.equal(balance.valueOf(), initialTokens, initialTokens + " wasn't in the first account");
   });
 
-  it("should fail to transfer before transfers unlock", function () {
-    return expectRevert(token.transfer(account2, amount, {from: owner}))
+  it("should fail to transfer before transfers unlock", async () => {
+    await expectRevert(token.transfer(account2, amount, {from: owner}))
   })
 
-  it("should owner transfer tokens correctly", function () {
+  it("should owner transfer tokens correctly", async () => {
     // Get initial balances of first and second account.
-    var ownerStartingBalance;
-    var account2StartingBalance;
-    var ownerEndingBalance;
-    var account2EndingBalance;
+    let ownerStartingBalance;
+    let account2StartingBalance;
+    let ownerEndingBalance;
+    let account2EndingBalance;
 
-    return token.balanceOf(owner).then(function (balance) {
-      ownerStartingBalance = balance.toNumber();
-      return token.balanceOf(account2).then(function (balance) {
-        account2StartingBalance = balance.toNumber();
-        return token.ownerTransfer(account2, amount, {from: owner}).then(function () {
-          return token.balanceOf(owner).then(function (balance) {
-            ownerEndingBalance = balance.toNumber();
-            return token.balanceOf(account2).then(function (balance) {
-              account2EndingBalance = balance.toNumber();
+    [ownerStartingBalance, account2StartingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
 
-              assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-              assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-            });
-          });
-        });
-      });
-    });
+    await token.ownerTransfer(account2, amount, {from: owner});
+    
+    [ownerEndingBalance, account2EndingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
+
+    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
+    assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
   });
 
-  it("should failed on owner transfer more the account has", function () {
-    return expectRevert(token.ownerTransfer(account2, initialTokens + 1, {from: owner}))
+  it("should failed on owner transfer more the account has", async () => {
+    await expectRevert(token.ownerTransfer(account2, initialTokens + 1, {from: owner}))
   })
 
-  it("should fail on allowance before transfers unlock", function () {
-    return expectRevert(token.approve(account2, allowance, {from: owner}))
+  it("should fail on allowance before transfers unlock", async () => {
+    await expectRevert(token.approve(account2, allowance, {from: owner}))
   })
 
-  it("should unlock transfers", function () {
-    return token.makeTokensTransferable({from: owner})
+  it("should unlock transfers", async () => {
+    await token.makeTokensTransferable({from: owner})
   })
 
-  it("should transfer tokens correctly", function () {
+  it("should transfer tokens correctly", async () => {
     // Get initial balances of first and second account.
-    var ownerStartingBalance;
-    var account2StartingBalance;
-    var ownerEndingBalance;
-    var account2EndingBalance;
+    let ownerStartingBalance;
+    let account2StartingBalance;
+    let ownerEndingBalance;
+    let account2EndingBalance;
 
-    return token.balanceOf(owner).then(function (balance) {
-      ownerStartingBalance = balance.toNumber();
-      return token.balanceOf(account2).then(function (balance) {
-        account2StartingBalance = balance.toNumber();
-        return token.transfer(account2, amount, {from: owner}).then(function () {
-          return token.balanceOf(owner).then(function (balance) {
-            ownerEndingBalance = balance.toNumber();
-            return token.balanceOf(account2).then(function (balance) {
-              account2EndingBalance = balance.toNumber();
+    [ownerStartingBalance, account2StartingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
 
-              assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-              assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-            });
-          });
-        });
-      });
-    });
+    await token.transfer(account2, amount, {from: owner});
+    
+    [ownerEndingBalance, account2EndingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
+
+    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
+    assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
   });
 
-  it("should fail to transfer more then what the account has", function () {
+  it("should fail to transfer more then what the account has", async () => {
     // Get initial balances of first and second account.
-    var account2StartingBalance;
+    let account2StartingBalance;
 
-    return token.balanceOf(account2).then(function (balance) {
-      account2StartingBalance = balance.toNumber();
-      return expectRevert(token.transfer(account3, account2StartingBalance + 1, {from: account2}))
-    });
+    account2StartingBalance = (await token.balanceOf(account2)).toNumber()
+    await expectRevert(token.transfer(account3, account2StartingBalance + 1, {from: account2}))
   });
 
-  it("should transfer all tokens correctly", function () {
+  it("should transfer all tokens correctly", async () => {
     // Get initial balances of first and second account.
-    var account2StartingBalance;
-    var account3StartingBalance;
-    var account2EndingBalance;
-    var account3EndingBalance;
+    let account2StartingBalance;
+    let account3StartingBalance;
+    let account2EndingBalance;
+    let account3EndingBalance;
 
-    return token.balanceOf(account2).then(function (balance) {
-      account2StartingBalance = balance.toNumber();
-      assert(account2StartingBalance, "account2StartingBalance should be greater the zero.")
-      return token.balanceOf(account3).then(function (balance) {
-        account3StartingBalance = balance.toNumber();
-        return token.transfer(account3, account2StartingBalance, {from: account2}).then(function () {
-          return token.balanceOf(account2).then(function (balance) {
-            account2EndingBalance = balance.toNumber();
-            return token.balanceOf(account3).then(function (balance) {
-              account3EndingBalance = balance.toNumber();
+    [account2StartingBalance, account3StartingBalance] = (await Promise.all([token.balanceOf(account2), token.balanceOf(account3)])).map( (balance) => {return balance.toNumber()});
 
-              assert.equal(account2EndingBalance, 0, "Amount wasn't correctly taken from the sender");
-              assert.equal(account3EndingBalance, account3StartingBalance + account2StartingBalance, "Amount wasn't correctly sent to the receiver");
-            });
-          });
-        });
-      });
-    });
+    await token.transfer(account3, account2StartingBalance, {from: account2});
+
+    [account2EndingBalance, account3EndingBalance] = (await Promise.all([token.balanceOf(account2), token.balanceOf(account3)])).map( (balance) => {return balance.toNumber()});
+
+    assert.equal(account2EndingBalance, 0, "Amount wasn't correctly taken from the sender");
+    assert.equal(account3EndingBalance, account3StartingBalance + account2StartingBalance, "Amount wasn't correctly sent to the receiver");
   });
 
-  it("should fail to owner transfer after transfers unlock", function () {
-    return expectRevert(token.ownerTransfer(account2, amount, {from: owner}))
+  it("should fail to owner transfer after transfers unlock", async () => {
+    await expectRevert(token.ownerTransfer(account2, amount, {from: owner}))
   })
 
-  it("should success allowance.", function () {
-    return token.approve(account2, allowance, {from: owner}).then(function () {
-      return token.allowance(owner, account2).then(function (_allowance) {
-        assert.equal(allowance, _allowance.toNumber())
-      })
-    })
+  it("should success allowance.", async () => {
+    await token.approve(account2, allowance, {from: owner})
+    let _allowance = await token.allowance(owner, account2)
+    assert.equal(allowance, _allowance.toNumber())
   })
 
-  it("account2 should spent from his allowance", function () {
-    var ownerStartingBalance
-    var account2StartingBalance
-    var account3StartingBalance
-    var account2StartingAllownace
-    var ownerEndingBalance
-    var account2EndingBalance
-    var account3EndingBalance
-    var account2EndingAllowance
+  it("account2 should spent from his allowance", async () => {
+    let ownerStartingBalance
+    let account2StartingBalance
+    let account3StartingBalance
+    let account2StartingAllownace
+    let ownerEndingBalance
+    let account2EndingBalance
+    let account3EndingBalance
+    let account2EndingAllowance
 
-    return token.balanceOf(owner).then(function (balance) {
-      ownerStartingBalance = balance.toNumber();
-      return token.balanceOf(account2).then(function (balance) {
-        account2StartingBalance = balance.toNumber();
-        return token.balanceOf(account3).then(function (balance) {
-          account3StartingBalance = balance.toNumber();
-          return token.allowance(owner, account2).then(function (_allowance) {
-            account2StartingAllownace = _allowance.toNumber()
-            return token.transferFrom(owner, account3, amount, {from: account2}).then(function () {
-              return token.balanceOf(owner).then(function (balance) {
-                ownerEndingBalance = balance.toNumber();
-                return token.balanceOf(account2).then(function (balance) {
-                  account2EndingBalance = balance.toNumber();
-                  return token.balanceOf(account3).then(function (balance) {
-                    account3EndingBalance = balance.toNumber();
-                    return token.allowance(owner, account2).then(function (_allowance) {
-                      account2EndingAllowance = _allowance
+    [ownerStartingBalance, account2StartingBalance, account3StartingBalance, account2StartingAllownace] = 
+      (await Promise.all([
+        token.balanceOf(owner),
+        token.balanceOf(account2),
+        token.balanceOf(account3),
+        token.allowance(owner, account2)
+      ])).map( (balance) => {return balance.toNumber()});
 
-                      assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-                      assert.equal(account2StartingBalance, account2EndingBalance, "Invoker amount should't change");
-                      assert.equal(account3EndingBalance, account3StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-                      assert.equal(account2EndingAllowance, account2StartingAllownace - amount, "Allowance wasn't correctly change");
-                    });
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
-    });
+    await token.transferFrom(owner, account3, amount, {from: account2});
+
+    [ownerEndingBalance, account2EndingBalance, account3EndingBalance, account2EndingAllowance] = 
+      (await Promise.all([
+        token.balanceOf(owner),
+        token.balanceOf(account2),
+        token.balanceOf(account3),
+        token.allowance(owner, account2)
+      ])).map( (balance) => {return balance.toNumber()});
+
+    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
+    assert.equal(account2StartingBalance, account2EndingBalance, "Invoker amount should't change");
+    assert.equal(account3EndingBalance, account3StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
+    assert.equal(account2EndingAllowance, account2StartingAllownace - amount, "Allowance wasn't correctly change");
   })
 
-  it("account2 should not spent more then his allowance", function () {
-    var ownerStartingBalance
-    var account2StartingBalance
-    var account3StartingBalance
-    var account2StartingAllownace
+  it("account2 should not spent more then his allowance", async () => {
+    let ownerStartingBalance
+    let account2StartingBalance
+    let account3StartingBalance
+    let account2StartingAllownace
 
-    return token.balanceOf(owner).then(function (balance) {
-      ownerStartingBalance = balance.toNumber();
-      return token.balanceOf(account2).then(function (balance) {
-        account2StartingBalance = balance.toNumber();
-        return token.balanceOf(account3).then(function (balance) {
-          account3StartingBalance = balance.toNumber();
-          return token.allowance(owner, account2).then(function (_allowance) {
-            account2StartingAllownace = _allowance.toNumber()
+    [ownerStartingBalance, account2StartingBalance, account3StartingBalance, account2StartingAllownace] = 
+      (await Promise.all([
+        token.balanceOf(owner),
+        token.balanceOf(account2),
+        token.balanceOf(account3),
+        token.allowance(owner, account2)
+      ])).map( (balance) => {return balance.toNumber()});
 
-            assert(account2StartingAllownace);
-            assert(ownerStartingBalance >= account2StartingAllownace)
-            return expectRevert(token.transferFrom(owner, account3, account2StartingAllownace + 1, {from: account2}))
-          });
-        });
-      });
-    });
+    assert(account2StartingAllownace);
+    assert(ownerStartingBalance >= account2StartingAllownace)
+    await expectRevert(token.transferFrom(owner, account3, account2StartingAllownace + 1, {from: account2}))
   })
 
-  it("totalSupply should be equal to initialTokens", function () {
-    return token.totalSupply().then(function (amount) {
-      assert(initialTokens, amount.toNumber())
-    })
+  it("totalSupply should be equal to initialTokens", async () => {
+    let amount = await token.totalSupply()
+    assert(initialTokens, amount.toNumber())
   })
 });

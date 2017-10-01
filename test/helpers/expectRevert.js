@@ -1,19 +1,19 @@
-module.exports = function (promise) {
-    promise.then(function () {
-        assert(false, "Expected throw wasn't received");
-    }).catch(function (err) {
+module.exports = async (promise) => {
+    try {
+        await promise;
+    } catch (error) {
         // TODO: Check jump destination to destinguish between a throw and an actual invalid jump.
-        var invalidOpcode = ~err.message.search('invalid opcode');
+        const invalidOpcode = error.message.search('invalid opcode') > -1;
 
         // TODO: When we contract A calls contract B, and B throws, instead of an 'invalid jump', we get an 'out of gas'
         // error. How do we distinguish this from an actual out of gas event? The testrpc log actually show an "invalid
         // jump" event).
-        var outOfGas = ~err.message.search('out of gas');
+        const outOfGas = error.message.search('out of gas') > -1;
 
-        assert(invalidOpcode || outOfGas, `Expected throw, got ${err} instead`);
+        assert(invalidOpcode || outOfGas, `Expected throw, got ${error} instead`);
 
-        return ;
-    })
+        return;
+    }
 
-    
+    assert(false, "Expected throw wasn't received");
 };
