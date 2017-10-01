@@ -1,0 +1,26 @@
+{
+  "name": "cln-crowdfunding",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "scripts/testrpc.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colucom/CNTCrowdfunding.git"
+  },
+  "author": "Tal Beja",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/colucom/CNTCrowdfunding/issues"
+  },
+  "homepage": "https://github.com/colucom/CNTCrowdfunding#readme",
+  "dependencies": {
+    "ethereumjs-testrpc": "^4.1.3",
+    "truffle": "^3.4.11"
+  }
+}

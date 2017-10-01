@@ -89,12 +89,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint8 discountPercent;
     }
 
-    VestingPlan[] public vestingPlans = [
-        VestingPlan(0, 0, 6 months, 1 months, 4),
-        VestingPlan(0, 0, 1 years, 1 months, 12),
-        VestingPlan(0, 0, 2 years, 1 months, 26),
-        VestingPlan(0, 0, 3 years, 1 months, 35)
-    ];
+    VestingPlan[] public vestingPlans;
 
     event TokensIssued(address indexed _to, uint256 _tokens);
 
@@ -129,7 +124,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _fundingRecipient address The address of the funding recipient.
     /// @param _communityPoolAddress address The address of the community pool.
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
-    /// @param _stakeHoldersPoolAddress address The address of the stakeholders pool.
+    /// @param _stakeholdersPoolAddress address The address of the stakeholders pool.
     /// @param _unallocatedTokensPoolAddress address The address of the unallocated tokens pool.
     /// @param _startTime uint256 The start time of the token sale.
     function TestTokenSale(address _fundingRecipient,
@@ -144,6 +139,11 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_stakeholdersPoolAddress != address(0));
         require(_unallocatedTokensPoolAddress != address(0));
         require(_startTime > now);
+
+        vestingPlans.push(VestingPlan(0, 0, 6 * 30 days, 1 * 30 days, 4));
+        vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * 30 days, 12));
+        vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * 30 days, 26));
+        vestingPlans.push(VestingPlan(0, 0, 3 years, 1 * 30 days, 35));
 
         // Deploy new TestToken contract.
         test = new TestToken(MAX_TOKENS);
@@ -187,7 +187,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_vestingPlanIndex < vestingPlans.length);
 
         VestingPlan memory plan = vestingPlans[_vestingPlanIndex]; 
-        uint256 discountedTokensPerEth = TTT_PER_ETH.mul(100.sub(plan.discountPercent)).div(100);
+        uint256 discountedTokensPerEth = TTT_PER_ETH.mul(SafeMath.sub(100, plan.discountPercent)).div(100);
         // Accept funds and transfer to funding recipient.
         uint256 tokensLeftInPreSale = MAX_PRESALE_TOKENS_SOLD.sub(presaleTokensSold);
         uint256 weiLeftInSale = tokensLeftInPreSale.div(discountedTokensPerEth);
