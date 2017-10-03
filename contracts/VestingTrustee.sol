@@ -187,11 +187,5 @@ contract VestingTrustee is Ownable, TokenHolder {
         test.transfer(msg.sender, transferable);
 
         TokensUnlocked(msg.sender, transferable);
-
-        // if the grant is fully transferred
-        if (grant.transferred == grant.value) {
-            // Remove the grant.
-            delete grants[msg.sender];
-        }
     }
 }
