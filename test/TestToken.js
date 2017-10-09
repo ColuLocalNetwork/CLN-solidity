@@ -1,167 +1,158 @@
-const TestToken = artifacts.require("./TestToken.sol");
-
 const expectRevert = require('./helpers/expectRevert');
 
-contract('TestToken', function (accounts) {
-  
-  const initialTokens = 1000000000
-  const owner = accounts[0]
-  const account2 = accounts[1];
-  const account3 = accounts[2];
-  const allowance = 100;
-  const amount = 10;
+const TestToken = artifacts.require('../contracts/TestToken.sol');
 
-  let token;
+const TOKEN_DECIMALS = 10 ** 18;
 
-  before(async () => {
-    token = await TestToken.new(initialTokens)
-  })
+const MAX_TOKENS = 15 * 10 ** 8 * TOKEN_DECIMALS;
 
-  it("account 0 (owner) should have initial tokens.", async () => {
-    balance = await token.balanceOf(owner)
-    assert.equal(balance.valueOf(), initialTokens, initialTokens + " wasn't in the first account");
-  });
+contract('TestToken', (accounts) => {
+    let token;
 
-  it("should fail to transfer before transfers unlock", async () => {
-    await expectRevert(token.transfer(account2, amount, {from: owner}))
-  })
+    let owner = accounts[0];
+    let spender = accounts[1];
+    let to1 = accounts[2];
+    let to2 = accounts[3];
+    let to3 = accounts[4];
 
-  it("should owner transfer tokens correctly", async () => {
-    // Get initial balances of first and second account.
-    let ownerStartingBalance;
-    let account2StartingBalance;
-    let ownerEndingBalance;
-    let account2EndingBalance;
+    let allowedAmount = 100;  // Spender allowance
+    let transferredFunds = 1200;  // Funds to be transferred around in tests
 
-    [ownerStartingBalance, account2StartingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
+    let ownerAmount;
 
-    await token.ownerTransfer(account2, amount, {from: owner});
-    
-    [ownerEndingBalance, account2EndingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
+    beforeEach(async () => {
+        token = await TestToken.new(MAX_TOKENS);
+        ownerAmount = MAX_TOKENS;
+    });
 
-    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-    assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-  });
+    describe('construction', async () => {
+        it('should be ownable', async () => {
+            assert.equal(await token.owner(), owner);
+        });
 
-  it("should failed on owner transfer more the account has", async () => {
-    await expectRevert(token.ownerTransfer(account2, initialTokens + 1, {from: owner}))
-  })
+        it('should return correct name after construction', async () => {
+            assert.equal(await token.name(), 'Test token');
+        });
 
-  it("should fail on allowance before transfers unlock", async () => {
-    await expectRevert(token.approve(account2, allowance, {from: owner}))
-  })
+        it('should return correct symbol after construction', async () => {
+            assert.equal(await token.symbol(), 'TTT');
+        });
 
-  it("should unlock transfers", async () => {
-    await token.makeTokensTransferable({from: owner})
-  })
+        it('should return correct decimal points after construction', async () => {
+            assert.equal(await token.decimals(), 18);
+        });
 
-  it("should transfer tokens correctly", async () => {
-    // Get initial balances of first and second account.
-    let ownerStartingBalance;
-    let account2StartingBalance;
-    let ownerEndingBalance;
-    let account2EndingBalance;
+        it('should have isTransferable mode turned off', async () => {
+            assert.isFalse(await token.isTransferable());
+        });
+    });
 
-    [ownerStartingBalance, account2StartingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
+    describe('ownerTransfer', async () => {
 
-    await token.transfer(account2, amount, {from: owner});
-    
-    [ownerEndingBalance, account2EndingBalance] = (await Promise.all([token.balanceOf(owner), token.balanceOf(account2)])).map( (balance) => {return balance.toNumber()});
 
-    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-    assert.equal(account2EndingBalance, account2StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-  });
+        it('should update balances correctly after ownerTransfer', async () => {
+            assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
 
-  it("should fail to transfer more then what the account has", async () => {
-    // Get initial balances of first and second account.
-    let account2StartingBalance;
+            await token.ownerTransfer(to1, transferredFunds)
+            ownerAmount-=transferredFunds;
 
-    account2StartingBalance = (await token.balanceOf(account2)).toNumber()
-    await expectRevert(token.transfer(account3, account2StartingBalance + 1, {from: account2}))
-  });
+            // Checking owner balance reduced after every owner transfer
+            assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
+            assert.equal((await token.balanceOf(to1)).toNumber(), transferredFunds);
 
-  it("should transfer all tokens correctly", async () => {
-    // Get initial balances of first and second account.
-    let account2StartingBalance;
-    let account3StartingBalance;
-    let account2EndingBalance;
-    let account3EndingBalance;
+            await token.ownerTransfer(to2, transferredFunds)
+            ownerAmount-=transferredFunds;
+            assert.equal((await token.balanceOf(to2)).toNumber(), transferredFunds);
 
-    [account2StartingBalance, account3StartingBalance] = (await Promise.all([token.balanceOf(account2), token.balanceOf(account3)])).map( (balance) => {return balance.toNumber()});
+            await token.ownerTransfer(to3, transferredFunds)
+            ownerAmount-=transferredFunds;
+            assert.equal((await token.balanceOf(to3)).toNumber(), transferredFunds);
 
-    await token.transfer(account3, account2StartingBalance, {from: account2});
+            assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
+        });
 
-    [account2EndingBalance, account3EndingBalance] = (await Promise.all([token.balanceOf(account2), token.balanceOf(account3)])).map( (balance) => {return balance.toNumber()});
+        it('should not change totalSupply after ownerTransfer', async () => {
+            assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-    assert.equal(account2EndingBalance, 0, "Amount wasn't correctly taken from the sender");
-    assert.equal(account3EndingBalance, account3StartingBalance + account2StartingBalance, "Amount wasn't correctly sent to the receiver");
-  });
+            await token.ownerTransfer(to1, transferredFunds);
+            assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-  it("should fail to owner transfer after transfers unlock", async () => {
-    await expectRevert(token.ownerTransfer(account2, amount, {from: owner}))
-  })
+            await token.ownerTransfer(to1, transferredFunds);
+            assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-  it("should success allowance.", async () => {
-    await token.approve(account2, allowance, {from: owner})
-    let _allowance = await token.allowance(owner, account2)
-    assert.equal(allowance, _allowance.toNumber())
-  })
+            await token.ownerTransfer(to2, transferredFunds);
+            assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
+        });
 
-  it("account2 should spent from his allowance", async () => {
-    let ownerStartingBalance
-    let account2StartingBalance
-    let account3StartingBalance
-    let account2StartingAllownace
-    let ownerEndingBalance
-    let account2EndingBalance
-    let account3EndingBalance
-    let account2EndingAllowance
+        it('should start transferable mode', async () => {
+            await token.makeTokensTransferable();
+            assert(await token.isTransferable());
+        });
 
-    [ownerStartingBalance, account2StartingBalance, account3StartingBalance, account2StartingAllownace] = 
-      (await Promise.all([
-        token.balanceOf(owner),
-        token.balanceOf(account2),
-        token.balanceOf(account3),
-        token.allowance(owner, account2)
-      ])).map( (balance) => {return balance.toNumber()});
+        it('should allow to start transferable mode more than once', async () => {
+            await token.makeTokensTransferable();
+            await token.makeTokensTransferable();
+            await token.makeTokensTransferable();
+        });
 
-    await token.transferFrom(owner, account3, amount, {from: account2});
+        it('should not allow to ownerTransfer after start transferable mode', async () => {
+            await token.makeTokensTransferable();
+            await expectRevert(token.ownerTransfer(to1, transferredFunds));
+        });
 
-    [ownerEndingBalance, account2EndingBalance, account3EndingBalance, account2EndingAllowance] = 
-      (await Promise.all([
-        token.balanceOf(owner),
-        token.balanceOf(account2),
-        token.balanceOf(account3),
-        token.allowance(owner, account2)
-      ])).map( (balance) => {return balance.toNumber()});
+        it('should not allow approve() before start transferable mode', async () => {
+            await expectRevert(token.approve(spender, allowedAmount));
+        });
 
-    assert.equal(ownerEndingBalance, ownerStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-    assert.equal(account2StartingBalance, account2EndingBalance, "Invoker amount should't change");
-    assert.equal(account3EndingBalance, account3StartingBalance + amount, "Amount wasn't correctly sent to the receiver");
-    assert.equal(account2EndingAllowance, account2StartingAllownace - amount, "Allowance wasn't correctly change");
-  })
+        it('should allow approve() after start transferable mode', async () => {
+            await token.makeTokensTransferable();
+            await token.approve(spender, allowedAmount)
+        });
 
-  it("account2 should not spent more then his allowance", async () => {
-    let ownerStartingBalance
-    let account2StartingBalance
-    let account3StartingBalance
-    let account2StartingAllownace
+        it('should not allow transfer() before start transferable mode', async () => {
+            await expectRevert(token.transfer(spender, allowedAmount));
+        });
 
-    [ownerStartingBalance, account2StartingBalance, account3StartingBalance, account2StartingAllownace] = 
-      (await Promise.all([
-        token.balanceOf(owner),
-        token.balanceOf(account2),
-        token.balanceOf(account3),
-        token.allowance(owner, account2)
-      ])).map( (balance) => {return balance.toNumber()});
+        it('should allow transfer() after start transferable mode', async () => {
+            await token.ownerTransfer(owner, transferredFunds);
+            await token.makeTokensTransferable();
+            await token.transfer(to1, transferredFunds);
+        });
 
-    assert(account2StartingAllownace);
-    assert(ownerStartingBalance >= account2StartingAllownace)
-    await expectRevert(token.transferFrom(owner, account3, account2StartingAllownace + 1, {from: account2}))
-  })
+        it('should not allow transferFrom() before start transferable mode', async () => {
+            await expectRevert(token.transferFrom(owner, to1, allowedAmount, {from: spender}));
+        });
 
-  it("totalSupply should be equal to initialTokens", async () => {
-    let amount = await token.totalSupply()
-    assert(initialTokens, amount.toNumber())
-  })
+        it('should allow transferFrom() after start transferable mode', async () => {
+            await token.ownerTransfer(owner, transferredFunds);
+            await token.makeTokensTransferable();
+            await token.approve(spender, allowedAmount)
+            await token.transferFrom(owner, to1, allowedAmount, {from: spender})
+        });
+    });
+
+    describe('events', async () => {
+        it('should log normal transfer event on ownerTransfer', async () => {
+            let result = await token.ownerTransfer(to1, transferredFunds);
+
+            assert.lengthOf(result.logs, 1);
+            let event = result.logs[0];
+            assert.equal(event.event, 'Transfer');
+            assert.equal(event.args.from, owner);
+            assert.equal(event.args.to, to1);
+            assert.equal(Number(event.args.value), transferredFunds);
+        });
+
+        it('should log TokensTransferable event after start transferable mode', async () => {
+            let result = await token.makeTokensTransferable();
+            assert.lengthOf(result.logs, 1);
+            assert.equal(result.logs[0].event, 'TokensTransferable');
+
+            // Additional calls should not emit events.
+            result = await token.makeTokensTransferable();
+            assert.equal(result.logs.length, 0);
+            result = await token.makeTokensTransferable();
+            assert.equal(result.logs.length, 0);
+        });
+    });
 });
