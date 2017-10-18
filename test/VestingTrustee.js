@@ -1,8 +1,8 @@
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
 
-const TestToken = artifacts.require('../contracts/TestToken.sol');
-const VestingTrustee = artifacts.require('../contracts/VestingTrustee.sol');
+const TestToken = artifacts.require('TestToken');
+const VestingTrustee = artifacts.require('VestingTrustee');
 
 contract('VestingTrustee', (accounts) => {
     const initialTokens = 2 * 10 ** 12;

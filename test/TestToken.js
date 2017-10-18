@@ -1,6 +1,6 @@
 const expectRevert = require('./helpers/expectRevert');
 
-const TestToken = artifacts.require('../contracts/TestToken.sol');
+const TestToken = artifacts.require('TestToken');
 
 const TOKEN_DECIMALS = 10 ** 18;
 

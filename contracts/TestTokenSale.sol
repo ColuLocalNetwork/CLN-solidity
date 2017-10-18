@@ -22,10 +22,9 @@ contract TestTokenSale is Ownable, TokenHolder {
     address public fundingRecipient;
 
     // Post-TDE multisig addresses.
-
     address public communityPoolAddress;
     address public futureDevelopmentPoolAddress;
-    address public stakeholdersPoolAddress;
+    address public teamPoolAddress;
     address public unallocatedTokensPoolAddress;
 
     // Test token decimals.
@@ -33,23 +32,26 @@ contract TestTokenSale is Ownable, TokenHolder {
     // This is the same as in Test token contract.
     uint256 public constant TOKEN_DECIMALS = 10 ** 18;
 
+    // Additional Lockup Allocation Pool 
+    uint256 public constant ALAP = 47414230500000023839554600;
+
     // Maximum number of tokens in circulation: 1.5 trillion.
-    uint256 public constant MAX_TOKENS = 15 * 10 ** 8 * TOKEN_DECIMALS;
+    uint256 public constant MAX_TOKENS = 15 * 10 ** 8 * TOKEN_DECIMALS + ALAP;
 
-    // Maximum tokens offered in the sale (45%).
-    uint256 public constant MAX_TOKENS_SOLD = 675 * 10 ** 6 * TOKEN_DECIMALS;
+    // Maximum tokens offered in the sale (35%) + ALAP.
+    uint256 public constant MAX_TOKENS_SOLD = 525 * 10 ** 6 * TOKEN_DECIMALS + ALAP;
 
-    // Maximum tokens offered in the presale (from the initial 45% offered tokens).
-    uint256 public constant MAX_PRESALE_TOKENS_SOLD = 3375 * 10 ** 5 * TOKEN_DECIMALS;
+    // Maximum tokens offered in the presale (from the initial 35% offered tokens) + ALAP.
+    uint256 public constant MAX_PRESALE_TOKENS_SOLD = 2625 * 10 ** 5 * TOKEN_DECIMALS + ALAP;
 
-    // Tokens allocated for Community pool (25%).
-    uint256 public constant COMMUNITY_POOL = 375 * 10 ** 6 * TOKEN_DECIMALS;
+    // Tokens allocated for Community pool (30%).
+    uint256 public constant COMMUNITY_POOL = 45 * 10 ** 7 * TOKEN_DECIMALS;
 
-    // Tokens allocated for Future development pool (25%).
-    uint256 public constant FUTURE_DEVELOPMENT_POOL = 375 * 10 ** 6 * TOKEN_DECIMALS;
+    // Tokens allocated for Future development pool (29%).
+    uint256 public constant FUTURE_DEVELOPMENT_POOL = 435 * 10 ** 6 * TOKEN_DECIMALS;
 
-    // Tokens allocated for Stakeholders pool (5%).
-    uint256 public constant STAKEHOLDERS_POOL = 75 * 10 ** 6 * TOKEN_DECIMALS;
+    // Tokens allocated for Team pool (6%).
+    uint256 public constant TEAM_POOL = 9 * 10 ** 7 * TOKEN_DECIMALS;
 
     // TEST to ETH ratio.
     uint256 public constant TTT_PER_ETH = 3900;
@@ -66,7 +68,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     uint256 public presaleTokensSold = 0;
 
     // Participation caps, according to KYC tiers.
-    uint256 public constant TIER_1_CAP = 100 * TOKEN_DECIMALS;
+    uint256 public constant TIER_1_CAP = 300 * TTT_PER_ETH * TOKEN_DECIMALS;
     uint256 public constant TIER_2_CAP = uint256(-1); // Maximum uint256 value
 
     // Accumulated amount each participant have contributed so far.
@@ -86,7 +88,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 cliffOffset;
         uint256 endOffset;
         uint256 installmentLength;
-        uint8 discountPercent;
+        uint8 alapPercent;
     }
 
     VestingPlan[] public vestingPlans;
@@ -124,22 +126,23 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _fundingRecipient address The address of the funding recipient.
     /// @param _communityPoolAddress address The address of the community pool.
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
-    /// @param _stakeholdersPoolAddress address The address of the stakeholders pool.
+    /// @param _teamPoolAddress address The address of the team pool.
     /// @param _unallocatedTokensPoolAddress address The address of the unallocated tokens pool.
     /// @param _startTime uint256 The start time of the token sale.
     function TestTokenSale(address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
-        address _stakeholdersPoolAddress,
+        address _teamPoolAddress,
         address _unallocatedTokensPoolAddress,
         uint256 _startTime) {
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
         require(_futureDevelopmentPoolAddress != address(0));
-        require(_stakeholdersPoolAddress != address(0));
+        require(_teamPoolAddress != address(0));
         require(_unallocatedTokensPoolAddress != address(0));
         require(_startTime > now);
 
+        vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
         vestingPlans.push(VestingPlan(0, 0, 6 * 30 days, 1 * 30 days, 4));
         vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * 30 days, 12));
         vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * 30 days, 26));
@@ -154,7 +157,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         fundingRecipient = _fundingRecipient;
         communityPoolAddress = _communityPoolAddress;
         futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
-        stakeholdersPoolAddress = _stakeholdersPoolAddress;
+        teamPoolAddress = _teamPoolAddress;
         unallocatedTokensPoolAddress = _unallocatedTokensPoolAddress;
         startTime = _startTime;
         endTime = startTime + SALE_DURATION;
@@ -167,15 +170,15 @@ contract TestTokenSale is Ownable, TokenHolder {
     function allocatePoolsTokens() private onlyOwner {
         // Issue the remaining 55% token to designated pools.
 
-        issueTokens(communityPoolAddress, COMMUNITY_POOL);
+        transferTokens(communityPoolAddress, COMMUNITY_POOL);
 
         // Future Development Pool is locked for 3 years.
-        issueTokens(trustee, FUTURE_DEVELOPMENT_POOL);
+        transferTokens(trustee, FUTURE_DEVELOPMENT_POOL);
         trustee.grant(futureDevelopmentPoolAddress, FUTURE_DEVELOPMENT_POOL, endTime, endTime.add(3 years),
             endTime.add(3 years), 1 days, false);
         
-        // stakeholdersPoolAddress will create its own vesting trusts.
-        issueTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL);
+        // teamPoolAddress will create its own vesting trusts.
+        transferTokens(teamPoolAddress, TEAM_POOL);
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
@@ -187,17 +190,18 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_vestingPlanIndex < vestingPlans.length);
 
         VestingPlan memory plan = vestingPlans[_vestingPlanIndex]; 
-        uint256 discountedTokensPerEth = TTT_PER_ETH.mul(SafeMath.sub(100, plan.discountPercent)).div(100);
+        uint256 tokensAndALAPPerEth = TTT_PER_ETH.mul(SafeMath.add(100, plan.alapPercent)).div(100);
         // Accept funds and transfer to funding recipient.
         uint256 tokensLeftInPreSale = MAX_PRESALE_TOKENS_SOLD.sub(presaleTokensSold);
-        uint256 weiLeftInSale = tokensLeftInPreSale.div(discountedTokensPerEth);
+        uint256 weiLeftInSale = tokensLeftInPreSale.div(tokensAndALAPPerEth);
         uint256 weiToParticipate = SafeMath.min256(_etherValue, weiLeftInSale);
         require(weiToParticipate > 0);
         participationPresaleHistory[msg.sender] = participationPresaleHistory[msg.sender].add(weiToParticipate);
-        uint256 tokenSold = weiToParticipate.mul(discountedTokensPerEth);
-
-        issueTokens(trustee, tokenSold);
-        trustee.grant(_recipient, tokenSold, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
+        uint256 tokensToTransfer = weiToParticipate.mul(tokensAndALAPPerEth);
+        presaleTokensSold = presaleTokensSold.add(tokensToTransfer);
+        tokensSold = tokensSold.add(tokensToTransfer);
+        transferTokens(trustee, tokensToTransfer);
+        trustee.grant(_recipient, tokensToTransfer, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
             endTime.add(plan.endOffset), plan.installmentLength, false);
     }
 
@@ -254,14 +258,14 @@ contract TestTokenSale is Ownable, TokenHolder {
         fundingRecipient.transfer(weiToParticipate);
 
         // Issue tokens and transfer to recipient.
-        uint256 tokensToIssue = weiToParticipate.mul(TTT_PER_ETH);
-        if (tokensLeftInSale.sub(tokensToIssue) < TTT_PER_ETH) {
+        uint256 tokensToTransfer = weiToParticipate.mul(TTT_PER_ETH);
+        if (tokensLeftInSale.sub(tokensToTransfer) < TTT_PER_ETH) {
             // If purchase would cause less than TTT_PER_ETH tokens left then nobody could ever buy them.
             // So, gift them to the last buyer.
-            tokensToIssue = tokensLeftInSale;
+            tokensToTransfer = tokensLeftInSale;
         }
-        tokensSold = tokensSold.add(tokensToIssue);
-        issueTokens(_recipient, tokensToIssue);
+        tokensSold = tokensSold.add(tokensToTransfer);
+        transferTokens(_recipient, tokensToTransfer);
 
         // Partial refund if full participation not possible
         // e.g. due to cap being reached.
@@ -279,7 +283,7 @@ contract TestTokenSale is Ownable, TokenHolder {
 
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         if (tokensLeftInSale > 0) {
-            issueTokens(unallocatedTokensPoolAddress, tokensLeftInSale);
+            transferTokens(unallocatedTokensPoolAddress, tokensLeftInSale);
         }
 
         // Finish minting.
@@ -288,8 +292,8 @@ contract TestTokenSale is Ownable, TokenHolder {
 
     /// @dev Issues tokens for the recipient.
     /// @param _recipient address The address of the recipient.
-    /// @param _tokens uint256 The amount of tokens to issue.
-    function issueTokens(address _recipient, uint256 _tokens) private {
+    /// @param _tokens uint256 The amount of tokens to transfer.
+    function transferTokens(address _recipient, uint256 _tokens) private {
         // Request Test token contract to ownerTransfer the requested tokens for the buyer.
         test.ownerTransfer(_recipient, _tokens);
 
@@ -302,7 +306,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// NOTE:
     ///   1. The new owner will need to call Test token contract's acceptOwnership directly in order to accept the ownership.
     ///   2. Calling this method during the token sale will prevent the token sale to continue, since only the owner of
-    ///      the Test token contract can issue new tokens.
+    ///      the Test token contract can transfer tokens during the sale.
     function requestTestTokenOwnershipTransfer(address _newOwnerCandidate) external onlyOwner {
         test.requestOwnershipTransfer(_newOwnerCandidate);
     }
@@ -317,9 +321,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _newOwnerCandidate address The address to transfer ownership to.
     ///
     /// NOTE:
-    ///   1. The new owner will need to call VestingTrustee's acceptOwnership directly in order to accept the ownership.
-    ///   2. Calling this method during the token sale will prevent the token sale from finalizaing, since only the owner
-    ///      of the VestingTrustee contract can issue new token grants.
+    ///   The new owner will need to call VestingTrustee's acceptOwnership directly in order to accept the ownership.
     function requestVestingTrusteeOwnershipTransfer(address _newOwnerCandidate) external onlyOwner {
         trustee.requestOwnershipTransfer(_newOwnerCandidate);
     }

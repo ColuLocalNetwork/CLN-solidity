@@ -1,0 +1,1284 @@
+const BigNumber = require('bignumber.js');
+BigNumber.config({ ERRORS: false });
+const _ = require('lodash');
+const expectRevert = require('./helpers/expectRevert');
+const time = require('./helpers/time');
+const PresaleCalculator = require('../scripts/presaleCalculator');
+
+const TestToken = artifacts.require('TestToken');
+const TestTokenSaleMock = artifacts.require('TestTokenSaleMock');
+const VestingTrustee = artifacts.require('VestingTrustee');
+
+if (!String.prototype.padEnd) {
+    String.prototype.padEnd = function padEnd(targetLength, padString) {
+        targetLength = targetLength>>0; //floor if number or convert non-number to 0;
+        padString = String(padString || ' ');
+        if (this.length > targetLength) {
+            return String(this);
+        }
+        else {
+            targetLength = targetLength-this.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+            }
+            return String(this) + padString.slice(0,targetLength);
+        }
+    };
+}
+
+// Before tests are run, 10 accounts are created with 10M ETH assigned to each.
+// see scripts/ dir for more information.
+contract('TestTokenSale', (accounts) => {
+    const MINUTE = 60;
+    const HOUR = 60 * MINUTE;
+    const DAY = 24 * HOUR;
+    const WEEK = 7 * DAY;
+    const YEAR = 365 * DAY;
+
+    let DEFAULT_GAS_PRICE = new BigNumber(100000000000);
+    let GAS_COST_ERROR = process.env['SOLIDITY_COVERAGE'] ? 30000000000000000 : 0;
+
+    const TOKEN_DECIMALS = 10 ** 18;
+
+    // Additional Lockup Allocation Pool 
+    const ALAP = new BigNumber('47414230500000023839554600')
+
+    // Maximum number of tokens in circulation.
+    const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
+
+    // Maximum tokens offered in the sale (35%).
+    const MAX_TOKENS_SOLD = new BigNumber(525).mul(10 ** 6).mul(TOKEN_DECIMALS).add(ALAP);
+
+    // Maximum tokens offered in the presale (from the initial 35% offered tokens).
+    const MAX_PRESALE_TOKENS_SOLD = new BigNumber(2625).mul(10 ** 5).mul(TOKEN_DECIMALS).add(ALAP);
+
+    // Tokens allocated for Community pool (30%).
+    const COMMUNITY_POOL = new BigNumber(45).mul(10 ** 7).mul(TOKEN_DECIMALS);
+
+    // Tokens allocated for Future development pool (29%).
+    const FUTURE_DEVELOPMENT_POOL = new BigNumber(435).mul(10 ** 6).mul(TOKEN_DECIMALS);
+
+    // Tokens allocated for team pool (6%).
+    const TEAM_POOL = new BigNumber(9).mul(10 ** 7).mul(TOKEN_DECIMALS);
+
+    // Received funds are forwarded to this address.
+    const fundingRecipient = accounts[1];
+
+    // Post-TDE multisig addresses.
+    const communityPoolAddress = accounts[2];
+    const futureDevelopmentPoolAddress = accounts[3];
+    const teamPoolAddress = accounts[4];
+    const unallocatedTokensPoolAddress = accounts[5];
+
+    // TEST to ETH ratio.
+    const TTT_PER_ETH = 3900;
+    const presaleCalculator = PresaleCalculator(TTT_PER_ETH);
+
+    const TIER_1_CAP = 300 * TTT_PER_ETH * TOKEN_DECIMALS;
+    const TIER_2_CAP = Math.pow(2, 256) - 1; // Maximum uint256 value
+    const TIER_2_CAP_BIGNUMBER = new BigNumber(2).pow(256).minus(1);
+
+    const HUNDRED_BILLION_TOKENS = Math.pow(10, 11) * TOKEN_DECIMALS;
+
+    const VESTING_PLANS = {
+        'A': {startOffset: 0, cliffOffset: 0, endOffset: 1 * DAY, installmentLength: 1 * DAY, alapPercent: 0},
+        'B': {startOffset: 0, cliffOffset: 0, endOffset: 6 * 30 * DAY, installmentLength: 1 * 30 * DAY, alapPercent: 4},
+        'C': {startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 12},
+        'D': {startOffset: 0, cliffOffset: 0, endOffset: 2 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 26},
+        'E': {startOffset: 0, cliffOffset: 0, endOffset: 3 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 35}
+    }
+
+    const POOLS_TOKEN_GRANTS = [
+        {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 3 * YEAR, endOffset: 3 * YEAR, installmentLength: 1 * DAY, revokable: false}
+    ];
+
+    const PRESALES = [
+        {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000, plan: 'B'},
+        {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000, plan: 'A'},
+        {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1000000, plan: 'C'},
+        {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 433400, plan: 'C'},
+        {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 147300, plan: 'B'},
+        {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 672200, plan: 'E'},
+        {recipient: '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', dolarInvest: 280000, plan: 'D'},
+        {recipient: '0xc257274276a4e539741ca11b590b9447b26a8051', dolarInvest: 185100, plan: 'C'},
+        {recipient: '0xf27daff52c38b2c373ad2b9392652ddf433303c4', dolarInvest: 197000, plan: 'C'},
+        {recipient: '0x3d2e397f94e415d7773e72e44d5b5338a99e77d9', dolarInvest: 559100, plan: 'D'},
+        {recipient: '0xb8487eed31cf5c559bf3f4edd166b949553d0d11', dolarInvest: 958100, plan: 'A'},
+        {recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', dolarInvest: 326400, plan: 'E'},
+        {recipient: '0x1b3cb81e51011b549d78bf720b0d924ac763a7c2', dolarInvest: 605000, plan: 'C'},
+        {recipient: '0x6f52730dba7b02beefcaf0d6998c9ae901ea04f9', dolarInvest: 621800, plan: 'B'},
+        {recipient: '0x35da6abcb08f2b6164fe380bb6c47bd8f2304d55', dolarInvest: 920000, plan: 'D'},
+        {recipient: '0x51f9c432a4e59ac86282d6adab4c2eb8919160eb', dolarInvest: 209200, plan: 'D'},
+        {recipient: '0x8f7147aaa34d9ae583a7aa803e8df9bd6b4cc185', dolarInvest: 404600, plan: 'C'},
+        {recipient: '0x8eb3fa7907ad2ef4c7e3ba4b1d2f2aac6f4b5ae6', dolarInvest: 250400, plan: 'D'},
+        {recipient: '0x3bf86ed8a3153ec933786a02ac090301855e576b', dolarInvest: 495600, plan: 'E'},
+        {recipient: '0xc4832ffa32bd12a1696e3fe2ff2b44fc89d3e683', dolarInvest: 740500, plan: 'C'},
+        {recipient: '0xbf09d77048e270b662330e9486b38b43cd781495', dolarInvest: 155200, plan: 'E'},
+        {recipient: '0x3de8c14c8e7a956f5cc4d82beff749ee65fdc358', dolarInvest: 503200, plan: 'B'},
+        {recipient: '0xab5801a7d398351b8be11c439e05c5b3259aec9b', dolarInvest: 864000, plan: 'E'},
+        {recipient: '0xdb6fd484cfa46eeeb73c71edee823e4812f9e2e1', dolarInvest: 424900, plan: 'E'},
+        {recipient: '0x9d2bfc36106f038250c01801685785b16c86c60d', dolarInvest: 529000, plan: 'C'},
+        {recipient: '0x2b241f037337eb4acc61849bd272ac133f7cdf4b', dolarInvest: 242900, plan: 'B'},
+        {recipient: '0xb794f5ea0ba39494ce839613fffba74279579268', dolarInvest: 469000, plan: 'B'},
+        {recipient: '0xe853c56864a2ebe4576a807d26fdc4a0ada51919', dolarInvest: 696700, plan: 'B'},
+        {recipient: '0x281055afc982d96fab65b3a49cac8b878184cb16', dolarInvest: 336900, plan: 'C'},
+        {recipient: '0xa1065e30ef94e4a89c2ef83afaa991af45bd7799', dolarInvest: 349100, plan: 'C'},
+        {recipient: '0x2543fc6d6a746cdc395d43b2f3b0e33e469f8f7f', dolarInvest: 519700, plan: 'A'},
+        {recipient: '0x9dc61cd3c76c82ed0b566005351fd55cd8e578e3', dolarInvest: 133300, plan: 'D'},
+        {recipient: '0xb6ce0f17952116884cd558e828c1f7e6ca027b68', dolarInvest: 619800, plan: 'E'},
+        {recipient: '0xed3835eaf9367f7943b6520e27ea6c23144d4a86', dolarInvest: 372000, plan: 'E'},
+        {recipient: '0x6ba997a443426dbd1b79363b1f0dcd1f66b2a2c7', dolarInvest: 307700, plan: 'B'},
+        {recipient: '0x33e1c178e83f60d0ffa9b8780c6355dc42b77f9d', dolarInvest: 182400, plan: 'B'},
+        {recipient: '0xfdd913a83b30110a01f2f9e5f8cf4f20a2a60c6e', dolarInvest: 993700, plan: 'E'},
+        {recipient: '0x18bc87142f7449af54caa2c1b460e5ca24f3cab3', dolarInvest: 392800, plan: 'D'},
+        {recipient: '0xd5461272b55ca660ab8475bad6099ff66704bce3', dolarInvest: 691100, plan: 'B'},
+        {recipient: '0xae179f378f525437ec1b1357a015f5be2b499c81', dolarInvest: 157400, plan: 'C'},
+        {recipient: '0x1a5637275c7dafdd3eb0f5625fd5d59a1425bba4', dolarInvest: 103300, plan: 'B'},
+        {recipient: '0x009db764931f8a3ed2e20dc3af1373e4d33852e9', dolarInvest: 964700, plan: 'E'},
+        {recipient: '0x96107e5b992475d3862e7faa5450d4dbf36e82dc', dolarInvest: 330900, plan: 'E'},
+        {recipient: '0x7db259da13930642259312210a7049250670eec4', dolarInvest: 866200, plan: 'C'},
+        {recipient: '0xdc76cd25977e0a5ae17155770273ad58648900d3', dolarInvest: 843300, plan: 'B'},
+        {recipient: '0x5c4aa3c0e7f6917ee6c1204d85a01f08a80e6dd0', dolarInvest: 292600, plan: 'E'},
+        {recipient: '0x7d04d2edc058a1afc761d9c99ae4fc5c85d4c8a6', dolarInvest: 688200, plan: 'C'},
+        {recipient: '0x1706d193862da7f8c746aae63d514df93dfa5dbf', dolarInvest: 795800, plan: 'A'},
+        {recipient: '0xcafb10ee663f465f9d10588ac44ed20ed608c11e', dolarInvest: 928300, plan: 'E'},
+        {recipient: '0x316775a60ccc8147532a32eee332e7b944ca4ae6', dolarInvest: 840200, plan: 'D'}
+    ]
+
+    const FORMATED_PRESALE = presaleCalculator.calcPresale(PRESALES);
+
+    let now;
+
+    const increaseTime = async (by) => {
+        await time.increaseTime(by);
+        now += by;
+    };
+
+    // // Return a structured pre-sale grant for a specific address.
+    // const getTokenGrant = async (sale, address) => {
+    //     let tokenGrant = await sale.tokenGrants(address);
+
+    //     return {
+    //         value: tokenGrant[0].toNumber(),
+    //         startOffset: tokenGrant[1].toNumber(),
+    //         cliffOffset: tokenGrant[2].toNumber(),
+    //         endOffset: tokenGrant[3].toNumber(),
+    //         installmentLength: tokenGrant[4].toNumber(),
+    //         percentVested: tokenGrant[5].toNumber()
+    //     };
+    // };
+
+    // Return a structured vesting grant for a specific address.
+    const getGrant = async (trustee, address) => {
+        let grant = await trustee.grants(address);
+
+        return {
+            value: grant[0].toNumber(),
+            start: grant[1].toNumber(),
+            cliff: grant[2].toNumber(),
+            end: grant[3].toNumber(),
+            installmentLength: grant[4].toNumber(),
+            transferred: grant[5].toNumber(),
+            revokable: grant[6]
+        };
+    };
+
+    const addPresaleAlocation = async (sale) => {
+        for (let i = 0; i < FORMATED_PRESALE.length; i++) {
+            let presale = FORMATED_PRESALE[i];
+            console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale presale for ${presale[0]}...`);
+            await sale.presaleAlocation(...presale);
+        };
+        console.log('\tpresaleTokensSold', (await sale.presaleTokensSold()).toString())
+        assert.equal(MAX_PRESALE_TOKENS_SOLD, (await sale.presaleTokensSold()).toNumber())
+    };
+
+    // Checks if token grants exists.
+    const testTokenGrantExists = async (sale, tokenGrant) => {
+        let trustee = VestingTrustee.at(await sale.trustee());
+
+        let grant = await getGrant(trustee, tokenGrant.grantee);
+        let endTime = (await sale.endTime()).toNumber()
+        assert.equal(grant.value, tokenGrant.value, 'grant values should be the same');
+        assert.equal(grant.start, endTime + tokenGrant.startOffset, 'grant starts should be the same');
+        assert.equal(grant.cliff, endTime + tokenGrant.cliffOffset, 'grant cliffs should be the same');
+        assert.equal(grant.end, endTime + tokenGrant.endOffset, 'grant ends should be the same');
+        assert.equal(grant.installmentLength, tokenGrant.installmentLength, 'grant installmentLengths should be the same');
+        assert.equal(grant.revokable, tokenGrant.revokable, 'grant revokables should be the same');
+    };
+
+    const calcGrantFromPresale = (presale) => {
+        let formatedPresale = presaleCalculator.calcPresale([presale])[0];
+        let plan = VESTING_PLANS[presale.plan];
+
+        let ALAPPerEth = new BigNumber(TTT_PER_ETH).mul(plan.alapPercent).div(100);
+        let tokensAndALAPPerEth = new BigNumber(TTT_PER_ETH).add(ALAPPerEth);
+        let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
+
+        return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
+    }
+
+    // Checks if token presale grants exists.
+    const testTokenPresaleGrantExists = async (sale, presale) => {
+        let tokenGrant = calcGrantFromPresale(presale);
+        return await testTokenGrantExists(sale, tokenGrant)
+    };
+
+    // Get block timestamp.
+    beforeEach(async () => {
+        now = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+    });
+
+    describe('construction', async () => {
+        it('should not allow to initialize with null funding recipient address', async () => {
+            await expectRevert(TestTokenSaleMock.new(null, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with null community pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, null, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with null future development pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, null, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with null team pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, null, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with null unallocated tokens pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, null, now + 100));
+        });
+
+        it('should not allow to initialize with 0 funding recipient address', async () => {
+            await expectRevert(TestTokenSaleMock.new(0, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with 0 community pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, 0, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with 0 future development pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, 0, teamPoolAddress, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with 0 team pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, unallocatedTokensPoolAddress, now + 100));
+        });
+
+        it('should not allow to initialize with 0 unallocated tokens pool address', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, 0, now + 100));
+        });
+
+        it('should be initialized with a future starting time', async () => {
+            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now - 100));
+        });
+
+        it('should be initialized with a derived ending time', async () => {
+            let startTime = now + 100;
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, startTime);
+
+            assert.equal((await sale.endTime()).toNumber(), startTime + (await sale.SALE_DURATION()).toNumber());
+        });
+
+        it('should deploy the TestToken contract and own it', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+            assert(await sale.test() != 0);
+
+            let token = TestToken.at(await sale.test());
+            assert.equal(await token.owner(), sale.address);
+        });
+
+        it('should deploy the VestingTrustee contract and own it', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+            let token = TestToken.at(await sale.test());
+
+            let trustee = VestingTrustee.at(await sale.trustee());
+            assert.equal(await trustee.test(), token.address);
+            assert.equal(await trustee.owner(), sale.address);
+        });
+
+        it('should be initialized in transferable false mode', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+            let token = TestToken.at(await sale.test());
+            assert(!await token.isTransferable());
+        });
+
+        it('should be initialized with 0 total sold tokens', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+            assert.equal((await sale.tokensSold()), 0);
+        });
+
+
+        it('should initialize token grants', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+
+            for (const tokenGrant of POOLS_TOKEN_GRANTS) {
+                await testTokenGrantExists(sale, tokenGrant);
+            }
+        });
+
+        it('should allocate token pools', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 100);
+            let token = TestToken.at(await sale.test());
+            assert.equal((await token.balanceOf(communityPoolAddress)).toNumber(), COMMUNITY_POOL.toNumber());
+            assert.equal((await token.balanceOf(teamPoolAddress)).toNumber(), TEAM_POOL.toNumber());
+        })
+
+        it('should be ownable', async () => {
+            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 10000);
+            assert.equal(await sale.owner(), accounts[0]);
+        });
+    });
+
+    describe('presaleAlocation', async () => {
+        let sale;
+        beforeEach(async () => {
+            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 1000);
+        });
+
+        it('should not allow to be called by non-owner', async () => {
+            await expectRevert(sale.presaleAlocation(accounts[0], 1000, 0, {from: accounts[7]}));
+        });
+
+        it('should not allow to be called with null address', async () => {
+            await expectRevert(sale.presaleAlocation(null, 1000, 0));
+        });
+
+        it('should not allow to be called with 0 address', async () => {
+            await expectRevert(sale.presaleAlocation(0, 1000, 0));
+        });
+
+        it('should not allow to be called with 0 value', async () => {
+            await expectRevert(sale.presaleAlocation(accounts[0], 0, 0));
+        });
+
+        it('should not allow granting the same address twice', async () => {
+            await sale.presaleAlocation(accounts[0], 1000, 1);
+            await expectRevert(sale.presaleAlocation(accounts[0], 5000, 0));
+        });
+
+        it('should not allow to make vesting of non existing plan', async () => {
+            await expectRevert(sale.presaleAlocation(accounts[0], 1000, 7));
+        });
+
+        it('should add pre-sale token grants', async () => {
+            await addPresaleAlocation(sale);
+
+            for (const preSale of PRESALES) {
+                console.log(`\tchecking if token grant for ${preSale.recipient} exists...`);
+
+                await testTokenPresaleGrantExists(sale, preSale);
+            }
+        });
+    });
+
+    describe('participation caps', async () => {
+        let sale;
+
+        // Test all accounts have their participation caps set properly.
+        beforeEach(async () => {
+            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, now + 1000);
+
+            for (let participant of accounts) {
+                assert.equal((await sale.participationCaps(participant)).toNumber(), 0);
+            }
+        });
+
+        describe('setTier1Participants', async () => {
+            it('should be able to get called with an empty list of participants', async () => {
+                await sale.setTier1Participants([]);
+            });
+
+            it('should not allow to be called by non-owner', async () => {
+                await expectRevert(sale.setTier1Participants([], {from: accounts[7]}));
+            });
+
+            it('should set participation cap to TIER_1_CAP', async () => {
+                let participants = [accounts[1], accounts[4]];
+
+                await sale.setTier1Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
+                }
+            });
+
+            it('should allow upgrading existing participants to tier2', async () => {
+                let participants = [accounts[2], accounts[3], accounts[4]];
+
+                await sale.setTier1Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
+                }
+
+                await sale.setTier2Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
+                }
+            });
+        });
+
+        describe('setTier2Participants', async () => {
+            it('should be able to get called with an empty list of participants', async () => {
+                await sale.setTier2Participants([]);
+            });
+
+            it('should not allow to be called by non-owner', async () => {
+                let stranger = accounts[7];
+                assert.notEqual(await sale.owner(), stranger);
+
+                await expectRevert(sale.setTier2Participants([], {from: stranger}));
+            });
+
+            it('should set participation cap to TIER_2_CAP', async () => {
+                let participants = [accounts[1], accounts[4]];
+
+                await sale.setTier2Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
+                }
+            });
+
+            it('should allow downgrading existing participatns to tier1', async () => {
+                let participants = [accounts[2], accounts[3], accounts[4]];
+
+                await sale.setTier2Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
+                }
+
+                await sale.setTier1Participants(participants);
+
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
+                }
+            });
+        });
+    });
+
+    describe('finalize', async () => {
+        let sale;
+        let token;
+        let start;
+        let startFrom = 1000;
+        let end;
+
+        beforeEach(async () => {
+            start = now + startFrom;
+            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, start);
+            end = (await sale.endTime()).toNumber();
+            token = TestToken.at(await sale.test());
+
+            assert.equal(await token.isTransferable(), false);
+        });
+
+        context('before sale has started', async () => {
+            beforeEach(async () => {
+                assert.isBelow(now, start);
+            });
+
+            it('should not allow to finalize before selling all tokens', async () => {
+                await expectRevert(sale.finalize());
+            });
+        });
+
+        context('during the sale', async () => {
+            beforeEach(async () => {
+                // Increase time to be the in the middle between start and end.
+                await increaseTime(start - now + ((end - start) / 2));
+
+                assert.isAbove(now, start);
+                assert.isBelow(now, end);
+            });
+
+            it('should not allow to finalize before selling all tokens', async () => {
+                await expectRevert(sale.finalize());
+            });
+        });
+
+        let testFinalization = async () => {
+            it('should finish minting after sale was finalized', async () => {
+                await sale.finalize();
+
+                assert.equal(await token.isTransferable(), true);
+            });
+
+            it('should not allow to finalize token sale more than once', async () => {
+                await sale.finalize();
+
+                await expectRevert(sale.finalize());
+            });
+        }
+
+        context('after sale time has ended', async () => {
+            beforeEach(async () => {
+                await increaseTime(end - now + 1);
+                assert.isAbove(now, end);
+            });
+
+            context('sold all of the tokens', async () => {
+                beforeEach(async () => {
+                    await sale.setTokensSold(MAX_TOKENS_SOLD);
+                });
+
+                testFinalization();
+            });
+
+            context('sold only half of the tokens', async () => {
+                beforeEach(async () => {
+                    await sale.setTokensSold(MAX_TOKENS_SOLD.div(2));
+                });
+
+                testFinalization();
+            });
+
+            context('sold only tenth of the tokens', async () => {
+                beforeEach(async () => {
+                    await sale.setTokensSold(MAX_TOKENS_SOLD.div(10));
+                });
+
+                testFinalization();
+            });
+        });
+
+        context('reached token cap', async () => {
+            beforeEach(async () => {
+                await sale.setTokensSold(MAX_TOKENS_SOLD);
+            });
+
+            testFinalization();
+        });
+    });
+
+    // Execute a transaction, and test balances and total tokens sold have been updated correctly, while also testing
+    // for participation caps.
+    //
+    // NOTE: This function automatically finalizes the sale when the cap has been reached. This function is used in
+    // various tests where plenty of transactions are called, and its hard to decide when to exactly call finalize. This
+    // function does it for us.
+    let verifyTransactions = async (sale, fundRecipient, method, transactions) => {
+        let token = TestToken.at(await sale.test());
+
+        // Using large numerics, so we have to use BigNumber.
+        let totalTokensSold = await sale.tokensSold();;
+
+        let i = 0;
+        for (const t of transactions) {
+            // Set hard participation cap if mentioned in current transaction object. This means current object is not
+            // a transaction but a special object that signals when to set a new hard cap.
+            //
+            // NOTE: We have to convert the new cap number to string before converting them to BigNumber, since JS
+            // standard Number type doesn't support more than 15 significant digits.
+            if (t.hasOwnProperty('hardParticipationCap')) {
+                console.log(`\tsetting hard participation cap from ${(await sale.hardParticipationCap()).div(TOKEN_DECIMALS)} ` +
+                    `to ${t.hardParticipationCap / TOKEN_DECIMALS}`
+                );
+
+                // Value is assumed to be of BigNumber type.
+                await sale.setHardParticipationCap(t.hardParticipationCap);
+
+                continue;
+            }
+
+            let tokens = new BigNumber(t.value.toString()).mul(TTT_PER_ETH);
+
+            console.log(`\t[${++i} / ${transactions.length}] expecting account ${t.from} to buy up to ` +
+                `${tokens.toNumber() / TOKEN_DECIMALS} TTT for ${t.value / TOKEN_DECIMALS} ETH`
+            );
+
+            // Cache original balances before executing the transaction.
+            // We will test against these after the transaction has been executed.
+            let fundRecipientETHBalance = web3.eth.getBalance(fundRecipient);
+            let participantETHBalance = web3.eth.getBalance(t.from);
+            let participantTTTBalance = await token.balanceOf(t.from);
+            let participantHistory = await sale.participationHistory(t.from);
+
+            // Take into account the global hard participation cap.
+            let participantCap = await sale.participationCaps(t.from);
+            let hardParticipationCap = await sale.hardParticipationCap();
+            participantCap = BigNumber.min(participantCap, hardParticipationCap);
+
+            let tokensSold = await sale.tokensSold();
+            assert.equal(totalTokensSold.toNumber(), tokensSold.toNumber());
+
+            // If this transaction should fail, then theres no need to continue testing the current transaction and
+            // test for updated balances, etc., since everything related to it was reverted.
+            //
+            // Reasons for failures can be:
+            //  1. We already sold all the tokens
+            //  2. Participant has reached its participation cap.
+            if (MAX_TOKENS_SOLD.equals(tokensSold) ||
+                participantHistory.greaterThanOrEqualTo(participantCap)) {
+                await expectRevert(method(sale, t.value, t.from));
+
+                continue;
+            }
+
+            // Prediction of correct participant ETH, TTT balance, and total tokens sold:
+
+            // NOTE: We take into account partial refund to the participant, in case transaction goes past its
+            // participation cap.
+            //
+            // NOTE: We have to convert the (very) numbers to strings, before converting them to BigNumber, since JS
+            // standard Number type doesn't support more than 15 significant digits.
+            let contribution = BigNumber.min(t.value.toString(), participantCap.minus(participantHistory));
+            tokens = contribution.mul(TTT_PER_ETH);
+
+            // Take into account the remaining amount of tokens which can be still sold:
+            tokens = BigNumber.min(tokens, MAX_TOKENS_SOLD.minus(tokensSold));
+            contribution = tokens.div(TTT_PER_ETH);
+
+            totalTokensSold = totalTokensSold.plus(tokens);
+            
+            // Execute transaction.
+
+            let transaction = await method(sale, t.value, t.from);
+            let gasUsed = DEFAULT_GAS_PRICE.mul(transaction.receipt.gasUsed);
+
+
+            // Test for total tokens sold.
+            assert.equal((await sale.tokensSold()).toNumber(), tokensSold.plus(tokens).toNumber());
+            // Test for correct participant ETH + TTT balances.
+
+            // ETH:
+            assert.equal(web3.eth.getBalance(fundRecipient).toNumber(),
+                fundRecipientETHBalance.plus(contribution).toNumber());
+
+            assert.approximately( web3.eth.getBalance(t.from).toNumber(),
+                participantETHBalance.minus(contribution).minus(gasUsed).toNumber(), GAS_COST_ERROR);
+
+            // TTT:
+            assert.equal((await token.balanceOf(t.from)).toNumber(), participantTTTBalance.plus(tokens).toNumber());
+
+            // Test for updated participant cap.
+            assert.equal((await sale.participationHistory(t.from)).toNumber(),
+                participantHistory.plus(contribution).toNumber());
+
+            // Test owner transfer event.
+            assert.lengthOf(transaction.logs, 1);
+            let event = transaction.logs[0];
+            assert.equal(event.event, 'TokensIssued');
+            assert.equal(Number(event.args._tokens), tokens)
+
+            // Finalize sale if the all tokens have been sold.
+            if (totalTokensSold.equals(MAX_TOKENS_SOLD)) {
+                await sale.finalize();
+            }
+        }
+    };
+
+    let generateTokenTests = async (name, method) => {
+        describe(name, async () => {
+            let sale;
+            let token;
+            // accounts[0] (owner) is participating in the sale. We don't want
+            // him to send and receive funds at the same time.
+            let fundRecipient = accounts[11];
+            let tier2Participant = accounts[9];
+            let start;
+            let startFrom = 1000;
+            let end;
+            let value = 1000;
+
+            beforeEach(async () => {
+                start = now + startFrom;
+                sale = await TestTokenSaleMock.new(fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, start);
+                end = (await sale.endTime()).toNumber();
+                token = TestToken.at(await sale.test());
+
+                assert.equal(await token.isTransferable(), false);
+                await addPresaleAlocation(sale);
+                await sale.setTier2Participants([tier2Participant]);
+            });
+
+            context('sale time has ended', async () => {
+                beforeEach(async () => {
+                    await increaseTime(end - now + 1);
+                    assert.isAbove(now, end);
+                });
+
+                it('should not allow to execute', async () => {
+                    await expectRevert(method(sale, value));
+                });
+
+                context('and finalized', async () => {
+                    beforeEach(async () => {
+                        await sale.finalize();
+                    });
+
+                    it('should not allow to execute', async () => {
+                        await expectRevert(method(sale, value));
+                    });
+                });
+            });
+
+            context('reached token cap', async () => {
+                beforeEach(async () => {
+                    await sale.setTokensSold(MAX_TOKENS_SOLD);
+                    assert.equal((await sale.tokensSold()).toNumber(), MAX_TOKENS_SOLD.toNumber());
+                });
+
+                it('should not allow to execute', async () => {
+                    await expectRevert(method(sale, value));
+                });
+
+                context('and finalized', async () => {
+                    beforeEach(async () => {
+                        await sale.finalize();
+                    });
+
+                    it('should not allow to execute', async () => {
+                        await expectRevert(method(sale, value));
+                    });
+                });
+            });
+
+            context('before sale has started', async () => {
+                beforeEach(async () => {
+                    assert.isBelow(now, start);
+                });
+
+                it('should not allow to execute', async () => {
+                    await expectRevert(method(sale, value));
+                });
+            });
+
+            context('during the sale', async () => {
+                beforeEach(async () => {
+                    await increaseTime(start - now + ((end - start) / 2));
+                    assert.isAbove(now, start);
+                    assert.isBelow(now, end);
+                });
+
+                it('should not allow to execute with 0 ETH', async () => {
+                    await expectRevert(method(sale, 0));
+                });
+
+                // Test if transaction execution is unallowed and prevented for UNREGISTERED participants.
+                context('unregistered participants', async () => {
+                    [
+                        { from: accounts[1], value: 1 * TOKEN_DECIMALS },
+                        { from: accounts[2], value: 2 * TOKEN_DECIMALS },
+                        { from: accounts[3], value: 0.0001 * TOKEN_DECIMALS },
+                        { from: accounts[4], value: 10 * TOKEN_DECIMALS }
+                    ].forEach((t) => {
+                        it(`should not allow to participate with ${t.value / TOKEN_DECIMALS} ETH`, async () => {
+                            assert.equal((await sale.participationCaps(t.from)).toNumber(), 0);
+
+                            await expectRevert(method(sale, t.value));
+                        });
+                    });
+                });
+
+                // Test transaction are allowed and executed correctly for registered participants.
+                context('registered participants', async () => {
+                    let owner = accounts[0];
+
+                    let tier1Participant1 = accounts[1];
+                    let tier1Participant2 = accounts[2];
+                    let tier1Participant3 = accounts[3];
+
+                    let tier2Participant1 = accounts[4];
+                    let tier2Participant2 = accounts[5];
+                    let tier2Participant3 = accounts[6];  // Not used in following tests. "Dummy" account.
+
+                    // Use default (limited) hard participation cap
+                    // and initialize tier 1 + tier 2 participants.
+                    beforeEach(async () => {
+                        await sale.setTier1Participants([
+                            owner,
+                            tier1Participant1,
+                            tier1Participant2,
+                            tier1Participant3
+                        ]);
+                        await sale.setTier2Participants([
+                            tier2Participant1,
+                            tier2Participant2,
+                            tier2Participant3,
+                        ]);
+                    });
+
+                    [
+                        // Sanity test: test sending funds from account owner. Bulk 0
+                        [
+                            { from: owner, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 1 * TOKEN_DECIMALS },
+                            { from: owner, value: 1 * TOKEN_DECIMALS },
+                            { from: owner, value: 3 * TOKEN_DECIMALS },
+                        ],
+                        // Only tier 1 participants: Bulk 1
+                        [
+                            { from: tier1Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 150 * TOKEN_DECIMALS }
+                        ],
+                        // Tier 1 + Tier 2 participants: Bulk 2
+                        [
+                            { from: tier1Participant1, value: 1 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant2, value: 0.5 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 10 * TOKEN_DECIMALS },
+
+                            { from: tier2Participant1, value: 100 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 0.01 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant3, value: 2.5 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant2, value: 0.01 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 1200 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant1,  value: 0.01 * TOKEN_DECIMALS }
+                        ],
+                        // Another Tier 1 + Tier 2 participants: Bulk 3
+                        [
+                            { from: tier1Participant1, value: 5 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant2, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 2 * TOKEN_DECIMALS },
+
+                            { from: tier2Participant2, value: 1000 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant3, value: 1.3 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant2, value: 0.01 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 100 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant1, value: 0.01 * TOKEN_DECIMALS }
+                        ],
+                        // Participation cap should be reached by the middle of this transaction list, and then we raise
+                        // it and continue the remaining transactions: Bulk 4
+                        [
+                            { from: tier1Participant1, value: 11 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 12 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 13 * TOKEN_DECIMALS },
+
+                            { from: tier2Participant1, value: 21 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 211 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 22 * TOKEN_DECIMALS },
+
+                            { from: tier1Participant1, value: 5000 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M
+
+                            { hardParticipationCap: TIER_2_CAP_BIGNUMBER }, // Practically infinity
+
+                            { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M !!!!!!!!!!!!!!!!!!!!! [11 / 16] expecting account 0xafb19014bf2958727fc9faa0c3edbc5f2c29624f to buy up to 3900000000 TTT for 1000000 ETH
+                            //  contribution 1.1444738461538461538461538461538461538461538e+23 from 1e+24 ETH
+                            //  contribution 4.463448e+26 TTT
+                            { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
+                            { from: tier1Participant2, value: 1212 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 8000000 * TOKEN_DECIMALS } // 8M
+                        ],
+                        // Another similar test to above, just with different transactions. Bulk 5
+                        [
+                            { from: tier2Participant1, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 1000 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 10000 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 100 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 0.1 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 0.01 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 10 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 1000000 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1000 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 999 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 9999 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 99 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 10 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 10 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 100000 * TOKEN_DECIMALS },
+
+                            { hardParticipationCap: TIER_2_CAP_BIGNUMBER },
+
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M [19 / 26] expecting account 0xafb19014bf2958727fc9faa0c3edbc5f2c29624f to buy up to 3900000000 TTT for 1000000 ETH
+                            // contribution 1.1740737461538461538461538461538461538461538e+23 from 1e+24 ETH
+                            // contribution 4.57888761e+26 TTT
+                            { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
+                            { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 8000000 * TOKEN_DECIMALS }, // 50M
+                            { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 1212 * TOKEN_DECIMALS }
+                        ],
+                        // Test starting with hard cap at the lowest value possible: 1,
+                        // then rising to 5K. Bulk 6
+                        [
+                            { hardParticipationCap: new BigNumber(1) },
+
+                            { from: tier2Participant1, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 1000 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 10000 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 100 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 0.1 * TOKEN_DECIMALS },
+                            { from: tier1Participant1, value: 0.01 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 10 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 1000000 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1000 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 999 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 9999 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 99 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 10 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 10 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 1 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 100 * TOKEN_DECIMALS },
+                            { from: tier1Participant3, value: 100000 * TOKEN_DECIMALS },
+
+                            { hardParticipationCap: new BigNumber(5).mul(1000) }, // 5K
+
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M
+                            { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
+                            { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
+                            { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
+                            { from: tier2Participant2, value: 8000000 * TOKEN_DECIMALS }, // 50M
+                            { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
+                            { from: tier1Participant2, value: 1212 * TOKEN_DECIMALS }
+                        ],
+                    ].forEach((transactions, i) => {
+                        context(`bulk ${i}...`, async function() {
+                            // These are long tests, so we need to disable timeouts.
+                            this.timeout(0);
+
+                            it('should execute sale orders', async () => {
+                                await verifyTransactions(sale, fundRecipient, method, transactions);
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    // Generate tests for create() - Create and sell tokens to the caller.
+    generateTokenTests('using create()', async (sale, value, from) => {
+        let account = from || accounts[0];
+        return sale.create(account, {value: value, from: account});
+    });
+
+    // Generate tests for fallback method - Should be same as create().
+    generateTokenTests('using fallback function', async (sale, value, from) => {
+        if (from) {
+            return sale.sendTransaction({value: value, from: from});
+        }
+
+        return sale.send(value);
+    });
+
+    describe('transfer ownership', async () => {
+        let sale;
+        let token;
+        let trustee;
+        let start;
+        let startFrom = 1000;
+        let end;
+
+        beforeEach(async () => {
+            start = now + startFrom;
+            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, start);
+            end = (await sale.endTime()).toNumber();
+            token = TestToken.at(await sale.test());
+        });
+
+        // test token contract ownership transfer tests.
+        let testTransferAndAcceptTokenOwnership = async () => {
+            let owner = accounts[0];
+            let newOwner = accounts[1];
+            let notOwner = accounts[8];
+
+            describe('test token contract ownership transfer', async () => {
+                describe('request', async () => {
+                    it('should allow contract owner to request transfer', async () => {
+                        assert.equal(await token.owner(), sale.address);
+
+                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                    });
+
+                    it('should not allow non-owner to request transfer', async () => {
+                        await expectRevert(sale.requestTestTokenOwnershipTransfer(newOwner, {from: notOwner}));
+                    });
+                });
+
+                describe('accept', async () => {
+                    it('should not allow owner to accept', async () => {
+                        await expectRevert(token.acceptOwnership({from: owner}));
+                    });
+
+                    it('should not allow new owner to accept without request', async () => {
+                        await expectRevert(token.acceptOwnership({from: newOwner}));
+                    });
+                });
+
+                describe('request and accept', async () => {
+                    it('should transfer ownership to new owner', async () => {
+                        // Test original owner is still owner before and after ownership REQUEST (not accepted yet!).
+                        assert.equal(await token.owner(), sale.address);
+                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                        assert.equal(await token.owner(), sale.address);
+
+                        // Test ownership has been transferred after acceptance.
+                        await token.acceptOwnership({from: newOwner});
+                        assert.equal(await token.owner(), newOwner);
+
+                        // Original owner should not be able to request ownership after acceptance (he's not the owner
+                        // anymore).
+                        await expectRevert(sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner}));
+                    });
+
+                    it('should be able to claim ownership back', async () => {
+                        // Transfer ownership to another account.
+                        assert.equal(await token.owner(), sale.address);
+                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                        await token.acceptOwnership({from: newOwner});
+                        assert.equal(await token.owner(), newOwner);
+
+                        // Test transfer ownership back to original account.
+                        await token.requestOwnershipTransfer(sale.address, {from: newOwner});
+                        assert.equal(await token.owner(), newOwner);
+
+                        await sale.acceptTestTokenOwnership({from: owner});
+                        assert.equal(await token.owner(), sale.address);
+                    });
+                });
+            });
+        };
+
+        // Vesting trustee contract ownership transfer tests.
+        let testTransferAndAcceptVestingTrusteeOwnership = async () => {
+            let owner = accounts[0];
+            let newOwner = accounts[1];
+            let notOwner = accounts[8];
+
+            describe('Vesting Trustee contract ownership transfer', async () => {
+                describe('request', async () => {
+                    it('should allow for contract owner', async () => {
+                        assert.equal(await trustee.owner(), sale.address);
+
+                        await sale.requestVestingTrusteeOwnershipTransfer(newOwner, {from: owner});
+                    });
+
+                    it('should not allow for non-contract owner', async () => {
+                        await expectRevert(sale.requestVestingTrusteeOwnershipTransfer(newOwner, {from: notOwner}));
+                    });
+                });
+
+                describe('accept', async () => {
+                    it('should not allow owner to accept', async () => {
+                        await expectRevert(sale.acceptVestingTrusteeOwnership({from: notOwner}));
+                    });
+
+                    it('should not allow new owner to accept without request', async () => {
+                        await expectRevert(sale.acceptVestingTrusteeOwnership({from: notOwner}));
+                    });
+                });
+
+                describe('request and accept', async () => {
+                    it('should transfer ownership to new owner', async () => {
+                        // Test original owner is still owner before and
+                        // after ownership REQUEST (not accepted yet!).
+                        assert.equal(await token.owner(), sale.address);
+                        await sale.requestVestingTrusteeOwnershipTransfer(newOwner, {from: owner});
+                        assert.equal(await trustee.owner(), sale.address);
+
+                        // Test ownership has been transferred after acceptance.
+                        await trustee.acceptOwnership({from: newOwner});
+                        assert.equal(await trustee.owner(), newOwner);
+
+                        // Original owner should not be able to request
+                        // ownership after acceptance (he's not the owner anymore).
+                        await expectRevert(sale.requestVestingTrusteeOwnershipTransfer(newOwner, {from: owner}));
+                    });
+
+                    it('should be able to claim ownership back', async () => {
+                        // Transfer ownership to another account.
+                        assert.equal(await trustee.owner(), sale.address);
+                        await sale.requestVestingTrusteeOwnershipTransfer(newOwner, {from: owner});
+                        await trustee.acceptOwnership({from: newOwner});
+                        assert.equal(await trustee.owner(), newOwner);
+
+                        // Test transfer ownership back to original account.
+                        await trustee.requestOwnershipTransfer(sale.address, {from: newOwner});
+                        assert.equal(await trustee.owner(), newOwner);
+
+                        await sale.acceptVestingTrusteeOwnership({from: owner});
+                        assert.equal(await trustee.owner(), sale.address);
+                    });
+                });
+            });
+        };
+
+        context('during the sale', async () => {
+            beforeEach(async () => {
+                await increaseTime(start - now + ((end - start) / 2));
+
+                assert.isAbove(now, start);
+                assert.isBelow(now, end);
+            });
+
+            testTransferAndAcceptTokenOwnership();
+        });
+
+        context('after the sale', async () => {
+            context('reached token cap', async () => {
+                beforeEach(async () => {
+                    await sale.setTokensSold(MAX_TOKENS_SOLD);
+                    await sale.finalize();
+
+                    trustee = VestingTrustee.at(await sale.trustee());
+                });
+
+                testTransferAndAcceptTokenOwnership();
+                testTransferAndAcceptVestingTrusteeOwnership();
+            });
+
+            context('after the ending time', async () => {
+                beforeEach(async () => {
+                    await increaseTime(end - now + 1);
+                    assert.isAbove(now, end);
+
+                    await sale.finalize();
+
+                    trustee = VestingTrustee.at(await sale.trustee());
+                });
+
+                testTransferAndAcceptTokenOwnership();
+                testTransferAndAcceptVestingTrusteeOwnership();
+            });
+        });
+    });
+
+    const longTests = process.env['LONG_TESTS'];
+    (longTests ? describe : describe.skip)('long token sale scenarios', async function() {
+        // These are very long tests, so we need to  disable timeouts.
+        this.timeout(0);
+
+        let sale;
+        let token;
+        let tier1Participants;
+        let tier2Participants;
+        let start;
+        let startFrom = 1000;
+        let end;
+        let fundRecipient = accounts[0];
+
+        // Center index in accounts array.
+        const centerIndex = Math.floor(accounts.length / 2);
+
+        // Setup a standard sale just like previous tests, with a single tier 2 participant
+        // and move time to be during the sale.
+        beforeEach(async () => {
+            start = now + startFrom;
+            sale = await TestTokenSaleMock.new(fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, unallocatedTokensPoolAddress, start);
+            end = (await sale.endTime()).toNumber();
+            await addPresaleAlocation(sale);
+            token = TestToken.at(await sale.test());
+
+            // We'll be testing transactions from all these accounts in the following tests.
+            // We require at least 50 (ignoring first owner account).
+            assert.isAtLeast(accounts.length, 51);
+
+            // We're generating transactions for many accounts and also skipping the first owner account.
+            // We split these accounts to two tiers, thus in order for them to be equal
+            // length we need an odd (accounts.length) value
+            assert.equal(accounts.length % 2, 1);
+
+            await increaseTime(start - now + 1);
+            assert.isAtLeast(now, start);
+            assert.isBelow(now, end);
+        });
+
+        let create = async (sale, value, from) => {
+            let account = from || accounts[0];
+            return sale.create(account, {value: value, from: account});
+        };
+
+        const WHITELIST_SIZE = 50000;
+
+        // NOTE (accounts.length - 1) because we're skipping first owner account.
+        context(`${WHITELIST_SIZE + accounts.length - 1} registered participants`, async () => {
+            const BATCH_SIZE = 200;
+
+            // Whitelist participants along with random addresses:
+
+            beforeEach(async () => {
+
+                // Assign random addresses (as noise) to tier 1.
+                for (let i = 0; i < WHITELIST_SIZE / BATCH_SIZE; ++i) {
+                    console.log(`\tWhitelisting [${i * BATCH_SIZE} - ${(i + 1) * BATCH_SIZE}] non-existing participants...`);
+                    const addresses = Array.from(Array(BATCH_SIZE), (_, x) => {
+                        return '0x'.padEnd(42, x + (i + 1) * BATCH_SIZE)
+                    });
+
+                    await sale.setTier1Participants(addresses);
+                }
+                // Assign 50% of participants to tier 1 and the other to tier 2.
+                //
+                // NOTE skipping owner account.
+                tier1Participants = accounts.slice(1, centerIndex + 1);
+                tier2Participants = accounts.slice(centerIndex + 1, accounts.length);
+
+                console.log(`\tWhitelisting ${tier1Participants.length} tier 1 participants...`);
+                await sale.setTier1Participants(tier1Participants);
+
+                console.log(`\tWhitelisting ${tier2Participants.length} tier 2 participants...`);
+                await sale.setTier2Participants(tier2Participants);
+            });
+
+            it('should be able to participate', async () => {
+                // Generate transactions, and mix tier 1 and tier 2 transactions together.
+                let transactions = [];
+                for (let i = 0; i < centerIndex; ++i) {
+                    // NOTE value is (i+1) such that first member will send 1 ETH (0 ETH will fail).
+                    transactions.push({from: tier1Participants[i], value: new BigNumber(i + 1).mul(TOKEN_DECIMALS)});
+                    transactions.push({from: tier2Participants[i], value: new BigNumber(i + 1).mul(10).mul(TOKEN_DECIMALS)});
+                }
+
+                await verifyTransactions(sale, fundRecipient, create, transactions);
+            });
+
+            // This test generates very small and very large transactions. During the sale,
+            // the hard cap is lifted to infinity, and then we test the very large
+            // transactions are succeeding, and the sale is finalized.
+            //
+            // We're trying to create "chaotic" behaviour by mixing small and large transactions together.
+            it('should be able to participate in various amounts with changing sale cap', async () => {
+                // Generate transactions, and mix tier 1 and tier 2 transactions together.
+                let transactions = [];
+                let liftHardCapIndex = 75;
+                for (let j = 0; j < 100; ++j) {
+                    // Lift hard cap to infinity during the sale.
+                    if (j === 70) {
+                        console.log(`\tGenerating hard participation cap change...`);
+                        transactions.push({ hardParticipationCap: TIER_2_CAP_BIGNUMBER });
+                    }
+
+                    console.log(`\tGenerating ${tier1Participants.length} transactions...`);
+                    for (let i = 0; i < centerIndex; ++i) {
+                        // NOTE value is (i+1) such that first member will send 1 ETH (0 ETH will fail).
+
+                        // Tier 1 participants send a negligble amount of ETH (0.01-0.25 ETH).
+                        transactions.push({from: tier1Participants[i], value: new BigNumber(i + 1).mul(0.01).mul(TOKEN_DECIMALS)});
+
+                        // Tier 2 participants start with sending 1-25 ETH every iteration,
+                        // Then after the hard cap has been lifted, send 500-12500 ETH.
+                        let tier2Value = j < liftHardCapIndex ? 1 : 500;
+                        transactions.push({from: tier2Participants[i], value: new BigNumber(i + 1).mul(tier2Value).mul(TOKEN_DECIMALS)});
+                    }
+                }
+
+                await verifyTransactions(sale, fundRecipient, create, transactions);
+            });
+        });
+    });
+});
