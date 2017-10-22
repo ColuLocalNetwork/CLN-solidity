@@ -122,16 +122,19 @@ contract TestTokenSale is Ownable, TokenHolder {
     }
 
     /// @dev Constructor that initializes the sale conditions.
+    /// @param _owner address The address of this contract owner.
     /// @param _fundingRecipient address The address of the funding recipient.
     /// @param _communityPoolAddress address The address of the community pool.
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
     /// @param _teamPoolAddress address The address of the team pool.
     /// @param _startTime uint256 The start time of the token sale.
-    function TestTokenSale(address _fundingRecipient,
+    function TestTokenSale(address _owner,
+        address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _teamPoolAddress,
         uint256 _startTime) {
+        require(_owner != address(0));
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
         require(_futureDevelopmentPoolAddress != address(0));
@@ -150,6 +153,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Deploy new VestingTrustee contract.
         trustee = new VestingTrustee(test);
 
+        owner = _owner;
         fundingRecipient = _fundingRecipient;
         communityPoolAddress = _communityPoolAddress;
         futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;

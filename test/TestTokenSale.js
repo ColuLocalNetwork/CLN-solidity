@@ -61,6 +61,7 @@ contract('TestTokenSale', (accounts) => {
     // Tokens allocated for team pool (6%).
     const TEAM_POOL = new BigNumber(9).mul(10 ** 7).mul(TOKEN_DECIMALS);
 
+    const owner = accounts[0];
     // Received funds are forwarded to this address.
     const fundingRecipient = accounts[1];
 
@@ -227,51 +228,59 @@ contract('TestTokenSale', (accounts) => {
     });
 
     describe('construction', async () => {
+        it('should not allow to initialize with null owner address', async () => {
+            await expectRevert(TestTokenSaleMock.new(null, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+        });
+
         it('should not allow to initialize with null funding recipient address', async () => {
-            await expectRevert(TestTokenSaleMock.new(null, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, null, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null community pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, null, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, null, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null future development pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, null, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, null, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null team pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, null, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, null, now + 100));
+        });
+
+        it('should not allow to initialize with 0 owner address', async () => {
+            await expectRevert(TestTokenSaleMock.new(0, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 funding recipient address', async () => {
-            await expectRevert(TestTokenSaleMock.new(0, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, 0, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 community pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, 0, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, 0, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 future development pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, 0, teamPoolAddress, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, 0, teamPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 team pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, now + 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, now + 100));
         });
 
         it('should be initialized with a future starting time', async () => {
-            await expectRevert(TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now - 100));
+            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now - 100));
         });
 
         it('should be initialized with a derived ending time', async () => {
             let startTime = now + 100;
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
 
             assert.equal((await sale.endTime()).toNumber(), startTime + (await sale.SALE_DURATION()).toNumber());
         });
 
         it('should deploy the TestToken contract and own it', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
             assert(await sale.test() != 0);
 
             let token = TestToken.at(await sale.test());
@@ -279,7 +288,7 @@ contract('TestTokenSale', (accounts) => {
         });
 
         it('should deploy the VestingTrustee contract and own it', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
             let token = TestToken.at(await sale.test());
 
             let trustee = VestingTrustee.at(await sale.trustee());
@@ -288,25 +297,25 @@ contract('TestTokenSale', (accounts) => {
         });
 
         it('should be initialized in transferable false mode', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
             let token = TestToken.at(await sale.test());
             assert(!await token.isTransferable());
         });
 
         it('should be initialized with 0 total sold tokens', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
             assert.equal((await sale.tokensSold()), 0);
         });
 
         it('should allocate token pools', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
             let token = TestToken.at(await sale.test());
             assert.equal((await token.balanceOf(communityPoolAddress)).toNumber(), COMMUNITY_POOL.toNumber());
             assert.equal((await token.balanceOf(teamPoolAddress)).toNumber(), TEAM_POOL.toNumber());
         })
 
         it('should be ownable', async () => {
-            let sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 10000);
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 10000);
             assert.equal(await sale.owner(), accounts[0]);
         });
     });
@@ -314,7 +323,7 @@ contract('TestTokenSale', (accounts) => {
     describe('presaleAlocation', async () => {
         let sale;
         beforeEach(async () => {
-            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
         });
 
         it('should not allow to be called by non-owner', async () => {
@@ -358,7 +367,7 @@ contract('TestTokenSale', (accounts) => {
 
         // Test all accounts have their participation caps set properly.
         beforeEach(async () => {
-            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
 
             for (let participant of accounts) {
                 assert.equal((await sale.participationCaps(participant)).toNumber(), 0);
@@ -450,7 +459,7 @@ contract('TestTokenSale', (accounts) => {
 
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
             end = (await sale.endTime()).toNumber();
             token = TestToken.at(await sale.test());
 
@@ -677,7 +686,7 @@ contract('TestTokenSale', (accounts) => {
 
             beforeEach(async () => {
                 start = now + startFrom;
-                sale = await TestTokenSaleMock.new(fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+                sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
                 end = (await sale.endTime()).toNumber();
                 token = TestToken.at(await sale.test());
 
@@ -976,7 +985,7 @@ contract('TestTokenSale', (accounts) => {
 
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
             end = (await sale.endTime()).toNumber();
             token = TestToken.at(await sale.test());
         });
@@ -1169,7 +1178,7 @@ contract('TestTokenSale', (accounts) => {
         // and move time to be during the sale.
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
             end = (await sale.endTime()).toNumber();
             await addPresaleAlocation(sale);
             token = TestToken.at(await sale.test());
