@@ -7,13 +7,11 @@ contract TestTokenSaleMock is TestTokenSale {
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _stakeholdersPoolAddress,
-        address _unallocatedTokensPoolAddress,
         uint256 _startTime)
         TestTokenSale(_fundingRecipient,
         _communityPoolAddress,
         _futureDevelopmentPoolAddress,
         _stakeholdersPoolAddress,
-        _unallocatedTokensPoolAddress,
         _startTime) {
     }
 

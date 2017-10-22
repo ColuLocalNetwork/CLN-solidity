@@ -25,7 +25,6 @@ contract TestTokenSale is Ownable, TokenHolder {
     address public communityPoolAddress;
     address public futureDevelopmentPoolAddress;
     address public teamPoolAddress;
-    address public unallocatedTokensPoolAddress;
 
     // Test token decimals.
     // Using same decimal value as ETH (makes ETH-TEST conversion much easier).
@@ -127,19 +126,16 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _communityPoolAddress address The address of the community pool.
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
     /// @param _teamPoolAddress address The address of the team pool.
-    /// @param _unallocatedTokensPoolAddress address The address of the unallocated tokens pool.
     /// @param _startTime uint256 The start time of the token sale.
     function TestTokenSale(address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _teamPoolAddress,
-        address _unallocatedTokensPoolAddress,
         uint256 _startTime) {
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
         require(_futureDevelopmentPoolAddress != address(0));
         require(_teamPoolAddress != address(0));
-        require(_unallocatedTokensPoolAddress != address(0));
         require(_startTime > now);
 
         vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
@@ -158,7 +154,6 @@ contract TestTokenSale is Ownable, TokenHolder {
         communityPoolAddress = _communityPoolAddress;
         futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
         teamPoolAddress = _teamPoolAddress;
-        unallocatedTokensPoolAddress = _unallocatedTokensPoolAddress;
         startTime = _startTime;
         endTime = startTime + SALE_DURATION;
 
@@ -171,11 +166,6 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Issue the remaining 55% token to designated pools.
 
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
-
-        // Future Development Pool is locked for 3 years.
-        transferTokens(trustee, FUTURE_DEVELOPMENT_POOL);
-        trustee.grant(futureDevelopmentPoolAddress, FUTURE_DEVELOPMENT_POOL, endTime, endTime.add(3 years),
-            endTime.add(3 years), 1 days, false);
         
         // teamPoolAddress will create its own vesting trusts.
         transferTokens(teamPoolAddress, TEAM_POOL);
@@ -282,9 +272,11 @@ contract TestTokenSale is Ownable, TokenHolder {
         }
 
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
-        if (tokensLeftInSale > 0) {
-            transferTokens(unallocatedTokensPoolAddress, tokensLeftInSale);
-        }
+        uint256 futureDevelopmentPool = FUTURE_DEVELOPMENT_POOL.add(tokensLeftInSale);
+        // Future Development Pool is locked for 3 years.
+        transferTokens(trustee, futureDevelopmentPool);
+        trustee.grant(futureDevelopmentPoolAddress, futureDevelopmentPool, endTime, endTime.add(3 years),
+            endTime.add(3 years), 1 days, false);
 
         // Finish minting.
         test.makeTokensTransferable();
