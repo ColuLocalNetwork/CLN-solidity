@@ -66,10 +66,6 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Amount of tokens sold until now in the sale.
     uint256 public presaleTokensSold = 0;
 
-    // Participation caps, according to KYC tiers.
-    uint256 public constant TIER_1_CAP = 300 * TTT_PER_ETH * TOKEN_DECIMALS;
-    uint256 public constant TIER_2_CAP = uint256(-1); // Maximum uint256 value
-
     // Accumulated amount each participant have contributed so far.
     mapping (address => uint256) public participationHistory;
     
@@ -81,6 +77,8 @@ contract TestTokenSale is Ownable, TokenHolder {
 
     // Maximum amount ANYBODY is currently allowed to contribute.
     uint256 public hardParticipationCap = 5000 * TOKEN_DECIMALS;
+
+    bool public initialized = false;
 
     struct VestingPlan {
         uint256 startOffset;
@@ -121,6 +119,24 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
+    /// @dev Reverts if called before sale ends.
+    modifier notInitialized() {
+        if (initialized) {
+            revert();
+        }
+
+        _;
+    }
+
+    /// @dev Reverts if called before sale ends.
+    modifier isInitialized() {
+        if (!initialized) {
+            revert();
+        }
+
+        _;
+    }
+
     /// @dev Constructor that initializes the sale conditions.
     /// @param _owner address The address of this contract owner.
     /// @param _fundingRecipient address The address of the funding recipient.
@@ -141,6 +157,18 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_teamPoolAddress != address(0));
         require(_startTime > now);
 
+        owner = _owner;
+        fundingRecipient = _fundingRecipient;
+        communityPoolAddress = _communityPoolAddress;
+        futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
+        teamPoolAddress = _teamPoolAddress;
+        startTime = _startTime;
+        endTime = startTime + SALE_DURATION;
+    }
+
+    function initialize() public onlyOwner notInitialized {
+        initialized = true;
+
         vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
         vestingPlans.push(VestingPlan(0, 0, 6 * 30 days, 1 * 30 days, 4));
         vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * 30 days, 12));
@@ -153,21 +181,13 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Deploy new VestingTrustee contract.
         trustee = new VestingTrustee(test);
 
-        owner = _owner;
-        fundingRecipient = _fundingRecipient;
-        communityPoolAddress = _communityPoolAddress;
-        futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
-        teamPoolAddress = _teamPoolAddress;
-        startTime = _startTime;
-        endTime = startTime + SALE_DURATION;
-
         // Initialize special vesting grants.
         allocatePoolsTokens();
     }
 
     /// @dev allocate pools tokens.
     function allocatePoolsTokens() private onlyOwner {
-        // Issue the remaining 55% token to designated pools.
+        // Issue the remaining tokens to designated pools.
 
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
         
@@ -179,7 +199,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _recipient address The presale participant address to recieve the tokens.
     /// @param _etherValue uint256 The invesment value as if it was sent in ethers.
     /// @param _vestingPlanIndex uint8 The vesting plan index.
-    function presaleAlocation(address _recipient, uint256 _etherValue, uint8 _vestingPlanIndex) public onlyOwner onlyBeforeSale {
+    function presaleAlocation(address _recipient, uint256 _etherValue, uint8 _vestingPlanIndex) external onlyOwner onlyBeforeSale isInitialized {
         require(_recipient != address(0));
         require(_vestingPlanIndex < vestingPlans.length);
 
@@ -202,40 +222,28 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @dev Add a list of participants to a capped participation tier.
     /// @param _participants address[] The list of participant addresses.
     /// @param _cap uint256 The cap amount (in ETH).
-    function setParticipationCap(address[] _participants, uint256 _cap) private onlyOwner {
+    function setParticipationCap(address[] _participants, uint256 _cap) external onlyOwner isInitialized {
         for (uint i = 0; i < _participants.length; i++) {
             participationCaps[_participants[i]] = _cap;
         }
     }
 
-    /// @dev Add a list of participants to cap tier #1.
-    /// @param _participants address[] The list of participant addresses.
-    function setTier1Participants(address[] _participants) external onlyOwner {
-        setParticipationCap(_participants, TIER_1_CAP);
-    }
-
-    /// @dev Add a list of participants to tier #2.
-    /// @param _participants address[] The list of participant addresses.
-    function setTier2Participants(address[] _participants) external onlyOwner {
-        setParticipationCap(_participants, TIER_2_CAP);
-    }
-
     /// @dev Set hard participation cap for all participants.
     /// @param _cap uint256 The hard cap amount.
-    function setHardParticipationCap(uint256 _cap) external onlyOwner {
+    function setHardParticipationCap(uint256 _cap) external onlyOwner isInitialized {
         require(_cap > 0);
 
         hardParticipationCap = _cap;
     }
 
     /// @dev Fallback function that will delegate the request to create().
-    function () external payable onlyDuringSale {
+    function () external payable onlyDuringSale isInitialized {
         create(msg.sender);
     }
 
     /// @dev Create and sell tokens to the caller.
     /// @param _recipient address The address of the recipient receiving the tokens.
-    function create(address _recipient) public payable onlyDuringSale {
+    function create(address _recipient) public payable onlyDuringSale isInitialized {
         require(_recipient != address(0));
 
         // Enforce participation cap (in Wei received).
@@ -270,7 +278,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     }
 
     /// @dev Finalizes the token sale event, by stopping token minting.
-    function finalize() external onlyAfterSale onlyOwner {
+    function finalize() external onlyAfterSale onlyOwner isInitialized {
         if (test.isTransferable()) {
             revert();
         }

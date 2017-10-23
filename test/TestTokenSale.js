@@ -75,8 +75,7 @@ contract('TestTokenSale', (accounts) => {
     const presaleCalculator = PresaleCalculator(TTT_PER_ETH);
 
     const TIER_1_CAP = 300 * TTT_PER_ETH * TOKEN_DECIMALS;
-    const TIER_2_CAP = Math.pow(2, 256) - 1; // Maximum uint256 value
-    const TIER_2_CAP_BIGNUMBER = new BigNumber(2).pow(256).minus(1);
+    const TIER_2_CAP = new BigNumber(2).pow(256).minus(1);
 
     const HUNDRED_BILLION_TOKENS = Math.pow(10, 11) * TOKEN_DECIMALS;
 
@@ -272,15 +271,24 @@ contract('TestTokenSale', (accounts) => {
             await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now - 100));
         });
 
+
         it('should be initialized with a derived ending time', async () => {
             let startTime = now + 100;
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
-
+            await sale.initialize();
             assert.equal((await sale.endTime()).toNumber(), startTime + (await sale.SALE_DURATION()).toNumber());
         });
 
+        it('should not let initialized twice', async () => {
+            let startTime = now + 100;
+            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
+            await sale.initialize();
+            await expectRevert(sale.initialize());
+        })
+
         it('should deploy the TestToken contract and own it', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            await sale.initialize();
             assert(await sale.test() != 0);
 
             let token = TestToken.at(await sale.test());
@@ -289,6 +297,7 @@ contract('TestTokenSale', (accounts) => {
 
         it('should deploy the VestingTrustee contract and own it', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            await sale.initialize();
             let token = TestToken.at(await sale.test());
 
             let trustee = VestingTrustee.at(await sale.trustee());
@@ -298,17 +307,20 @@ contract('TestTokenSale', (accounts) => {
 
         it('should be initialized in transferable false mode', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            await sale.initialize();
             let token = TestToken.at(await sale.test());
             assert(!await token.isTransferable());
         });
 
         it('should be initialized with 0 total sold tokens', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            await sale.initialize();
             assert.equal((await sale.tokensSold()), 0);
         });
 
         it('should allocate token pools', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            await sale.initialize();
             let token = TestToken.at(await sale.test());
             assert.equal((await token.balanceOf(communityPoolAddress)).toNumber(), COMMUNITY_POOL.toNumber());
             assert.equal((await token.balanceOf(teamPoolAddress)).toNumber(), TEAM_POOL.toNumber());
@@ -316,6 +328,7 @@ contract('TestTokenSale', (accounts) => {
 
         it('should be ownable', async () => {
             let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 10000);
+            await sale.initialize();
             assert.equal(await sale.owner(), accounts[0]);
         });
     });
@@ -324,6 +337,7 @@ contract('TestTokenSale', (accounts) => {
         let sale;
         beforeEach(async () => {
             sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            await sale.initialize();
         });
 
         it('should not allow to be called by non-owner', async () => {
@@ -368,25 +382,26 @@ contract('TestTokenSale', (accounts) => {
         // Test all accounts have their participation caps set properly.
         beforeEach(async () => {
             sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            await sale.initialize();
 
             for (let participant of accounts) {
                 assert.equal((await sale.participationCaps(participant)).toNumber(), 0);
             }
         });
 
-        describe('setTier1Participants', async () => {
+        describe('setParticipationCap', async () => {
             it('should be able to get called with an empty list of participants', async () => {
-                await sale.setTier1Participants([]);
+                await sale.setParticipationCap([], TIER_1_CAP);
             });
 
             it('should not allow to be called by non-owner', async () => {
-                await expectRevert(sale.setTier1Participants([], {from: accounts[7]}));
+                await expectRevert(sale.setParticipationCap([], TIER_1_CAP, {from: accounts[7]}));
             });
 
             it('should set participation cap to TIER_1_CAP', async () => {
                 let participants = [accounts[1], accounts[4]];
 
-                await sale.setTier1Participants(participants);
+                await sale.setParticipationCap(participants, TIER_1_CAP);
 
                 for (let participant of participants) {
                     assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
@@ -395,56 +410,14 @@ contract('TestTokenSale', (accounts) => {
 
             it('should allow upgrading existing participants to tier2', async () => {
                 let participants = [accounts[2], accounts[3], accounts[4]];
-
-                await sale.setTier1Participants(participants);
-
-                for (let participant of participants) {
-                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
-                }
-
-                await sale.setTier2Participants(participants);
-
-                for (let participant of participants) {
-                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
-                }
-            });
-        });
-
-        describe('setTier2Participants', async () => {
-            it('should be able to get called with an empty list of participants', async () => {
-                await sale.setTier2Participants([]);
-            });
-
-            it('should not allow to be called by non-owner', async () => {
-                let stranger = accounts[7];
-                assert.notEqual(await sale.owner(), stranger);
-
-                await expectRevert(sale.setTier2Participants([], {from: stranger}));
-            });
-
-            it('should set participation cap to TIER_2_CAP', async () => {
-                let participants = [accounts[1], accounts[4]];
-
-                await sale.setTier2Participants(participants);
-
-                for (let participant of participants) {
-                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
-                }
-            });
-
-            it('should allow downgrading existing participatns to tier1', async () => {
-                let participants = [accounts[2], accounts[3], accounts[4]];
-
-                await sale.setTier2Participants(participants);
-
-                for (let participant of participants) {
-                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
-                }
-
-                await sale.setTier1Participants(participants);
+                await sale.setParticipationCap(participants, TIER_1_CAP);
 
                 for (let participant of participants) {
                     assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_1_CAP);
+                }
+                await sale.setParticipationCap(participants, TIER_2_CAP);
+                for (let participant of participants) {
+                    assert.equal((await sale.participationCaps(participant)).toNumber(), TIER_2_CAP);
                 }
             });
         });
@@ -460,6 +433,7 @@ contract('TestTokenSale', (accounts) => {
         beforeEach(async () => {
             start = now + startFrom;
             sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            await sale.initialize();
             end = (await sale.endTime()).toNumber();
             token = TestToken.at(await sale.test());
 
@@ -687,12 +661,13 @@ contract('TestTokenSale', (accounts) => {
             beforeEach(async () => {
                 start = now + startFrom;
                 sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+                await sale.initialize();
                 end = (await sale.endTime()).toNumber();
                 token = TestToken.at(await sale.test());
 
                 assert.equal(await token.isTransferable(), false);
                 await addPresaleAlocation(sale);
-                await sale.setTier2Participants([tier2Participant]);
+                await sale.setParticipationCap([tier2Participant], TIER_2_CAP);
             });
 
             context('sale time has ended', async () => {
@@ -789,17 +764,17 @@ contract('TestTokenSale', (accounts) => {
                     // Use default (limited) hard participation cap
                     // and initialize tier 1 + tier 2 participants.
                     beforeEach(async () => {
-                        await sale.setTier1Participants([
+                        await sale.setParticipationCap([
                             owner,
                             tier1Participant1,
                             tier1Participant2,
                             tier1Participant3
-                        ]);
-                        await sale.setTier2Participants([
+                        ], TIER_1_CAP);
+                        await sale.setParticipationCap([
                             tier2Participant1,
                             tier2Participant2,
                             tier2Participant3,
-                        ]);
+                        ], TIER_2_CAP);
                     });
 
                     [
@@ -866,7 +841,7 @@ contract('TestTokenSale', (accounts) => {
                             { from: tier1Participant1, value: 5000 * TOKEN_DECIMALS },
                             { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M
 
-                            { hardParticipationCap: TIER_2_CAP_BIGNUMBER }, // Practically infinity
+                            { hardParticipationCap: TIER_2_CAP }, // Practically infinity
 
                             { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
                             { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
@@ -899,7 +874,7 @@ contract('TestTokenSale', (accounts) => {
                             { from: tier1Participant3, value: 100 * TOKEN_DECIMALS },
                             { from: tier1Participant3, value: 100000 * TOKEN_DECIMALS },
 
-                            { hardParticipationCap: TIER_2_CAP_BIGNUMBER },
+                            { hardParticipationCap: TIER_2_CAP },
 
                             { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M [19 / 26] expecting account 0xafb19014bf2958727fc9faa0c3edbc5f2c29624f to buy up to 3900000000 TTT for 1000000 ETH
                             // contribution 1.1740737461538461538461538461538461538461538e+23 from 1e+24 ETH
@@ -986,6 +961,7 @@ contract('TestTokenSale', (accounts) => {
         beforeEach(async () => {
             start = now + startFrom;
             sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            await sale.initialize();
             end = (await sale.endTime()).toNumber();
             token = TestToken.at(await sale.test());
         });
@@ -1179,6 +1155,7 @@ contract('TestTokenSale', (accounts) => {
         beforeEach(async () => {
             start = now + startFrom;
             sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            await sale.initialize();
             end = (await sale.endTime()).toNumber();
             await addPresaleAlocation(sale);
             token = TestToken.at(await sale.test());
@@ -1219,7 +1196,7 @@ contract('TestTokenSale', (accounts) => {
                         return '0x'.padEnd(42, x + (i + 1) * BATCH_SIZE)
                     });
 
-                    await sale.setTier1Participants(addresses);
+                    await sale.setParticipationCap(addresses, TIER_1_CAP);
                 }
                 // Assign 50% of participants to tier 1 and the other to tier 2.
                 //
@@ -1228,10 +1205,10 @@ contract('TestTokenSale', (accounts) => {
                 tier2Participants = accounts.slice(centerIndex + 1, accounts.length);
 
                 console.log(`\tWhitelisting ${tier1Participants.length} tier 1 participants...`);
-                await sale.setTier1Participants(tier1Participants);
+                await sale.setParticipationCap(tier1Participants, TIER_1_CAP);
 
                 console.log(`\tWhitelisting ${tier2Participants.length} tier 2 participants...`);
-                await sale.setTier2Participants(tier2Participants);
+                await sale.setParticipationCap(tier2Participants, TIER_2_CAP);
             });
 
             it('should be able to participate', async () => {
@@ -1259,7 +1236,7 @@ contract('TestTokenSale', (accounts) => {
                     // Lift hard cap to infinity during the sale.
                     if (j === 70) {
                         console.log(`\tGenerating hard participation cap change...`);
-                        transactions.push({ hardParticipationCap: TIER_2_CAP_BIGNUMBER });
+                        transactions.push({ hardParticipationCap: TIER_2_CAP });
                     }
 
                     console.log(`\tGenerating ${tier1Participants.length} transactions...`);
