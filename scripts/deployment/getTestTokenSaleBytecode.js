@@ -33,15 +33,19 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
       'TestTokenSale.sol': fs.readFileSync(__dirname + '/../../contracts/TestTokenSale.sol', 'utf8'),
     }
 
-    var contractCompiled = solc.compile({sources: input}, 1)
-    var contractObj = contractCompiled.contracts['TestTokenSale.sol:TestTokenSale']
-    var bytecode = contractObj.bytecode
+    solc.loadRemoteVersion(config.get('compilerVersion'), function(err, solcSnapshot) {
+      if (err) return console.error('err =', err)
 
-    // console.log([owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
+      var contractCompiled = solcSnapshot.compile({sources: input}, 1)
+      var contractObj = contractCompiled.contracts['TestTokenSale.sol:TestTokenSale']
+      var bytecode = contractObj.bytecode
 
-    var encoded = abi.rawEncode(['address', 'address', 'address', 'address', 'address', 'uint256'], [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
-    var params = encoded.toString('hex')
+      // console.log([owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
 
-    console.log('0x' + bytecode + params)
+      var encoded = abi.rawEncode(['address', 'address', 'address', 'address', 'address', 'uint256'], [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
+      var params = encoded.toString('hex')
+
+      console.log('0x' + bytecode + params)
+    })
   })
 })
