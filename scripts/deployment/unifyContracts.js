@@ -14,7 +14,7 @@ var contracts = [
 	'TestTokenSale.sol',
 ]
 
-var unifiedContract = __dirname + '/../../contracts/Unified.sol'
+var unifiedContract = __dirname + '/Unified.sol'
 
 async.waterfall([
 	function writeFileWithHeader (callback) {
