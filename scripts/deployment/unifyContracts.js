@@ -17,11 +17,9 @@ var contracts = [
 var unifiedContract = __dirname + '/../../contracts/Unified.sol'
 
 async.waterfall([
-	function truncate (callback) {
-		fs.truncate(unifiedContract, 0, callback)
-	},
 	function writeHeader (callback) {
-		fs.writeFile(unifiedContract, config.get('solidity'), callback)
+		// open file for writing, file is created (if it does not exist) or truncated (if it exists)
+		fs.writeFile(unifiedContract, config.get('solidity'), {flag: 'w'}, callback)
 	},
 	function readFiles (callback) {
 		async.concat(contracts, readFile, callback)
