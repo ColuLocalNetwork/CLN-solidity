@@ -1,3 +1,4 @@
+var config = require('./config')
 var solc = require('solc')
 var fs = require('fs')
 
@@ -12,8 +13,11 @@ var input = {
   'TestTokenSale.sol': fs.readFileSync(__dirname + '/../../contracts/TestTokenSale.sol', 'utf8'),
 }
 
-var contractCompiled = solc.compile({sources: input}, 1)
-var contractObj = contractCompiled.contracts['TestToken.sol:TestToken']
-var abi = contractObj.interface
+solc.loadRemoteVersion(config.get('compilerVersion'), function(err, solcSnapshot) {
+	if (err) return console.error('err =', err)
+	var contractCompiled = solcSnapshot.compile({sources: input}, 1)
+	var contractObj = contractCompiled.contracts['TestToken.sol:TestToken']
+	var abi = contractObj.interface
 
-console.log(abi)
+	console.log(abi)
+})

@@ -38,7 +38,7 @@ async.auto({
     web3.eth.getCoinbase(cb)
   },
   loadCompilerVersion: function (cb) {
-    solc.loadRemoteVersion('v0.4.15+commit.bbb8e64f', cb)
+    solc.loadRemoteVersion(config.get('compilerVersion'), cb)
   },
   getGasPrice: web3.eth.getGasPrice,
   estimateGas: ['loadCompilerVersion', 'getBlock', function (results, cb) {
