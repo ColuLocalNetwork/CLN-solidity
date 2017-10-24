@@ -17,7 +17,7 @@ var contracts = [
 var unifiedContract = __dirname + '/../../contracts/Unified.sol'
 
 async.waterfall([
-	function writeHeader (callback) {
+	function writeFileWithHeader (callback) {
 		// open file for writing, file is created (if it does not exist) or truncated (if it exists)
 		fs.writeFile(unifiedContract, config.get('solidity'), {flag: 'w'}, callback)
 	},
