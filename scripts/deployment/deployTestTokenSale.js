@@ -6,7 +6,7 @@ var async = require('async')
 var fs = require('fs')
 var argv = require('yargs').argv
 
-var args = require('./TestTokenSale.json')
+var args = require('./TestTokenSale.json')[config.get('web3Provider')]
 var owner = args.owner
 var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress
