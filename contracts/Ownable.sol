@@ -1,8 +1,10 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 /// @title Ownable
 /// @dev The Ownable contract has an owner address, and provides basic authorization control functions, this simplifies
 /// and the implementation of "user permissions".
+/// @dev Based on OpenZeppelin's Ownable.
+
 contract Ownable {
     address public owner;
     address public newOwnerCandidate;

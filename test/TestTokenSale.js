@@ -636,7 +636,7 @@ contract('TestTokenSale', (accounts) => {
             assert.lengthOf(transaction.logs, 1);
             let event = transaction.logs[0];
             assert.equal(event.event, 'TokensIssued');
-            assert.equal(Number(event.args._tokens), tokens)
+            assert.equal(Number(event.args.tokens), tokens)
 
             // Finalize sale if the all tokens have been sold.
             if (totalTokensSold.equals(MAX_TOKENS_SOLD)) {

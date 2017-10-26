@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 import './Ownable.sol';
 import './SafeMath.sol';
@@ -6,6 +6,7 @@ import './BasicToken.sol';
 import './TokenHolder.sol';
 
 /// @title Test Token contract.
+/// @author Tal Beja.
 contract TestToken is Ownable, BasicToken, TokenHolder {
     using SafeMath for uint256;
 
@@ -37,7 +38,7 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
         balances[msg.sender] = totalSupply;
     }
 
-    /// @dev End minting mode.
+    /// @dev start transferable mode.
     function makeTokensTransferable() external onlyOwner {
         if (isTransferable) {
             return;
@@ -70,7 +71,7 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
         return super.transferFrom(_from, _to, _value);
     }
 
-    /// @dev Same ERC20 behavior, but for owner transters during the token sale.
+    /// @dev Same ERC20 behavior, but for the contract owner transters only during the token sale.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     function ownerTransfer(address _to, uint256 _value) public onlyOwner notTransferable returns (bool) {

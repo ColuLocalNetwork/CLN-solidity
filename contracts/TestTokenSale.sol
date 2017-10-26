@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './Ownable.sol';
@@ -7,6 +7,7 @@ import './TestToken.sol';
 import './VestingTrustee.sol';
 
 /// @title Test token sale contract.
+/// @author Tal Beja.
 contract TestTokenSale is Ownable, TokenHolder {
     using SafeMath for uint256;
 
@@ -63,23 +64,25 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Amount of tokens sold until now in the sale.
     uint256 public tokensSold = 0;
 
-    // Amount of tokens sold until now in the sale.
+    // Amount of tokens sold until now in the pre-sale.
     uint256 public presaleTokensSold = 0;
 
     // Accumulated amount each participant have contributed so far.
     mapping (address => uint256) public participationHistory;
     
-    // Accumulated amount each participant have contributed so far in the presale.
+    // Accumulated amount each participant have contributed so far in the pre-sale.
     mapping (address => uint256) public participationPresaleHistory;
 
-    // Maximum amount that each particular is allowed to contribute (in WEI).
+    // Maximum amount that each particular is allowed to contribute (in ETH-WEI).
     mapping (address => uint256) public participationCaps;
 
-    // Maximum amount ANYBODY is currently allowed to contribute.
-    uint256 public hardParticipationCap = 5000 * TOKEN_DECIMALS;
+    // Maximum amount ANYBODY is currently allowed to contribute. Set to max uint256 so no limitiation other then personal participationCaps.
+    uint256 public hardParticipationCap = uint256(-1);
 
+    // initialization of the contract, spilted from the constractor to avoid gas block limit.
     bool public initialized = false;
 
+    // Vesting plan structure for pre-sale
     struct VestingPlan {
         uint256 startOffset;
         uint256 cliffOffset;
@@ -88,9 +91,11 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint8 alapPercent;
     }
 
+    // Vesting plans for pre-sale
     VestingPlan[] public vestingPlans;
 
-    event TokensIssued(address indexed _to, uint256 _tokens);
+    // Each token that sent from the testTokenSale considered as issued.
+    event TokensIssued(address indexed to, uint256 tokens);
 
     /// @dev Reverts if called when not before sale.
     modifier onlyBeforeSale() {
@@ -119,7 +124,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called before sale ends.
+    /// @dev Reverts if called before sale initialized.
     modifier notInitialized() {
         if (initialized) {
             revert();
@@ -128,7 +133,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called before sale ends.
+    /// @dev Reverts if called after sale initialized.
     modifier isInitialized() {
         if (!initialized) {
             revert();
@@ -181,14 +186,9 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Deploy new VestingTrustee contract.
         trustee = new VestingTrustee(test);
 
-        // Initialize special vesting grants.
-        allocatePoolsTokens();
-    }
+        // allocate pools tokens:
 
-    /// @dev allocate pools tokens.
-    function allocatePoolsTokens() private onlyOwner {
         // Issue the remaining tokens to designated pools.
-
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
         
         // teamPoolAddress will create its own vesting trusts.
@@ -203,9 +203,9 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_recipient != address(0));
         require(_vestingPlanIndex < vestingPlans.length);
 
+        // Calculate plan and token amount.
         VestingPlan memory plan = vestingPlans[_vestingPlanIndex]; 
         uint256 tokensAndALAPPerEth = TTT_PER_ETH.mul(SafeMath.add(100, plan.alapPercent)).div(100);
-        // Accept funds and transfer to funding recipient.
         uint256 tokensLeftInPreSale = MAX_PRESALE_TOKENS_SOLD.sub(presaleTokensSold);
         uint256 weiLeftInSale = tokensLeftInPreSale.div(tokensAndALAPPerEth);
         uint256 weiToParticipate = SafeMath.min256(_etherValue, weiLeftInSale);
@@ -214,6 +214,8 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 tokensToTransfer = weiToParticipate.mul(tokensAndALAPPerEth);
         presaleTokensSold = presaleTokensSold.add(tokensToTransfer);
         tokensSold = tokensSold.add(tokensToTransfer);
+        
+        // Transfer tokens to trustee and create grant.
         transferTokens(trustee, tokensToTransfer);
         trustee.grant(_recipient, tokensToTransfer, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
             endTime.add(plan.endOffset), plan.installmentLength, false);
@@ -259,7 +261,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         participationHistory[msg.sender] = weiAlreadyParticipated.add(weiToParticipate);
         fundingRecipient.transfer(weiToParticipate);
 
-        // Issue tokens and transfer to recipient.
+        // Transfer tokens to recipient.
         uint256 tokensToTransfer = weiToParticipate.mul(TTT_PER_ETH);
         if (tokensLeftInSale.sub(tokensToTransfer) < TTT_PER_ETH) {
             // If purchase would cause less than TTT_PER_ETH tokens left then nobody could ever buy them.
@@ -277,12 +279,13 @@ contract TestTokenSale is Ownable, TokenHolder {
         }
     }
 
-    /// @dev Finalizes the token sale event, by stopping token minting.
+    /// @dev Finalizes the token sale event: make future development pool grant (lockup) and making token transfarable.
     function finalize() external onlyAfterSale onlyOwner isInitialized {
         if (test.isTransferable()) {
             revert();
         }
 
+        // Add unsold token to the future development pool grant (lockup).
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         uint256 futureDevelopmentPool = FUTURE_DEVELOPMENT_POOL.add(tokensLeftInSale);
         // Future Development Pool is locked for 3 years.
@@ -290,11 +293,11 @@ contract TestTokenSale is Ownable, TokenHolder {
         trustee.grant(futureDevelopmentPoolAddress, futureDevelopmentPool, endTime, endTime.add(3 years),
             endTime.add(3 years), 1 days, false);
 
-        // Finish minting.
+        // Make tokens Transferable, end the sale!.
         test.makeTokensTransferable();
     }
 
-    /// @dev Issues tokens for the recipient.
+    /// @dev Transfer tokens from the sale contract to a recipient.
     /// @param _recipient address The address of the recipient.
     /// @param _tokens uint256 The amount of tokens to transfer.
     function transferTokens(address _recipient, uint256 _tokens) private {
@@ -325,7 +328,9 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _newOwnerCandidate address The address to transfer ownership to.
     ///
     /// NOTE:
-    ///   The new owner will need to call VestingTrustee's acceptOwnership directly in order to accept the ownership.
+    ///   1. The new owner will need to call trustee contract's acceptOwnership directly in order to accept the ownership.
+    ///   2. Calling this method during the token sale will prevent the token sale from alocation presale grunts add finalize, since only the owner of
+    ///      the trustee contract can create grunts needed in the presaleAlocation add finalize methods.
     function requestVestingTrusteeOwnershipTransfer(address _newOwnerCandidate) external onlyOwner {
         trustee.requestOwnershipTransfer(_newOwnerCandidate);
     }

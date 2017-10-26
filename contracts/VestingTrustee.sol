@@ -1,11 +1,14 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './Ownable.sol';
 import './TestToken.sol';
 
 /// @title Vesting trustee contract for Test token.
-contract VestingTrustee is Ownable, TokenHolder {
+/// @dev This Contract can't be TokenHolder, since it will allow its owner to drain its vested tokens.
+/// @dev This means that any token sent to it different than TestToken is basicly stucked here forever.
+/// @dev TestTokens that sent here (by mistake) can withdrawn using the grant method. 
+contract VestingTrustee is Ownable {
     using SafeMath for uint256;
 
     // Test token contract.
@@ -86,6 +89,7 @@ contract VestingTrustee is Ownable, TokenHolder {
     }
 
     /// @dev Revoke the grant of tokens of a specifed address.
+    /// @dev Unlocked tokens will be sent to the grantee, the rest is transferred to the trustee's owner.
     /// @param _holder The address which will have its tokens revoked.
     function revoke(address _holder) public onlyOwner {
         Grant memory grant = grants[_holder];
