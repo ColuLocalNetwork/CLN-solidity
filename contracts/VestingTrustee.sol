@@ -99,8 +99,8 @@ contract VestingTrustee is Ownable {
 
         // Get the total amount of vested tokens, acccording to grant.
         uint256 vested = calculateVestedTokens(grant, now);
-        
-        // Calculate the untranferred vested tokens.
+
+        // Calculate the untransferred vested tokens.
         uint256 transferable = vested.sub(grant.transferred);
 
         if (transferable > 0) {
@@ -148,14 +148,14 @@ contract VestingTrustee is Ownable {
             return 0;
         }
 
-        // If we're after the end of the vesting period - everything is vested;
+        // If we're after the end of the vesting period - everything is vested.
         if (_time >= _grant.end) {
             return _grant.value;
         }
 
         // Calculate amount of installments past until now.
         //
-        // NOTE result gets floored because of integer division.
+        // NOTE: result gets floored because of integer division.
         uint256 installmentsPast = _time.sub(_grant.start).div(_grant.installmentLength);
 
         // Calculate amount of days in entire vesting period.

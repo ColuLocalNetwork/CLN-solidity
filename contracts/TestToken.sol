@@ -13,10 +13,10 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
     string public constant name = "Test token";
     string public constant symbol = "TTT";
 
-    // Using same decimal value as ETH (makes ETH-TTT conversion much easier).
+    // Using same decimals value as ETH (makes ETH-TTT conversion much easier).
     uint8 public constant decimals = 18;
 
-    // States whether tokens transfers allowed or not.
+    // States whether token transfers is allowed or not.
     // Used during token sale.
     bool public isTransferable = false;
 
@@ -32,7 +32,7 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
         _;
     }
 
-    /// @dev The TestToken create all tokens and gives them to the owner.
+    /// @dev Creates all tokens and gives them to the owner.
     function TestToken(uint256 _totalSupply) {
         totalSupply = _totalSupply;
         balances[msg.sender] = totalSupply;
@@ -64,8 +64,8 @@ contract TestToken is Ownable, BasicToken, TokenHolder {
     }
 
     /// @dev Same ERC20 behavior, but reverts if not transferable.
-    /// @param _from address The address which you want to send tokens from.
-    /// @param _to address The address which you want to transfer to.
+    /// @param _from address The address to send tokens from.
+    /// @param _to address The address to transfer to.
     /// @param _value uint256 the amount of tokens to be transferred.
     function transferFrom(address _from, address _to, uint256 _value) public transferable returns (bool) {
         return super.transferFrom(_from, _to, _value);
