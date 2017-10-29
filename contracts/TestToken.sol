@@ -1,13 +1,12 @@
 pragma solidity 0.4.18;
 
-import './Ownable.sol';
 import './SafeMath.sol';
-import './BasicToken.sol';
 import './TokenHolder.sol';
+import './UpgradeableToken.sol';
 
 /// @title Test Token contract.
 /// @author Tal Beja.
-contract TestToken is Ownable, BasicToken, TokenHolder {
+contract TestToken is UpgradeableToken, TokenHolder {
     using SafeMath for uint256;
 
     string public constant name = "Test token";
