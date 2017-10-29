@@ -16,7 +16,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     // TEST token contract.
     TestToken public test;
 
-    // Vesting contract for pre-sale participants.
+    // Vesting contract for presale participants.
     VestingTrustee public trustee;
 
     // Received funds are forwarded to this address.
@@ -28,11 +28,11 @@ contract TestTokenSale is Ownable, TokenHolder {
     address public teamPoolAddress;
 
     // Test token decimals.
-    // Using same decimal value as ETH (makes ETH-TEST conversion much easier).
+    // Using same decimals value as ETH (makes ETH-TEST conversion much easier).
     // This is the same as in Test token contract.
     uint256 public constant TOKEN_DECIMALS = 10 ** 18;
 
-    // Additional Lockup Allocation Pool 
+    // Additional Lockup Allocation Pool
     uint256 public constant ALAP = 47414230500000023839554600;
 
     // Maximum number of tokens in circulation: 1.5 trillion.
@@ -64,25 +64,25 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Amount of tokens sold until now in the sale.
     uint256 public tokensSold = 0;
 
-    // Amount of tokens sold until now in the pre-sale.
+    // Amount of tokens sold until now in the presale.
     uint256 public presaleTokensSold = 0;
 
-    // Accumulated amount each participant have contributed so far.
+    // Accumulated amount each participant has contributed so far in the sale (in WEI).
     mapping (address => uint256) public participationHistory;
-    
-    // Accumulated amount each participant have contributed so far in the pre-sale.
+
+    // Accumulated amount each participant have contributed so far in the presale.
     mapping (address => uint256) public participationPresaleHistory;
 
     // Maximum amount that each particular is allowed to contribute (in ETH-WEI).
     mapping (address => uint256) public participationCaps;
 
-    // Maximum amount ANYBODY is currently allowed to contribute. Set to max uint256 so no limitiation other then personal participationCaps.
+    // Maximum amount ANYONE is currently allowed to contribute. Set to max uint256 so no limitation other than personal participationCaps.
     uint256 public hardParticipationCap = uint256(-1);
 
-    // initialization of the contract, spilted from the constractor to avoid gas block limit.
+    // initialization of the contract, splitted from the constructor to avoid gas block limit.
     bool public initialized = false;
 
-    // Vesting plan structure for pre-sale
+    // Vesting plan structure for presale
     struct VestingPlan {
         uint256 startOffset;
         uint256 cliffOffset;
@@ -91,13 +91,13 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint8 alapPercent;
     }
 
-    // Vesting plans for pre-sale
+    // Vesting plans for presale
     VestingPlan[] public vestingPlans;
 
-    // Each token that sent from the testTokenSale considered as issued.
+    // Each token that is sent from the TestTokenSale is considered as issued.
     event TokensIssued(address indexed to, uint256 tokens);
 
-    /// @dev Reverts if called when not before sale.
+    /// @dev Reverts if called not before the sale.
     modifier onlyBeforeSale() {
         if (now >= startTime) {
             revert();
@@ -106,7 +106,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called when not during sale.
+    /// @dev Reverts if called not during the sale.
     modifier onlyDuringSale() {
         if (tokensSold >= MAX_TOKENS_SOLD || now < startTime || now >= endTime) {
             revert();
@@ -115,7 +115,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called before sale ends.
+    /// @dev Reverts if called before the sale ends.
     modifier onlyAfterSale() {
         if (!(tokensSold >= MAX_TOKENS_SOLD || now >= endTime)) {
             revert();
@@ -124,7 +124,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called before sale initialized.
+    /// @dev Reverts if called before the sale is initialized.
     modifier notInitialized() {
         if (initialized) {
             revert();
@@ -133,7 +133,8 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Reverts if called after sale initialized.
+
+    /// @dev Reverts if called after the sale is initialized.
     modifier isInitialized() {
         if (!initialized) {
             revert();
@@ -142,7 +143,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         _;
     }
 
-    /// @dev Constructor that initializes the sale conditions.
+    /// @dev Constructor sets the sale addresses and start time.
     /// @param _owner address The address of this contract owner.
     /// @param _fundingRecipient address The address of the funding recipient.
     /// @param _communityPoolAddress address The address of the community pool.
@@ -171,6 +172,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         endTime = startTime + SALE_DURATION;
     }
 
+    /// @dev Initialize the sale conditions.
     function initialize() public onlyOwner notInitialized {
         initialized = true;
 
@@ -186,26 +188,27 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Deploy new VestingTrustee contract.
         trustee = new VestingTrustee(test);
 
-        // allocate pools tokens:
+        // allocate pool tokens:
 
         // Issue the remaining tokens to designated pools.
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
-        
+
         // teamPoolAddress will create its own vesting trusts.
         transferTokens(teamPoolAddress, TEAM_POOL);
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
     /// @param _recipient address The presale participant address to recieve the tokens.
-    /// @param _etherValue uint256 The invesment value as if it was sent in ethers.
+    /// @param _etherValue uint256 The invesment value (in ETH).
     /// @param _vestingPlanIndex uint8 The vesting plan index.
-    function presaleAlocation(address _recipient, uint256 _etherValue, uint8 _vestingPlanIndex) external onlyOwner onlyBeforeSale isInitialized {
+    function presaleAllocation(address _recipient, uint256 _etherValue, uint8 _vestingPlanIndex) external onlyOwner onlyBeforeSale isInitialized {
         require(_recipient != address(0));
         require(_vestingPlanIndex < vestingPlans.length);
 
         // Calculate plan and token amount.
-        VestingPlan memory plan = vestingPlans[_vestingPlanIndex]; 
+        VestingPlan memory plan = vestingPlans[_vestingPlanIndex];
         uint256 tokensAndALAPPerEth = TTT_PER_ETH.mul(SafeMath.add(100, plan.alapPercent)).div(100);
+
         uint256 tokensLeftInPreSale = MAX_PRESALE_TOKENS_SOLD.sub(presaleTokensSold);
         uint256 weiLeftInSale = tokensLeftInPreSale.div(tokensAndALAPPerEth);
         uint256 weiToParticipate = SafeMath.min256(_etherValue, weiLeftInSale);
@@ -214,7 +217,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 tokensToTransfer = weiToParticipate.mul(tokensAndALAPPerEth);
         presaleTokensSold = presaleTokensSold.add(tokensToTransfer);
         tokensSold = tokensSold.add(tokensToTransfer);
-        
+
         // Transfer tokens to trustee and create grant.
         transferTokens(trustee, tokensToTransfer);
         trustee.grant(_recipient, tokensToTransfer, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
@@ -248,7 +251,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     function create(address _recipient) public payable onlyDuringSale isInitialized {
         require(_recipient != address(0));
 
-        // Enforce participation cap (in Wei received).
+        // Enforce participation cap (in WEI received).
         uint256 weiAlreadyParticipated = participationHistory[msg.sender];
         uint256 participationCap = SafeMath.min256(participationCaps[msg.sender], hardParticipationCap);
         uint256 cappedWeiReceived = SafeMath.min256(msg.value, participationCap.sub(weiAlreadyParticipated));
@@ -264,7 +267,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         // Transfer tokens to recipient.
         uint256 tokensToTransfer = weiToParticipate.mul(TTT_PER_ETH);
         if (tokensLeftInSale.sub(tokensToTransfer) < TTT_PER_ETH) {
-            // If purchase would cause less than TTT_PER_ETH tokens left then nobody could ever buy them.
+            // If purchase would cause less than TTT_PER_ETH tokens to be left then nobody could ever buy them.
             // So, gift them to the last buyer.
             tokensToTransfer = tokensLeftInSale;
         }
@@ -279,7 +282,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         }
     }
 
-    /// @dev Finalizes the token sale event: make future development pool grant (lockup) and making token transfarable.
+    /// @dev Finalizes the token sale event: make future development pool grant (lockup) and make token transfarable.
     function finalize() external onlyAfterSale onlyOwner isInitialized {
         if (test.isTransferable()) {
             revert();
