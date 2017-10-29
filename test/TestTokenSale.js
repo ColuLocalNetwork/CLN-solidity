@@ -180,11 +180,11 @@ contract('TestTokenSale', (accounts) => {
         };
     };
 
-    const addPresaleAlocation = async (sale) => {
+    const addPresaleAllocation = async (sale) => {
         for (let i = 0; i < FORMATED_PRESALE.length; i++) {
             let presale = FORMATED_PRESALE[i];
             console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale presale for ${presale[0]}...`);
-            await sale.presaleAlocation(...presale);
+            await sale.presaleAllocation(...presale);
         };
         console.log('\tpresaleTokensSold', (await sale.presaleTokensSold()).toString())
         assert.equal(MAX_PRESALE_TOKENS_SOLD, (await sale.presaleTokensSold()).toNumber())
@@ -333,7 +333,7 @@ contract('TestTokenSale', (accounts) => {
         });
     });
 
-    describe('presaleAlocation', async () => {
+    describe('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
@@ -341,32 +341,32 @@ contract('TestTokenSale', (accounts) => {
         });
 
         it('should not allow to be called by non-owner', async () => {
-            await expectRevert(sale.presaleAlocation(accounts[0], 1000, 0, {from: accounts[7]}));
+            await expectRevert(sale.presaleAllocation(accounts[0], 1000, 0, {from: accounts[7]}));
         });
 
         it('should not allow to be called with null address', async () => {
-            await expectRevert(sale.presaleAlocation(null, 1000, 0));
+            await expectRevert(sale.presaleAllocation(null, 1000, 0));
         });
 
         it('should not allow to be called with 0 address', async () => {
-            await expectRevert(sale.presaleAlocation(0, 1000, 0));
+            await expectRevert(sale.presaleAllocation(0, 1000, 0));
         });
 
         it('should not allow to be called with 0 value', async () => {
-            await expectRevert(sale.presaleAlocation(accounts[0], 0, 0));
+            await expectRevert(sale.presaleAllocation(accounts[0], 0, 0));
         });
 
         it('should not allow granting the same address twice', async () => {
-            await sale.presaleAlocation(accounts[0], 1000, 1);
-            await expectRevert(sale.presaleAlocation(accounts[0], 5000, 0));
+            await sale.presaleAllocation(accounts[0], 1000, 1);
+            await expectRevert(sale.presaleAllocation(accounts[0], 5000, 0));
         });
 
         it('should not allow to make vesting of non existing plan', async () => {
-            await expectRevert(sale.presaleAlocation(accounts[0], 1000, 7));
+            await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
         it('should add pre-sale token grants', async () => {
-            await addPresaleAlocation(sale);
+            await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
                 console.log(`\tchecking if token grant for ${preSale.recipient} exists...`);
@@ -666,7 +666,7 @@ contract('TestTokenSale', (accounts) => {
                 token = TestToken.at(await sale.test());
 
                 assert.equal(await token.isTransferable(), false);
-                await addPresaleAlocation(sale);
+                await addPresaleAllocation(sale);
                 await sale.setParticipationCap([tier2Participant], TIER_2_CAP);
             });
 
@@ -1157,7 +1157,7 @@ contract('TestTokenSale', (accounts) => {
             sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
             await sale.initialize();
             end = (await sale.endTime()).toNumber();
-            await addPresaleAlocation(sale);
+            await addPresaleAllocation(sale);
             token = TestToken.at(await sale.test());
 
             // We'll be testing transactions from all these accounts in the following tests.
