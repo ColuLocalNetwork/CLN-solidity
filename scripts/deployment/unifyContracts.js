@@ -9,6 +9,8 @@ var contracts = [
 	'ERC20.sol',
 	'BasicToken.sol',
 	'TokenHolder.sol',
+	'UpgradeableToken.sol',
+	'UpgradeAgent.sol',
 	'TestToken.sol',
 	'VestingTrustee.sol',
 	'TestTokenSale.sol',

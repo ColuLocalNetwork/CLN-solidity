@@ -21,6 +21,8 @@ var input = {
   'SafeMath.sol': fs.readFileSync(__dirname + '/../../contracts/SafeMath.sol', 'utf8'),
   'TestToken.sol': fs.readFileSync(__dirname + '/../../contracts/TestToken.sol', 'utf8'),
   'TokenHolder.sol': fs.readFileSync(__dirname + '/../../contracts/TokenHolder.sol', 'utf8'),
+  'UpgradeableToken.sol': fs.readFileSync(__dirname + '/../../contracts/UpgradeableToken.sol', 'utf8'),
+  'UpgradeAgent.sol': fs.readFileSync(__dirname + '/../../contracts/UpgradeAgent.sol', 'utf8'),
   'VestingTrustee.sol': fs.readFileSync(__dirname + '/../../contracts/VestingTrustee.sol', 'utf8'),
   'TestTokenSale.sol': fs.readFileSync(__dirname + '/../../contracts/TestTokenSale.sol', 'utf8'),
 }
@@ -62,6 +64,7 @@ async.auto({
     var from = results.getFromAddress
     var gas = results.estimateGas
     var gasPrice = results.getGasPrice
+    console.log('from: %s, gas: %s, gasPrice: %s', from, gas, gasPrice)
     deployTransactionObj.send({
       from,
       gas,
