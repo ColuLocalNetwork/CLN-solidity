@@ -19,10 +19,10 @@ contract UpgradeableToken is Ownable, BasicToken {
   
   // Upgrade states.
  
-  // - NotAllowed: The child contract has not reached a condition where the upgrade can bgun
-  // - WaitingForAgent: Token allows upgrade, but we don't have a new agent yet
-  // - ReadyToUpgrade: The agent is set, but not a single token has been upgraded yet
-  // - Upgrading: Upgrade agent is set and the balance holders can upgrade their tokens  
+  // - NotAllowed: The child contract has not reached a condition where the upgrade can begin.
+  // - WaitingForAgent: Token allows upgrade, but we don't have a new agent yet.
+  // - ReadyToUpgrade: The agent is set, but not a single token has been upgraded yet.
+  // - Upgrading: Upgrade agent is set and the balance holders can upgrade their tokens.
   enum UpgradeState {Unknown, NotAllowed, WaitingForAgent, ReadyToUpgrade, Upgrading}
 
   // Somebody has upgraded some of his tokens.
@@ -31,7 +31,7 @@ contract UpgradeableToken is Ownable, BasicToken {
   // New upgrade agent available.
   event UpgradeAgentSet(address agent);
 
-  // @dev Reverts if UpgradeState is deferent than ReadyToUpgrade or Upgrading
+  // @dev Reverts if UpgradeState is different than ReadyToUpgrade or Upgrading
   modifier upgradeReady() {
     UpgradeState state = getUpgradeState();
     if(!(state == UpgradeState.ReadyToUpgrade || state == UpgradeState.Upgrading)) {
@@ -90,7 +90,7 @@ contract UpgradeableToken is Ownable, BasicToken {
     else return UpgradeState.Upgrading;
   }
 
-  /// @dev Child contract can enable to provide the condition when the upgrade can begun.
+  /// @dev Child contract can enable to provide the condition when the upgrade can begin.
   function canUpgrade() public constant returns(bool) {
      return true;
   }
