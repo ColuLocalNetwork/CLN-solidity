@@ -155,7 +155,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _teamPoolAddress,
-        uint256 _startTime) {
+        uint256 _startTime) public {
         require(_owner != address(0));
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
@@ -220,8 +220,8 @@ contract TestTokenSale is Ownable, TokenHolder {
 
         // Transfer tokens to trustee and create grant.
         transferTokens(trustee, tokensToTransfer);
-        trustee.grant(_recipient, tokensToTransfer, endTime.add(plan.startOffset), endTime.add(plan.cliffOffset),
-            endTime.add(plan.endOffset), plan.installmentLength, false);
+        trustee.grant(_recipient, tokensToTransfer, startTime.add(plan.startOffset), startTime.add(plan.cliffOffset),
+            startTime.add(plan.endOffset), plan.installmentLength, false);
     }
 
     /// @dev Add a list of participants to a capped participation tier.
@@ -293,8 +293,8 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 futureDevelopmentPool = FUTURE_DEVELOPMENT_POOL.add(tokensLeftInSale);
         // Future Development Pool is locked for 3 years.
         transferTokens(trustee, futureDevelopmentPool);
-        trustee.grant(futureDevelopmentPoolAddress, futureDevelopmentPool, endTime, endTime.add(3 years),
-            endTime.add(3 years), 1 days, false);
+        trustee.grant(futureDevelopmentPoolAddress, futureDevelopmentPool, startTime, startTime.add(3 years),
+            startTime.add(3 years), 1 days, false);
 
         // Make tokens Transferable, end the sale!.
         test.makeTokensTransferable();

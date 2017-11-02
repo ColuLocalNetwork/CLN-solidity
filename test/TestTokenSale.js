@@ -195,11 +195,11 @@ contract('TestTokenSale', (accounts) => {
         let trustee = VestingTrustee.at(await sale.trustee());
 
         let grant = await getGrant(trustee, tokenGrant.grantee);
-        let endTime = (await sale.endTime()).toNumber()
+        let startTime = (await sale.startTime()).toNumber()
         assert.equal(grant.value, tokenGrant.value, 'grant values should be the same');
-        assert.equal(grant.start, endTime + tokenGrant.startOffset, 'grant starts should be the same');
-        assert.equal(grant.cliff, endTime + tokenGrant.cliffOffset, 'grant cliffs should be the same');
-        assert.equal(grant.end, endTime + tokenGrant.endOffset, 'grant ends should be the same');
+        assert.equal(grant.start, startTime + tokenGrant.startOffset, 'grant starts should be the same');
+        assert.equal(grant.cliff, startTime + tokenGrant.cliffOffset, 'grant cliffs should be the same');
+        assert.equal(grant.end, startTime + tokenGrant.endOffset, 'grant ends should be the same');
         assert.equal(grant.installmentLength, tokenGrant.installmentLength, 'grant installmentLengths should be the same');
         assert.equal(grant.revokable, tokenGrant.revokable, 'grant revokables should be the same');
     };
