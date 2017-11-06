@@ -252,8 +252,8 @@ contract TestTokenSale is Ownable, TokenHolder {
         require(_recipient != address(0));
 
         // Enforce participation cap (in WEI received).
-        uint256 weiAlreadyParticipated = participationHistory[msg.sender];
-        uint256 participationCap = SafeMath.min256(participationCaps[msg.sender], hardParticipationCap);
+        uint256 weiAlreadyParticipated = participationHistory[_recipient];
+        uint256 participationCap = SafeMath.min256(participationCaps[_recipient], hardParticipationCap);
         uint256 cappedWeiReceived = SafeMath.min256(msg.value, participationCap.sub(weiAlreadyParticipated));
         require(cappedWeiReceived > 0);
 
@@ -261,7 +261,7 @@ contract TestTokenSale is Ownable, TokenHolder {
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         uint256 weiLeftInSale = tokensLeftInSale.div(TTT_PER_ETH);
         uint256 weiToParticipate = SafeMath.min256(cappedWeiReceived, weiLeftInSale);
-        participationHistory[msg.sender] = weiAlreadyParticipated.add(weiToParticipate);
+        participationHistory[_recipient] = weiAlreadyParticipated.add(weiToParticipate);
         fundingRecipient.transfer(weiToParticipate);
 
         // Transfer tokens to recipient.
