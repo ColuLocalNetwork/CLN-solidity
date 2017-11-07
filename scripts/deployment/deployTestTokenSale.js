@@ -62,6 +62,7 @@ async.auto({
     var from = results.getFromAddress
     var gas = results.estimateGas
     var gasPrice = results.getGasPrice
+    console.log('from: %s, gas: %s, gasPrice: %s', from, gas, gasPrice)
     deployTransactionObj.send({
       from,
       gas,
