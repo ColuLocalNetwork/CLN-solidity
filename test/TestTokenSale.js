@@ -41,7 +41,7 @@ contract('TestTokenSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool 
-    const ALAP = new BigNumber('47414230500000023839554600')
+    const ALAP = new BigNumber('47751732000000023865524178')
 
     // Maximum number of tokens in circulation.
     const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
@@ -90,56 +90,26 @@ contract('TestTokenSale', (accounts) => {
     const DEVELOPMENT_TOKEN_GRANT = {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 3 * YEAR, endOffset: 3 * YEAR, installmentLength: 1 * DAY, revokable: false}
 
     const PRESALES = [
-        {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000, plan: 'B'},
-        {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000, plan: 'A'},
+        {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000,  plan: 'B'},
+        {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000,  plan: 'A'},
         {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1000000, plan: 'C'},
-        {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 433400, plan: 'C'},
-        {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 147300, plan: 'B'},
-        {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 672200, plan: 'E'},
-        {recipient: '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', dolarInvest: 280000, plan: 'D'},
-        {recipient: '0xc257274276a4e539741ca11b590b9447b26a8051', dolarInvest: 185100, plan: 'C'},
-        {recipient: '0xf27daff52c38b2c373ad2b9392652ddf433303c4', dolarInvest: 197000, plan: 'C'},
-        {recipient: '0x3d2e397f94e415d7773e72e44d5b5338a99e77d9', dolarInvest: 559100, plan: 'D'},
-        {recipient: '0xb8487eed31cf5c559bf3f4edd166b949553d0d11', dolarInvest: 958100, plan: 'A'},
-        {recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', dolarInvest: 326400, plan: 'E'},
-        {recipient: '0x1b3cb81e51011b549d78bf720b0d924ac763a7c2', dolarInvest: 605000, plan: 'C'},
-        {recipient: '0x6f52730dba7b02beefcaf0d6998c9ae901ea04f9', dolarInvest: 621800, plan: 'B'},
-        {recipient: '0x35da6abcb08f2b6164fe380bb6c47bd8f2304d55', dolarInvest: 920000, plan: 'D'},
-        {recipient: '0x51f9c432a4e59ac86282d6adab4c2eb8919160eb', dolarInvest: 209200, plan: 'D'},
-        {recipient: '0x8f7147aaa34d9ae583a7aa803e8df9bd6b4cc185', dolarInvest: 404600, plan: 'C'},
-        {recipient: '0x8eb3fa7907ad2ef4c7e3ba4b1d2f2aac6f4b5ae6', dolarInvest: 250400, plan: 'D'},
-        {recipient: '0x3bf86ed8a3153ec933786a02ac090301855e576b', dolarInvest: 495600, plan: 'E'},
-        {recipient: '0xc4832ffa32bd12a1696e3fe2ff2b44fc89d3e683', dolarInvest: 740500, plan: 'C'},
-        {recipient: '0xbf09d77048e270b662330e9486b38b43cd781495', dolarInvest: 155200, plan: 'E'},
-        {recipient: '0x3de8c14c8e7a956f5cc4d82beff749ee65fdc358', dolarInvest: 503200, plan: 'B'},
-        {recipient: '0xab5801a7d398351b8be11c439e05c5b3259aec9b', dolarInvest: 864000, plan: 'E'},
-        {recipient: '0xdb6fd484cfa46eeeb73c71edee823e4812f9e2e1', dolarInvest: 424900, plan: 'E'},
-        {recipient: '0x9d2bfc36106f038250c01801685785b16c86c60d', dolarInvest: 529000, plan: 'C'},
-        {recipient: '0x2b241f037337eb4acc61849bd272ac133f7cdf4b', dolarInvest: 242900, plan: 'B'},
-        {recipient: '0xb794f5ea0ba39494ce839613fffba74279579268', dolarInvest: 469000, plan: 'B'},
-        {recipient: '0xe853c56864a2ebe4576a807d26fdc4a0ada51919', dolarInvest: 696700, plan: 'B'},
-        {recipient: '0x281055afc982d96fab65b3a49cac8b878184cb16', dolarInvest: 336900, plan: 'C'},
-        {recipient: '0xa1065e30ef94e4a89c2ef83afaa991af45bd7799', dolarInvest: 349100, plan: 'C'},
-        {recipient: '0x2543fc6d6a746cdc395d43b2f3b0e33e469f8f7f', dolarInvest: 519700, plan: 'A'},
-        {recipient: '0x9dc61cd3c76c82ed0b566005351fd55cd8e578e3', dolarInvest: 133300, plan: 'D'},
-        {recipient: '0xb6ce0f17952116884cd558e828c1f7e6ca027b68', dolarInvest: 619800, plan: 'E'},
-        {recipient: '0xed3835eaf9367f7943b6520e27ea6c23144d4a86', dolarInvest: 372000, plan: 'E'},
-        {recipient: '0x6ba997a443426dbd1b79363b1f0dcd1f66b2a2c7', dolarInvest: 307700, plan: 'B'},
-        {recipient: '0x33e1c178e83f60d0ffa9b8780c6355dc42b77f9d', dolarInvest: 182400, plan: 'B'},
-        {recipient: '0xfdd913a83b30110a01f2f9e5f8cf4f20a2a60c6e', dolarInvest: 993700, plan: 'E'},
-        {recipient: '0x18bc87142f7449af54caa2c1b460e5ca24f3cab3', dolarInvest: 392800, plan: 'D'},
-        {recipient: '0xd5461272b55ca660ab8475bad6099ff66704bce3', dolarInvest: 691100, plan: 'B'},
-        {recipient: '0xae179f378f525437ec1b1357a015f5be2b499c81', dolarInvest: 157400, plan: 'C'},
-        {recipient: '0x1a5637275c7dafdd3eb0f5625fd5d59a1425bba4', dolarInvest: 103300, plan: 'B'},
-        {recipient: '0x009db764931f8a3ed2e20dc3af1373e4d33852e9', dolarInvest: 964700, plan: 'E'},
-        {recipient: '0x96107e5b992475d3862e7faa5450d4dbf36e82dc', dolarInvest: 330900, plan: 'E'},
-        {recipient: '0x7db259da13930642259312210a7049250670eec4', dolarInvest: 866200, plan: 'C'},
-        {recipient: '0xdc76cd25977e0a5ae17155770273ad58648900d3', dolarInvest: 843300, plan: 'B'},
-        {recipient: '0x5c4aa3c0e7f6917ee6c1204d85a01f08a80e6dd0', dolarInvest: 292600, plan: 'E'},
-        {recipient: '0x7d04d2edc058a1afc761d9c99ae4fc5c85d4c8a6', dolarInvest: 688200, plan: 'C'},
-        {recipient: '0x1706d193862da7f8c746aae63d514df93dfa5dbf', dolarInvest: 795800, plan: 'A'},
-        {recipient: '0xcafb10ee663f465f9d10588ac44ed20ed608c11e', dolarInvest: 928300, plan: 'E'},
-        {recipient: '0x316775a60ccc8147532a32eee332e7b944ca4ae6', dolarInvest: 840200, plan: 'D'}
+        {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 1433400, plan: 'C'},
+        {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 1147300, plan: 'B'},
+        {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 1672200, plan: 'E'},
+        {recipient: '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', dolarInvest: 1280000, plan: 'D'},
+        {recipient: '0xc257274276a4e539741ca11b590b9447b26a8051', dolarInvest: 1185100, plan: 'C'},
+        {recipient: '0xf27daff52c38b2c373ad2b9392652ddf433303c4', dolarInvest: 1197000, plan: 'C'},
+        {recipient: '0x3d2e397f94e415d7773e72e44d5b5338a99e77d9', dolarInvest: 1559100, plan: 'D'},
+        {recipient: '0xb8487eed31cf5c559bf3f4edd166b949553d0d11', dolarInvest: 1958100, plan: 'A'},
+        {recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', dolarInvest: 1326400, plan: 'E'},
+        {recipient: '0x1b3cb81e51011b549d78bf720b0d924ac763a7c2', dolarInvest: 1605000, plan: 'C'},
+        {recipient: '0x6f52730dba7b02beefcaf0d6998c9ae901ea04f9', dolarInvest: 1621800, plan: 'B'},
+        {recipient: '0x35da6abcb08f2b6164fe380bb6c47bd8f2304d55', dolarInvest: 1920000, plan: 'D'},
+        {recipient: '0x51f9c432a4e59ac86282d6adab4c2eb8919160eb', dolarInvest: 1209200, plan: 'D'},
+        {recipient: '0x8f7147aaa34d9ae583a7aa803e8df9bd6b4cc185', dolarInvest: 1404600, plan: 'C'},
+        {recipient: '0x8eb3fa7907ad2ef4c7e3ba4b1d2f2aac6f4b5ae6', dolarInvest: 1250400, plan: 'D'},
+        {recipient: '0x3bf86ed8a3153ec933786a02ac090301855e576b', dolarInvest: 1495600, plan: 'E'},
+        {recipient: '0xc4832ffa32bd12a1696e3fe2ff2b44fc89d3e683', dolarInvest: 334800,  plan: 'C'}
     ]
 
     const FORMATED_PRESALE = presaleCalculator.calcPresale(PRESALES);
@@ -196,7 +166,7 @@ contract('TestTokenSale', (accounts) => {
 
         let grant = await getGrant(trustee, tokenGrant.grantee);
         let startTime = (await sale.startTime()).toNumber()
-        assert.equal(grant.value, tokenGrant.value, 'grant values should be the same');
+        assert.equal(grant.value, tokenGrant.value.toNumber(), 'grant values should be the same');
         assert.equal(grant.start, startTime + tokenGrant.startOffset, 'grant starts should be the same');
         assert.equal(grant.cliff, startTime + tokenGrant.cliffOffset, 'grant cliffs should be the same');
         assert.equal(grant.end, startTime + tokenGrant.endOffset, 'grant ends should be the same');
