@@ -91,7 +91,7 @@ contract UpgradeableToken is Ownable, BasicToken {
   }
 
   /// @dev Child contract can enable to provide the condition when the upgrade can begin.
-  function canUpgrade() public constant returns(bool) {
+  function canUpgrade() public pure returns(bool) {
      return true;
   }
 

@@ -8,7 +8,7 @@ contract UpgradeAgent {
   uint256 public originalSupply;
 
   /// @dev Interface marker.
-  function isUpgradeAgent() public constant returns (bool) {
+  function isUpgradeAgent() public pure returns (bool) {
     return true;
   }
 

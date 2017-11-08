@@ -1,12 +1,12 @@
 const expectRevert = require('./helpers/expectRevert');
 
-const TestToken = artifacts.require('TestToken');
+const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 
 const TOKEN_DECIMALS = 10 ** 18;
 
 const MAX_TOKENS = 15 * 10 ** 8 * TOKEN_DECIMALS;
 
-contract('TestToken', (accounts) => {
+contract('ColuLocalNetwork', (accounts) => {
     let token;
 
     let owner = accounts[0];
@@ -21,7 +21,7 @@ contract('TestToken', (accounts) => {
     let ownerAmount;
 
     beforeEach(async () => {
-        token = await TestToken.new(MAX_TOKENS);
+        token = await ColuLocalNetwork.new(MAX_TOKENS);
         ownerAmount = MAX_TOKENS;
     });
 
@@ -31,11 +31,11 @@ contract('TestToken', (accounts) => {
         });
 
         it('should return correct name after construction', async () => {
-            assert.equal(await token.name(), 'Test token');
+            assert.equal(await token.name(), 'Colu Local Network');
         });
 
         it('should return correct symbol after construction', async () => {
-            assert.equal(await token.symbol(), 'TTT');
+            assert.equal(await token.symbol(), 'CLN');
         });
 
         it('should return correct decimal points after construction', async () => {

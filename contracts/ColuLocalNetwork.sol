@@ -4,15 +4,15 @@ import './SafeMath.sol';
 import './TokenHolder.sol';
 import './UpgradeableToken.sol';
 
-/// @title Test Token contract.
+/// @title Colu Local Network contract.
 /// @author Tal Beja.
-contract TestToken is UpgradeableToken, TokenHolder {
+contract ColuLocalNetwork is UpgradeableToken, TokenHolder {
     using SafeMath for uint256;
 
-    string public constant name = "Test token";
-    string public constant symbol = "TTT";
+    string public constant name = "Colu Local Network";
+    string public constant symbol = "CLN";
 
-    // Using same decimals value as ETH (makes ETH-TTT conversion much easier).
+    // Using same decimals value as ETH (makes ETH-CLN conversion much easier).
     uint8 public constant decimals = 18;
 
     // States whether token transfers is allowed or not.
@@ -32,7 +32,7 @@ contract TestToken is UpgradeableToken, TokenHolder {
     }
 
     /// @dev Creates all tokens and gives them to the owner.
-    function TestToken(uint256 _totalSupply) {
+    function ColuLocalNetwork(uint256 _totalSupply) public {
         totalSupply = _totalSupply;
         balances[msg.sender] = totalSupply;
     }

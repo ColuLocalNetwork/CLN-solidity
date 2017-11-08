@@ -9,7 +9,7 @@ module.exports = (_tokensPerEth) => {
       return presales.map((presale) => {
         let vestingPlanIndex = presale.plan.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
         let recipient = presale.recipient;
-        let etherValue = new BigNumber(presale.dolarInvest).mul(decimals).mul(decimals).div(testTokenUsdPriceSigDig * tokensPerEth);
+        let etherValue = new BigNumber(presale.dolarInvest).mul(decimals).mul(decimals).div(testTokenUsdPriceSigDig * tokensPerEth).round();
         return [recipient, etherValue, vestingPlanIndex];
       })
     }

@@ -45,7 +45,7 @@ async.auto({
   getGasPrice: web3.eth.getGasPrice,
   estimateGas: ['loadCompilerVersion', 'getBlock', function (results, cb) {
     var now = results.getBlock.timestamp
-    startTime = args.startTime || (now + 3600)
+    startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
     var constructorArguments = [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime]
     var solcSnapshot = results.loadCompilerVersion
     var contractCompiled = solc.compile({sources: input}, 1)

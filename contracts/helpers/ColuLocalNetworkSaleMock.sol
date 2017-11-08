@@ -1,15 +1,15 @@
 pragma solidity 0.4.18;
 
-import '../TestTokenSale.sol';
+import '../ColuLocalNetworkSale.sol';
 
-contract TestTokenSaleMock is TestTokenSale {
-    function TestTokenSaleMock(address _owner,
+contract ColuLocalNetworkSaleMock is ColuLocalNetworkSale {
+    function ColuLocalNetworkSaleMock(address _owner,
         address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _stakeholdersPoolAddress,
-        uint256 _startTime)
-        TestTokenSale(_owner,
+        uint256 _startTime) public
+        ColuLocalNetworkSale(_owner,
         _fundingRecipient,
         _communityPoolAddress,
         _futureDevelopmentPoolAddress,
@@ -17,7 +17,7 @@ contract TestTokenSaleMock is TestTokenSale {
         _startTime) {
     }
 
-    function setTokensSold(uint256 _tokensSold) {
+    function setTokensSold(uint256 _tokensSold) public {
         tokensSold = _tokensSold;
     }
 }

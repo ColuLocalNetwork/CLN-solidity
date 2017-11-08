@@ -20,7 +20,7 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
     if(err) return console.error("err =", err)
     var now = data.timestamp
 
-    startTime = args.startTime || (now + 3600)
+    startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
 
     var input = {
       'BasicToken.sol': fs.readFileSync(__dirname + '/../../contracts/BasicToken.sol', 'utf8'),

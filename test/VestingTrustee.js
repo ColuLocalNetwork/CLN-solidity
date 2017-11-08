@@ -1,7 +1,7 @@
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
 
-const TestToken = artifacts.require('TestToken');
+const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const VestingTrustee = artifacts.require('VestingTrustee');
 
 contract('VestingTrustee', (accounts) => {
@@ -20,7 +20,7 @@ contract('VestingTrustee', (accounts) => {
     beforeEach(async () => {
         now = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
 
-        token = await TestToken.new(initialTokens);
+        token = await ColuLocalNetwork.new(initialTokens);
         trustee = await VestingTrustee.new(token.address, {from: granter});
     });
 

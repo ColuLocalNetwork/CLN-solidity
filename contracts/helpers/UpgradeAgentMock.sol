@@ -16,7 +16,7 @@ contract UpgradeAgentMock is UpgradeAgent, BasicTokenMock {
       _;
     }
 
-    function UpgradeAgentMock(address _lastToken, uint256 _originalSupply) {
+    function UpgradeAgentMock(address _lastToken, uint256 _originalSupply) public {
       lastToken = BasicTokenMock(_lastToken);
       originalSupply = _originalSupply;
     }

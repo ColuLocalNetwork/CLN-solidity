@@ -35,7 +35,7 @@ contract BasicToken is ERC20 {
     /// @param _owner address The address which owns the funds.
     /// @param _spender address The address which will spend the funds.
     /// @return uint256 specifying the amount of tokens still available for the spender.
-    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) constant public returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 
@@ -43,7 +43,7 @@ contract BasicToken is ERC20 {
     /// @dev Gets the balance of the specified address.
     /// @param _owner address The address to query the the balance of.
     /// @return uint256 representing the amount owned by the passed address.
-    function balanceOf(address _owner) constant returns (uint256 balance) {
+    function balanceOf(address _owner) constant public returns (uint256 balance) {
         return balances[_owner];
     }
 
