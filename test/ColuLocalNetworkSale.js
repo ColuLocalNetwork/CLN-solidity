@@ -5,8 +5,8 @@ const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
 const PresaleCalculator = require('../scripts/presaleCalculator');
 
-const TestToken = artifacts.require('TestToken');
-const TestTokenSaleMock = artifacts.require('TestTokenSaleMock');
+const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
+const ColuLocalNetworkSaleMock = artifacts.require('ColuLocalNetworkSaleMock');
 const VestingTrustee = artifacts.require('VestingTrustee');
 
 if (!String.prototype.padEnd) {
@@ -28,7 +28,7 @@ if (!String.prototype.padEnd) {
 
 // Before tests are run, 10 accounts are created with 10M ETH assigned to each.
 // see scripts/ dir for more information.
-contract('TestTokenSale', (accounts) => {
+contract('ColuLocalNetworkSale', (accounts) => {
     const MINUTE = 60;
     const HOUR = 60 * MINUTE;
     const DAY = 24 * HOUR;
@@ -58,8 +58,8 @@ contract('TestTokenSale', (accounts) => {
     // Tokens allocated for Future development pool (29%).
     const FUTURE_DEVELOPMENT_POOL = new BigNumber(435).mul(10 ** 6).mul(TOKEN_DECIMALS);
 
-    // Tokens allocated for team pool (6%).
-    const TEAM_POOL = new BigNumber(9).mul(10 ** 7).mul(TOKEN_DECIMALS);
+    // Tokens allocated for stakeholders pool (6%).
+    const STAKEHOLDERS_POOL = new BigNumber(9).mul(10 ** 7).mul(TOKEN_DECIMALS);
 
     const owner = accounts[0];
     // Received funds are forwarded to this address.
@@ -68,13 +68,13 @@ contract('TestTokenSale', (accounts) => {
     // Post-TDE multisig addresses.
     const communityPoolAddress = accounts[2];
     const futureDevelopmentPoolAddress = accounts[3];
-    const teamPoolAddress = accounts[4];
+    const stakeholdersPoolAddress = accounts[4];
 
-    // TEST to ETH ratio.
-    const TTT_PER_ETH = 3900;
-    const presaleCalculator = PresaleCalculator(TTT_PER_ETH);
+    // CLN to ETH ratio.
+    const CLN_PER_ETH = 3900;
+    const presaleCalculator = PresaleCalculator(CLN_PER_ETH);
 
-    const TIER_1_CAP = 300 * TTT_PER_ETH * TOKEN_DECIMALS;
+    const TIER_1_CAP = 300 * CLN_PER_ETH * TOKEN_DECIMALS;
     const TIER_2_CAP = new BigNumber(2).pow(256).minus(1);
 
     const HUNDRED_BILLION_TOKENS = Math.pow(10, 11) * TOKEN_DECIMALS;
@@ -161,7 +161,7 @@ contract('TestTokenSale', (accounts) => {
     };
 
     // Checks if token grants exists.
-    const testTokenGrantExists = async (sale, tokenGrant) => {
+    const ColuLocalNetworkGrantExists = async (sale, tokenGrant) => {
         let trustee = VestingTrustee.at(await sale.trustee());
 
         let grant = await getGrant(trustee, tokenGrant.grantee);
@@ -178,17 +178,17 @@ contract('TestTokenSale', (accounts) => {
         let formatedPresale = presaleCalculator.calcPresale([presale])[0];
         let plan = VESTING_PLANS[presale.plan];
 
-        let ALAPPerEth = new BigNumber(TTT_PER_ETH).mul(plan.alapPercent).div(100);
-        let tokensAndALAPPerEth = new BigNumber(TTT_PER_ETH).add(ALAPPerEth);
+        let ALAPPerEth = new BigNumber(CLN_PER_ETH).mul(plan.alapPercent).div(100);
+        let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
 
         return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
     }
 
     // Checks if token presale grants exists.
-    const testTokenPresaleGrantExists = async (sale, presale) => {
+    const ColuLocalNetworkPresaleGrantExists = async (sale, presale) => {
         let tokenGrant = calcGrantFromPresale(presale);
-        return await testTokenGrantExists(sale, tokenGrant)
+        return await ColuLocalNetworkGrantExists(sale, tokenGrant)
     };
 
     // Get block timestamp.
@@ -198,106 +198,106 @@ contract('TestTokenSale', (accounts) => {
 
     describe('construction', async () => {
         it('should not allow to initialize with null owner address', async () => {
-            await expectRevert(TestTokenSaleMock.new(null, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(null, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null funding recipient address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, null, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, null, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null community pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, null, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, null, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with null future development pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, null, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, null, stakeholdersPoolAddress, now + 100));
         });
 
-        it('should not allow to initialize with null team pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, null, now + 100));
+        it('should not allow to initialize with null stakeholders pool address', async () => {
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, null, now + 100));
         });
 
         it('should not allow to initialize with 0 owner address', async () => {
-            await expectRevert(TestTokenSaleMock.new(0, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(0, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 funding recipient address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, 0, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, 0, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 community pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, 0, futureDevelopmentPoolAddress, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, 0, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
 
         it('should not allow to initialize with 0 future development pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, 0, teamPoolAddress, now + 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, 0, stakeholdersPoolAddress, now + 100));
         });
 
-        it('should not allow to initialize with 0 team pool address', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, now + 100));
+        it('should not allow to initialize with 0 stakeholders pool address', async () => {
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, now + 100));
         });
 
         it('should be initialized with a future starting time', async () => {
-            await expectRevert(TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now - 100));
+            await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now - 100));
         });
 
 
         it('should be initialized with a derived ending time', async () => {
             let startTime = now + 100;
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, startTime);
             await sale.initialize();
             assert.equal((await sale.endTime()).toNumber(), startTime + (await sale.SALE_DURATION()).toNumber());
         });
 
         it('should not let initialized twice', async () => {
             let startTime = now + 100;
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, startTime);
             await sale.initialize();
             await expectRevert(sale.initialize());
         })
 
-        it('should deploy the TestToken contract and own it', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+        it('should deploy the ColuLocalNetwork contract and own it', async () => {
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100);
             await sale.initialize();
-            assert(await sale.test() != 0);
+            assert(await sale.cln() != 0);
 
-            let token = TestToken.at(await sale.test());
+            let token = ColuLocalNetwork.at(await sale.cln());
             assert.equal(await token.owner(), sale.address);
         });
 
         it('should deploy the VestingTrustee contract and own it', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100);
             await sale.initialize();
-            let token = TestToken.at(await sale.test());
+            let token = ColuLocalNetwork.at(await sale.cln());
 
             let trustee = VestingTrustee.at(await sale.trustee());
-            assert.equal(await trustee.test(), token.address);
+            assert.equal(await trustee.cln(), token.address);
             assert.equal(await trustee.owner(), sale.address);
         });
 
         it('should be initialized in transferable false mode', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100);
             await sale.initialize();
-            let token = TestToken.at(await sale.test());
+            let token = ColuLocalNetwork.at(await sale.cln());
             assert(!await token.isTransferable());
         });
 
         it('should be initialized with 0 total sold tokens', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100);
             await sale.initialize();
             assert.equal((await sale.tokensSold()), 0);
         });
 
         it('should allocate token pools', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 100);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100);
             await sale.initialize();
-            let token = TestToken.at(await sale.test());
+            let token = ColuLocalNetwork.at(await sale.cln());
             assert.equal((await token.balanceOf(communityPoolAddress)).toNumber(), COMMUNITY_POOL.toNumber());
-            assert.equal((await token.balanceOf(teamPoolAddress)).toNumber(), TEAM_POOL.toNumber());
+            assert.equal((await token.balanceOf(stakeholdersPoolAddress)).toNumber(), STAKEHOLDERS_POOL.toNumber());
         })
 
         it('should be ownable', async () => {
-            let sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 10000);
+            let sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 10000);
             await sale.initialize();
             assert.equal(await sale.owner(), accounts[0]);
         });
@@ -306,7 +306,7 @@ contract('TestTokenSale', (accounts) => {
     describe('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
-            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
             await sale.initialize();
         });
 
@@ -341,7 +341,7 @@ contract('TestTokenSale', (accounts) => {
             for (const preSale of PRESALES) {
                 console.log(`\tchecking if token grant for ${preSale.recipient} exists...`);
 
-                await testTokenPresaleGrantExists(sale, preSale);
+                await ColuLocalNetworkPresaleGrantExists(sale, preSale);
             }
         });
     });
@@ -351,7 +351,7 @@ contract('TestTokenSale', (accounts) => {
 
         // Test all accounts have their participation caps set properly.
         beforeEach(async () => {
-            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, now + 1000);
+            sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
             await sale.initialize();
 
             for (let participant of accounts) {
@@ -402,10 +402,10 @@ contract('TestTokenSale', (accounts) => {
 
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, start);
             await sale.initialize();
             end = (await sale.endTime()).toNumber();
-            token = TestToken.at(await sale.test());
+            token = ColuLocalNetwork.at(await sale.cln());
 
             assert.equal(await token.isTransferable(), false);
         });
@@ -454,7 +454,7 @@ contract('TestTokenSale', (accounts) => {
                 let tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
                 let developmentTokenGrant = _.clone(DEVELOPMENT_TOKEN_GRANT);
                 developmentTokenGrant.value = developmentTokenGrant.value.add(tokensLeftInSale);
-                await testTokenGrantExists(sale, developmentTokenGrant);
+                await ColuLocalNetworkGrantExists(sale, developmentTokenGrant);
             });
         }
 
@@ -505,7 +505,7 @@ contract('TestTokenSale', (accounts) => {
     // various tests where plenty of transactions are called, and its hard to decide when to exactly call finalize. This
     // function does it for us.
     let verifyTransactions = async (sale, fundRecipient, method, transactions) => {
-        let token = TestToken.at(await sale.test());
+        let token = ColuLocalNetwork.at(await sale.cln());
 
         // Using large numerics, so we have to use BigNumber.
         let totalTokensSold = await sale.tokensSold();;
@@ -528,17 +528,17 @@ contract('TestTokenSale', (accounts) => {
                 continue;
             }
 
-            let tokens = new BigNumber(t.value.toString()).mul(TTT_PER_ETH);
+            let tokens = new BigNumber(t.value.toString()).mul(CLN_PER_ETH);
 
             console.log(`\t[${++i} / ${transactions.length}] expecting account ${t.from} to buy up to ` +
-                `${tokens.toNumber() / TOKEN_DECIMALS} TTT for ${t.value / TOKEN_DECIMALS} ETH`
+                `${tokens.toNumber() / TOKEN_DECIMALS} CLN for ${t.value / TOKEN_DECIMALS} ETH`
             );
 
             // Cache original balances before executing the transaction.
             // We will test against these after the transaction has been executed.
             let fundRecipientETHBalance = web3.eth.getBalance(fundRecipient);
             let participantETHBalance = web3.eth.getBalance(t.from);
-            let participantTTTBalance = await token.balanceOf(t.from);
+            let participantCLNBalance = await token.balanceOf(t.from);
             let participantHistory = await sale.participationHistory(t.from);
 
             // Take into account the global hard participation cap.
@@ -562,7 +562,7 @@ contract('TestTokenSale', (accounts) => {
                 continue;
             }
 
-            // Prediction of correct participant ETH, TTT balance, and total tokens sold:
+            // Prediction of correct participant ETH, CLN balance, and total tokens sold:
 
             // NOTE: We take into account partial refund to the participant, in case transaction goes past its
             // participation cap.
@@ -570,11 +570,11 @@ contract('TestTokenSale', (accounts) => {
             // NOTE: We have to convert the (very) numbers to strings, before converting them to BigNumber, since JS
             // standard Number type doesn't support more than 15 significant digits.
             let contribution = BigNumber.min(t.value.toString(), participantCap.minus(participantHistory));
-            tokens = contribution.mul(TTT_PER_ETH);
+            tokens = contribution.mul(CLN_PER_ETH);
 
             // Take into account the remaining amount of tokens which can be still sold:
             tokens = BigNumber.min(tokens, MAX_TOKENS_SOLD.minus(tokensSold));
-            contribution = tokens.div(TTT_PER_ETH);
+            contribution = tokens.div(CLN_PER_ETH);
 
             totalTokensSold = totalTokensSold.plus(tokens);
             
@@ -586,7 +586,7 @@ contract('TestTokenSale', (accounts) => {
 
             // Test for total tokens sold.
             assert.equal((await sale.tokensSold()).toNumber(), tokensSold.plus(tokens).toNumber());
-            // Test for correct participant ETH + TTT balances.
+            // Test for correct participant ETH + CLN balances.
 
             // ETH:
             assert.equal(web3.eth.getBalance(fundRecipient).toNumber(),
@@ -595,8 +595,8 @@ contract('TestTokenSale', (accounts) => {
             assert.approximately( web3.eth.getBalance(t.from).toNumber(),
                 participantETHBalance.minus(contribution).minus(gasUsed).toNumber(), GAS_COST_ERROR);
 
-            // TTT:
-            assert.equal((await token.balanceOf(t.from)).toNumber(), participantTTTBalance.plus(tokens).toNumber());
+            // CLN:
+            assert.equal((await token.balanceOf(t.from)).toNumber(), participantCLNBalance.plus(tokens).toNumber());
 
             // Test for updated participant cap.
             assert.equal((await sale.participationHistory(t.from)).toNumber(),
@@ -630,10 +630,10 @@ contract('TestTokenSale', (accounts) => {
 
             beforeEach(async () => {
                 start = now + startFrom;
-                sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+                sale = await ColuLocalNetworkSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, start);
                 await sale.initialize();
                 end = (await sale.endTime()).toNumber();
-                token = TestToken.at(await sale.test());
+                token = ColuLocalNetwork.at(await sale.cln());
 
                 assert.equal(await token.isTransferable(), false);
                 await addPresaleAllocation(sale);
@@ -815,9 +815,7 @@ contract('TestTokenSale', (accounts) => {
 
                             { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
                             { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
-                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M !!!!!!!!!!!!!!!!!!!!! [11 / 16] expecting account 0xafb19014bf2958727fc9faa0c3edbc5f2c29624f to buy up to 3900000000 TTT for 1000000 ETH
-                            //  contribution 1.1444738461538461538461538461538461538461538e+23 from 1e+24 ETH
-                            //  contribution 4.463448e+26 TTT
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, 
                             { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
                             { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
                             { from: tier1Participant2, value: 1212 * TOKEN_DECIMALS },
@@ -846,9 +844,7 @@ contract('TestTokenSale', (accounts) => {
 
                             { hardParticipationCap: TIER_2_CAP },
 
-                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, // 1M [19 / 26] expecting account 0xafb19014bf2958727fc9faa0c3edbc5f2c29624f to buy up to 3900000000 TTT for 1000000 ETH
-                            // contribution 1.1740737461538461538461538461538461538461538e+23 from 1e+24 ETH
-                            // contribution 4.57888761e+26 TTT
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, 
                             { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
                             { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
                             { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
@@ -930,10 +926,10 @@ contract('TestTokenSale', (accounts) => {
 
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, start);
             await sale.initialize();
             end = (await sale.endTime()).toNumber();
-            token = TestToken.at(await sale.test());
+            token = ColuLocalNetwork.at(await sale.cln());
         });
 
         // test token contract ownership transfer tests.
@@ -947,11 +943,11 @@ contract('TestTokenSale', (accounts) => {
                     it('should allow contract owner to request transfer', async () => {
                         assert.equal(await token.owner(), sale.address);
 
-                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                        await sale.requestColuLocalNetworkOwnershipTransfer(newOwner, {from: owner});
                     });
 
                     it('should not allow non-owner to request transfer', async () => {
-                        await expectRevert(sale.requestTestTokenOwnershipTransfer(newOwner, {from: notOwner}));
+                        await expectRevert(sale.requestColuLocalNetworkOwnershipTransfer(newOwner, {from: notOwner}));
                     });
                 });
 
@@ -969,7 +965,7 @@ contract('TestTokenSale', (accounts) => {
                     it('should transfer ownership to new owner', async () => {
                         // Test original owner is still owner before and after ownership REQUEST (not accepted yet!).
                         assert.equal(await token.owner(), sale.address);
-                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                        await sale.requestColuLocalNetworkOwnershipTransfer(newOwner, {from: owner});
                         assert.equal(await token.owner(), sale.address);
 
                         // Test ownership has been transferred after acceptance.
@@ -978,13 +974,13 @@ contract('TestTokenSale', (accounts) => {
 
                         // Original owner should not be able to request ownership after acceptance (he's not the owner
                         // anymore).
-                        await expectRevert(sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner}));
+                        await expectRevert(sale.requestColuLocalNetworkOwnershipTransfer(newOwner, {from: owner}));
                     });
 
                     it('should be able to claim ownership back', async () => {
                         // Transfer ownership to another account.
                         assert.equal(await token.owner(), sale.address);
-                        await sale.requestTestTokenOwnershipTransfer(newOwner, {from: owner});
+                        await sale.requestColuLocalNetworkOwnershipTransfer(newOwner, {from: owner});
                         await token.acceptOwnership({from: newOwner});
                         assert.equal(await token.owner(), newOwner);
 
@@ -992,7 +988,7 @@ contract('TestTokenSale', (accounts) => {
                         await token.requestOwnershipTransfer(sale.address, {from: newOwner});
                         assert.equal(await token.owner(), newOwner);
 
-                        await sale.acceptTestTokenOwnership({from: owner});
+                        await sale.acceptColuLocalNetworkOwnership({from: owner});
                         assert.equal(await token.owner(), sale.address);
                     });
                 });
@@ -1124,11 +1120,11 @@ contract('TestTokenSale', (accounts) => {
         // and move time to be during the sale.
         beforeEach(async () => {
             start = now + startFrom;
-            sale = await TestTokenSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, start);
+            sale = await ColuLocalNetworkSaleMock.new(owner, fundRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, start);
             await sale.initialize();
             end = (await sale.endTime()).toNumber();
             await addPresaleAllocation(sale);
-            token = TestToken.at(await sale.test());
+            token = ColuLocalNetwork.at(await sale.cln());
 
             // We'll be testing transactions from all these accounts in the following tests.
             // We require at least 50 (ignoring first owner account).

@@ -1,15 +1,15 @@
 pragma solidity 0.4.18;
 
-import '../TestTokenSale.sol';
+import '../ColuLocalNetworkSale.sol';
 
-contract TestTokenSaleMock is TestTokenSale {
-    function TestTokenSaleMock(address _owner,
+contract ColuLocalNetworkSaleMock is ColuLocalNetworkSale {
+    function ColuLocalNetworkSaleMock(address _owner,
         address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _stakeholdersPoolAddress,
         uint256 _startTime)
-        TestTokenSale(_owner,
+        ColuLocalNetworkSale(_owner,
         _fundingRecipient,
         _communityPoolAddress,
         _futureDevelopmentPoolAddress,

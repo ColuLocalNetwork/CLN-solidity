@@ -3,18 +3,18 @@ pragma solidity 0.4.18;
 import './SafeMath.sol';
 import './Ownable.sol';
 import './TokenHolder.sol';
-import './TestToken.sol';
+import './ColuLocalNetwork.sol';
 import './VestingTrustee.sol';
 
-/// @title Test token sale contract.
+/// @title Colu Local Network sale contract.
 /// @author Tal Beja.
-contract TestTokenSale is Ownable, TokenHolder {
+contract ColuLocalNetworkSale is Ownable, TokenHolder {
     using SafeMath for uint256;
 
     // External parties:
 
-    // TEST token contract.
-    TestToken public test;
+    // Colu Local Network contract.
+    ColuLocalNetwork public cln;
 
     // Vesting contract for presale participants.
     VestingTrustee public trustee;
@@ -25,11 +25,11 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Post-TDE multisig addresses.
     address public communityPoolAddress;
     address public futureDevelopmentPoolAddress;
-    address public teamPoolAddress;
+    address public stakeholdersPoolAddress;
 
-    // Test token decimals.
-    // Using same decimals value as ETH (makes ETH-TEST conversion much easier).
-    // This is the same as in Test token contract.
+    // Colu Local Network decimals.
+    // Using same decimals value as ETH (makes ETH-CLN conversion much easier).
+    // This is the same as in Colu Local Network contract.
     uint256 public constant TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
@@ -50,11 +50,11 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Tokens allocated for Future development pool (29%).
     uint256 public constant FUTURE_DEVELOPMENT_POOL = 435 * 10 ** 6 * TOKEN_DECIMALS;
 
-    // Tokens allocated for Team pool (6%).
-    uint256 public constant TEAM_POOL = 9 * 10 ** 7 * TOKEN_DECIMALS;
+    // Tokens allocated for Stakeholdes pool (6%).
+    uint256 public constant STAKEHOLDERS_POOL = 9 * 10 ** 7 * TOKEN_DECIMALS;
 
-    // TEST to ETH ratio.
-    uint256 public constant TTT_PER_ETH = 3900;
+    // CLN to ETH ratio.
+    uint256 public constant CLN_PER_ETH = 3900;
 
     // Sale start, end blocks (time ranges)
     uint256 public constant SALE_DURATION = 7 days;
@@ -94,7 +94,7 @@ contract TestTokenSale is Ownable, TokenHolder {
     // Vesting plans for presale
     VestingPlan[] public vestingPlans;
 
-    // Each token that is sent from the TestTokenSale is considered as issued.
+    // Each token that is sent from the ColuLocalNetworkSale is considered as issued.
     event TokensIssued(address indexed to, uint256 tokens);
 
     /// @dev Reverts if called not before the sale.
@@ -148,26 +148,26 @@ contract TestTokenSale is Ownable, TokenHolder {
     /// @param _fundingRecipient address The address of the funding recipient.
     /// @param _communityPoolAddress address The address of the community pool.
     /// @param _futureDevelopmentPoolAddress address The address of the future development pool.
-    /// @param _teamPoolAddress address The address of the team pool.
+    /// @param _stakeholdersPoolAddress address The address of the team pool.
     /// @param _startTime uint256 The start time of the token sale.
-    function TestTokenSale(address _owner,
+    function ColuLocalNetworkSale(address _owner,
         address _fundingRecipient,
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
-        address _teamPoolAddress,
+        address _stakeholdersPoolAddress,
         uint256 _startTime) public {
         require(_owner != address(0));
         require(_fundingRecipient != address(0));
         require(_communityPoolAddress != address(0));
         require(_futureDevelopmentPoolAddress != address(0));
-        require(_teamPoolAddress != address(0));
+        require(_stakeholdersPoolAddress != address(0));
         require(_startTime > now);
 
         owner = _owner;
         fundingRecipient = _fundingRecipient;
         communityPoolAddress = _communityPoolAddress;
         futureDevelopmentPoolAddress = _futureDevelopmentPoolAddress;
-        teamPoolAddress = _teamPoolAddress;
+        stakeholdersPoolAddress = _stakeholdersPoolAddress;
         startTime = _startTime;
         endTime = startTime + SALE_DURATION;
     }
@@ -182,19 +182,19 @@ contract TestTokenSale is Ownable, TokenHolder {
         vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * 30 days, 26));
         vestingPlans.push(VestingPlan(0, 0, 3 years, 1 * 30 days, 35));
 
-        // Deploy new TestToken contract.
-        test = new TestToken(MAX_TOKENS);
+        // Deploy new ColuLocalNetwork contract.
+        cln = new ColuLocalNetwork(MAX_TOKENS);
 
         // Deploy new VestingTrustee contract.
-        trustee = new VestingTrustee(test);
+        trustee = new VestingTrustee(cln);
 
         // allocate pool tokens:
 
         // Issue the remaining tokens to designated pools.
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
 
-        // teamPoolAddress will create its own vesting trusts.
-        transferTokens(teamPoolAddress, TEAM_POOL);
+        // stakeholdersPoolAddress will create its own vesting trusts.
+        transferTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL);
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
@@ -207,7 +207,7 @@ contract TestTokenSale is Ownable, TokenHolder {
 
         // Calculate plan and token amount.
         VestingPlan memory plan = vestingPlans[_vestingPlanIndex];
-        uint256 tokensAndALAPPerEth = TTT_PER_ETH.mul(SafeMath.add(100, plan.alapPercent)).div(100);
+        uint256 tokensAndALAPPerEth = CLN_PER_ETH.mul(SafeMath.add(100, plan.alapPercent)).div(100);
 
         uint256 tokensLeftInPreSale = MAX_PRESALE_TOKENS_SOLD.sub(presaleTokensSold);
         uint256 weiLeftInSale = tokensLeftInPreSale.div(tokensAndALAPPerEth);
@@ -259,15 +259,15 @@ contract TestTokenSale is Ownable, TokenHolder {
 
         // Accept funds and transfer to funding recipient.
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
-        uint256 weiLeftInSale = tokensLeftInSale.div(TTT_PER_ETH);
+        uint256 weiLeftInSale = tokensLeftInSale.div(CLN_PER_ETH);
         uint256 weiToParticipate = SafeMath.min256(cappedWeiReceived, weiLeftInSale);
         participationHistory[_recipient] = weiAlreadyParticipated.add(weiToParticipate);
         fundingRecipient.transfer(weiToParticipate);
 
         // Transfer tokens to recipient.
-        uint256 tokensToTransfer = weiToParticipate.mul(TTT_PER_ETH);
-        if (tokensLeftInSale.sub(tokensToTransfer) < TTT_PER_ETH) {
-            // If purchase would cause less than TTT_PER_ETH tokens to be left then nobody could ever buy them.
+        uint256 tokensToTransfer = weiToParticipate.mul(CLN_PER_ETH);
+        if (tokensLeftInSale.sub(tokensToTransfer) < CLN_PER_ETH) {
+            // If purchase would cause less than CLN_PER_ETH tokens to be left then nobody could ever buy them.
             // So, gift them to the last buyer.
             tokensToTransfer = tokensLeftInSale;
         }
@@ -284,7 +284,7 @@ contract TestTokenSale is Ownable, TokenHolder {
 
     /// @dev Finalizes the token sale event: make future development pool grant (lockup) and make token transfarable.
     function finalize() external onlyAfterSale onlyOwner isInitialized {
-        if (test.isTransferable()) {
+        if (cln.isTransferable()) {
             revert();
         }
 
@@ -297,34 +297,34 @@ contract TestTokenSale is Ownable, TokenHolder {
             startTime.add(3 years), 1 days, false);
 
         // Make tokens Transferable, end the sale!.
-        test.makeTokensTransferable();
+        cln.makeTokensTransferable();
     }
 
     /// @dev Transfer tokens from the sale contract to a recipient.
     /// @param _recipient address The address of the recipient.
     /// @param _tokens uint256 The amount of tokens to transfer.
     function transferTokens(address _recipient, uint256 _tokens) private {
-        // Request Test token contract to ownerTransfer the requested tokens for the buyer.
-        test.ownerTransfer(_recipient, _tokens);
+        // Request Colu Local Network contract to ownerTransfer the requested tokens for the buyer.
+        cln.ownerTransfer(_recipient, _tokens);
 
         TokensIssued(_recipient, _tokens);
     }
 
-    /// @dev Requests to transfer control of the Test token contract to a new owner.
+    /// @dev Requests to transfer control of the Colu Local Network contract to a new owner.
     /// @param _newOwnerCandidate address The address to transfer ownership to.
     ///
     /// NOTE:
-    ///   1. The new owner will need to call Test token contract's acceptOwnership directly in order to accept the ownership.
+    ///   1. The new owner will need to call Colu Local Network contract's acceptOwnership directly in order to accept the ownership.
     ///   2. Calling this method during the token sale will prevent the token sale to continue, since only the owner of
-    ///      the Test token contract can transfer tokens during the sale.
-    function requestTestTokenOwnershipTransfer(address _newOwnerCandidate) external onlyOwner {
-        test.requestOwnershipTransfer(_newOwnerCandidate);
+    ///      the Colu Local Network contract can transfer tokens during the sale.
+    function requestColuLocalNetworkOwnershipTransfer(address _newOwnerCandidate) external onlyOwner {
+        cln.requestOwnershipTransfer(_newOwnerCandidate);
     }
 
-    /// @dev Accepts new ownership on behalf of the Test token contract.
-    // This can be used by the sale contract itself to claim back ownership of the Test token contract.
-    function acceptTestTokenOwnership() external onlyOwner {
-        test.acceptOwnership();
+    /// @dev Accepts new ownership on behalf of the Colu Local Network contract.
+    // This can be used by the sale contract itself to claim back ownership of the Colu Local Network contract.
+    function acceptColuLocalNetworkOwnership() external onlyOwner {
+        cln.acceptOwnership();
     }
 
     /// @dev Requests to transfer control of the VestingTrustee contract to a new owner.

@@ -2,17 +2,17 @@ pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './Ownable.sol';
-import './TestToken.sol';
+import './ColuLocalNetwork.sol';
 
-/// @title Vesting trustee contract for Test token.
+/// @title Vesting trustee contract for Colu Local Network.
 /// @dev This Contract can't be TokenHolder, since it will allow its owner to drain its vested tokens.
-/// @dev This means that any token sent to it different than TestToken is basicly stucked here forever.
-/// @dev TestTokens that sent here (by mistake) can withdrawn using the grant method. 
+/// @dev This means that any token sent to it different than ColuLocalNetwork is basicly stucked here forever.
+/// @dev ColuLocalNetwork that sent here (by mistake) can withdrawn using the grant method. 
 contract VestingTrustee is Ownable {
     using SafeMath for uint256;
 
-    // Test token contract.
-    TestToken public test;
+    // Colu Local Network contract.
+    ColuLocalNetwork public cln;
 
     // Vesting grant for a speicifc holder.
     struct Grant {
@@ -35,12 +35,12 @@ contract VestingTrustee is Ownable {
     event TokensUnlocked(address indexed _to, uint256 _value);
     event GrantRevoked(address indexed _holder, uint256 _refund);
 
-    /// @dev Constructor that initializes the address of the Test token contract.
-    /// @param _test TestToken The address of the previously deployed Test token contract.
-    function VestingTrustee(TestToken _test) {
-        require(_test != address(0));
+    /// @dev Constructor that initializes the address of the Colu Local Network contract.
+    /// @param _cln ColuLocalNetwork The address of the previously deployed Colu Local Network contract.
+    function VestingTrustee(ColuLocalNetwork _cln) {
+        require(_cln != address(0));
 
-        test = _test;
+        cln = _cln;
     }
 
     /// @dev Grant tokens to a specified address.
@@ -69,7 +69,7 @@ contract VestingTrustee is Ownable {
         require(_installmentLength > 0 && _installmentLength <= _end.sub(_start));
 
         // Grant must not exceed the total amount of tokens currently available for vesting.
-        require(totalVesting.add(_value) <= test.balanceOf(address(this)));
+        require(totalVesting.add(_value) <= cln.balanceOf(address(this)));
 
         // Assign a new grant.
         grants[_to] = Grant({
@@ -107,7 +107,7 @@ contract VestingTrustee is Ownable {
             // Update transferred and total vesting amount, then transfer remaining vested funds to holder.
             grant.transferred = grant.transferred.add(transferable);
             totalVesting = totalVesting.sub(transferable);
-            test.transfer(_holder, transferable);
+            cln.transfer(_holder, transferable);
 
             TokensUnlocked(_holder, transferable);
         }
@@ -120,7 +120,7 @@ contract VestingTrustee is Ownable {
 
         // Update total vesting amount and transfer previously calculated tokens to owner.
         totalVesting = totalVesting.sub(refund);
-        test.transfer(msg.sender, refund);
+        cln.transfer(msg.sender, refund);
 
         GrantRevoked(_holder, refund);
     }
@@ -188,7 +188,7 @@ contract VestingTrustee is Ownable {
         // Update transferred and total vesting amount, then transfer remaining vested funds to holder.
         grant.transferred = grant.transferred.add(transferable);
         totalVesting = totalVesting.sub(transferable);
-        test.transfer(msg.sender, transferable);
+        cln.transfer(msg.sender, transferable);
 
         TokensUnlocked(msg.sender, transferable);
     }
