@@ -13,7 +13,7 @@ contract Ownable {
     event OwnershipTransferred(address indexed _from, address indexed _to);
 
     /// @dev Constructor sets the original `owner` of the contract to the sender account.
-    function Ownable() {
+    function Ownable() public {
         owner = msg.sender;
     }
 

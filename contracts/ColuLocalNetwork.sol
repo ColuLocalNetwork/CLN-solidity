@@ -33,7 +33,7 @@ contract ColuLocalNetwork is Ownable, BasicToken, TokenHolder {
     }
 
     /// @dev Creates all tokens and gives them to the owner.
-    function ColuLocalNetwork(uint256 _totalSupply) {
+    function ColuLocalNetwork(uint256 _totalSupply) public {
         totalSupply = _totalSupply;
         balances[msg.sender] = totalSupply;
     }

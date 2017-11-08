@@ -8,7 +8,7 @@ contract ColuLocalNetworkSaleMock is ColuLocalNetworkSale {
         address _communityPoolAddress,
         address _futureDevelopmentPoolAddress,
         address _stakeholdersPoolAddress,
-        uint256 _startTime)
+        uint256 _startTime) public
         ColuLocalNetworkSale(_owner,
         _fundingRecipient,
         _communityPoolAddress,
@@ -17,7 +17,7 @@ contract ColuLocalNetworkSaleMock is ColuLocalNetworkSale {
         _startTime) {
     }
 
-    function setTokensSold(uint256 _tokensSold) {
+    function setTokensSold(uint256 _tokensSold) public {
         tokensSold = _tokensSold;
     }
 }

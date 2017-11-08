@@ -37,7 +37,7 @@ contract VestingTrustee is Ownable {
 
     /// @dev Constructor that initializes the address of the Colu Local Network contract.
     /// @param _cln ColuLocalNetwork The address of the previously deployed Colu Local Network contract.
-    function VestingTrustee(ColuLocalNetwork _cln) {
+    function VestingTrustee(ColuLocalNetwork _cln) public {
         require(_cln != address(0));
 
         cln = _cln;
@@ -142,7 +142,7 @@ contract VestingTrustee is Ownable {
     /// @param _grant Grant The vesting grant.
     /// @param _time uint256 The time to be checked
     /// @return An uint256 Representing the amount of vested tokens of a specific grant.
-    function calculateVestedTokens(Grant _grant, uint256 _time) private constant returns (uint256) {
+    function calculateVestedTokens(Grant _grant, uint256 _time) private pure returns (uint256) {
         // If we're before the cliff, then nothing is vested.
         if (_time < _grant.cliff) {
             return 0;

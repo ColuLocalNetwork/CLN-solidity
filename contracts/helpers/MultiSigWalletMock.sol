@@ -5,7 +5,7 @@ import '../MultiSigWallet.sol';
 contract MultiSigWalletMock is MultiSigWallet {
     uint256 public transactionId;
 
-    function MultiSigWalletMock(address[] _owners, uint _required) MultiSigWallet(_owners, _required) {
+    function MultiSigWalletMock(address[] _owners, uint _required) public MultiSigWallet(_owners, _required) {
     }
 
     function submitTransaction(address _destination, uint _value, bytes _data) public returns (uint _transactionId) {
