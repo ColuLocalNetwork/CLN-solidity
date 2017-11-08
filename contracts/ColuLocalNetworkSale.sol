@@ -226,7 +226,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
 
     /// @dev Add a list of participants to a capped participation tier.
     /// @param _participants address[] The list of participant addresses.
-    /// @param _cap uint256 The cap amount (in ETH).
+    /// @param _cap uint256 The cap amount (in ETH-WEI).
     function setParticipationCap(address[] _participants, uint256 _cap) external onlyOwner isInitialized {
         for (uint i = 0; i < _participants.length; i++) {
             participationCaps[_participants[i]] = _cap;
