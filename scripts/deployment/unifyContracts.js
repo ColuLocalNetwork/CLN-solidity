@@ -9,9 +9,9 @@ var contracts = [
 	'ERC20.sol',
 	'BasicToken.sol',
 	'TokenHolder.sol',
-	'TestToken.sol',
+	'ColuLocalNetwork.sol',
 	'VestingTrustee.sol',
-	'TestTokenSale.sol',
+	'ColuLocalNetworkSale.sol',
 ]
 
 var unifiedContract = __dirname + '/Unified.sol'
