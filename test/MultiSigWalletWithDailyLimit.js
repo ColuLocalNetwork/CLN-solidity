@@ -371,7 +371,7 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
                         for (let i = 1; i < spec.owners.length; i++) {
                             let confirmer = spec.owners[i];
 
-                            let prevWalletBalanace = await getBalance(wallet.address, coin);
+                            let prevWalletBalance = await getBalance(wallet.address, coin);
                             let prevReceiverBalance = await getBalance(receiver, coin);
 
                             // If this is not the final confirmation - don't expect any change.
@@ -386,18 +386,18 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
                                 // Should throw an error if trying to confirm the same transaction twice.
                                 await expectRevert(wallet.confirmTransaction(transactionId, {from: confirmer}));
 
-                                let walletBalanace = await getBalance(wallet.address, coin);
+                                let walletBalance = await getBalance(wallet.address, coin);
                                 let receiverBalance = await getBalance(receiver, coin);
 
                                 if (confirmations == spec.requirement) {
                                     assert.equal(await wallet.isConfirmed(transactionId), true);
 
-                                    assert.equal(walletBalanace.toNumber(), prevWalletBalanace.minus(value).toNumber());
+                                    assert.equal(walletBalance.toNumber(), prevWalletBalance.minus(value).toNumber());
                                     assert.equal(receiverBalance.toNumber(), prevReceiverBalance.plus(value).toNumber());
                                 } else {
                                     assert.equal(await wallet.isConfirmed(transactionId), false);
 
-                                    assert.equal(walletBalanace.toNumber(), prevWalletBalanace.toNumber());
+                                    assert.equal(walletBalance.toNumber(), prevWalletBalance.toNumber());
                                     assert.equal(receiverBalance.toNumber(), prevReceiverBalance.toNumber());
                                 }
                             } else {
@@ -406,10 +406,10 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
                                 // Should throw an error if trying to confirm an already executed transaction.
                                 await expectRevert(wallet.confirmTransaction(transactionId, {from: confirmer}));
 
-                                let walletBalanace = await getBalance(wallet.address, coin);
+                                let walletBalance = await getBalance(wallet.address, coin);
                                 let receiverBalance = await getBalance(receiver, coin);
 
-                                assert.equal(walletBalanace.toNumber(), prevWalletBalanace.toNumber());
+                                assert.equal(walletBalance.toNumber(), prevWalletBalance.toNumber());
                                 assert.equal(receiverBalance.toNumber(), prevReceiverBalance.toNumber());
                             }
                         }
@@ -710,8 +710,10 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
                             await changeDailyLimit(spec.dailyLimit + 1000, spec.owners[0]);
 
                             let updatedDailyLimit = (await wallet.dailyLimit()).toNumber();
+                            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
 
                             assert.equal(updatedDailyLimit, spec.dailyLimit + 1000);
+                            assert.equal(maxWithdraw, spec.dailyLimit + 1000);
                         });
                     } else {
                         it('should decrease daily limit by 1000', async () => {
@@ -721,13 +723,56 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
                             await changeDailyLimit(spec.dailyLimit - 1000, spec.owners[0]);
 
                             let updatedDailyLimit = (await wallet.dailyLimit()).toNumber();
+                            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
 
                             assert.equal(updatedDailyLimit, spec.dailyLimit - 1000);
+                            assert.equal(maxWithdraw, spec.dailyLimit - 1000);
                         });
                     }
                 });
             });
         });
+    });
+
+    describe.only('daily limit functionality', async () => {
+        let owner1 = accounts[0];
+        let owner2 = accounts[1];
+        let owner3 = accounts[2];
+
+        let requirement = 2;
+        let dailyLimit = 1000;
+
+        let wallet;
+
+        let initialFunds = 10000
+
+        let receiver = accounts[3];
+
+        beforeEach(async () => {
+            wallet = await MultiSigWalletWithDailyLimitMock.new([owner1, owner2, owner3], requirement, dailyLimit);
+            await wallet.sendTransaction({value: initialFunds});
+        });
+
+        it('should successfully withdraw less than daily limit', async () => {
+            let walletBalance = web3.eth.getBalance(wallet.address).toNumber();
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            let transferredFunds = 100;
+
+            await wallet.submitTransaction(receiver, transferredFunds, "", {from: owner1});
+
+            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            let spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds, maxWithdraw);
+            assert.equal(transferredFunds, spentToday);
+            assert.equal(receiverBalance + transferredFunds, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        // TODO withdraw more than daily limit - need confiramtion --> one test without confirmation, another with confirmation
+        // TODO withdraw multiple times - first X under limit, last one over limit
+        // TODO withdraw until limit is reached and than pass 1 day, so withdraw can successfully continue
     });
 
     describe('events', async () => {
