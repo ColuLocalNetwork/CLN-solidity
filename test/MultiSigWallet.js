@@ -1,7 +1,7 @@
 const expectRevert = require('./helpers/expectRevert');
 const coder = require('web3-eth-abi');
 
-const TestToken = artifacts.require('TestToken');
+const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const MultiSigWalletMock = artifacts.require('MultiSigWalletMock');
 
 contract('MultiSigWallet', (accounts) => {
@@ -155,8 +155,8 @@ contract('MultiSigWallet', (accounts) => {
             assert.equal(walletBalance2.toNumber(), walletBalance.plus(value).toNumber());
         });
 
-        it('should receive TTT', async () => {
-            let token = await TestToken.new(tokenBalance);
+        it('should receive CLN', async () => {
+            let token = await ColuLocalNetwork.new(tokenBalance);
 
             let value = 200;
             await token.ownerTransfer(sender, value);
@@ -204,7 +204,7 @@ contract('MultiSigWallet', (accounts) => {
                     await wallet.sendTransaction({value: initETHBalance});
                     assert.equal(web3.eth.getBalance(wallet.address).toNumber(), initETHBalance);
 
-                    token = await TestToken.new(tokenBalance);
+                    token = await ColuLocalNetwork.new(tokenBalance);
 
                     await token.ownerTransfer(wallet.address, initTokenBalance);
                     await token.makeTokensTransferable();
@@ -306,7 +306,7 @@ contract('MultiSigWallet', (accounts) => {
                         case 'ETH':
                             return web3.eth.getBalance(address);
 
-                        case 'TTT':
+                        case 'CLN':
                             return await token.balanceOf(address);
 
                         default:
@@ -319,7 +319,7 @@ contract('MultiSigWallet', (accounts) => {
                         case 'ETH':
                             return await wallet.submitTransaction(receiver, value, [], {from: from});
 
-                        case 'TTT':
+                        case 'CLN':
                             let params = [receiver, value];
                             let encoded = coder.encodeFunctionCall(ERC20_TRANSFER_ABI, params);
 
@@ -332,7 +332,7 @@ contract('MultiSigWallet', (accounts) => {
 
                 [
                     'ETH',
-                    'TTT'
+                    'CLN'
                 ].forEach((coin) => {
                     it(`should only send ${coin} when all confirmations were received`, async () => {
                         let transaction = submitTransaction(receiver, value, spec.owners[0], coin);
