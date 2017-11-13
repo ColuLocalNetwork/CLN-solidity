@@ -11,9 +11,9 @@ var contracts = [
 	'TokenHolder.sol',
 	'UpgradeableToken.sol',
 	'UpgradeAgent.sol',
-	'TestToken.sol',
+	'ColuLocalNetwork.sol',
 	'VestingTrustee.sol',
-	'TestTokenSale.sol',
+	'ColuLocalNetworkSale.sol',
 ]
 
 var unifiedContract = __dirname + '/Unified.sol'

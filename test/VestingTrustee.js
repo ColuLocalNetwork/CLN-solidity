@@ -1,3 +1,4 @@
+const BigNumber = require('bignumber.js');
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
 
@@ -5,7 +6,7 @@ const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const VestingTrustee = artifacts.require('VestingTrustee');
 
 contract('VestingTrustee', (accounts) => {
-    const initialTokens = 2 * 10 ** 12;
+    const initialTokens = new BigNumber(2 * 10 ** 12);
     const MINUTE = 60;
     const HOUR = 60 * MINUTE;
     const DAY = 24 * 60;
@@ -132,8 +133,8 @@ contract('VestingTrustee', (accounts) => {
             });
 
             it('should record a grant and increase grants count and total vesting', async () => {
-                let totalVesting = (await trustee.totalVesting()).toNumber();
-                assert.equal(totalVesting, 0);
+                let totalVesting = await trustee.totalVesting();
+                assert.equal(totalVesting.toNumber(), 0);
 
                 let value = 1000;
                 let start = now;
@@ -142,7 +143,7 @@ contract('VestingTrustee', (accounts) => {
                 let installmentLength = 1 * DAY;
                 await trustee.grant(accounts[0], value, start, cliff, end, installmentLength, false);
 
-                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting + value);
+                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value).toNumber());
                 let grant = await getGrant(accounts[0]);
                 assert.equal(grant.value, value);
                 assert.equal(grant.start, start);
@@ -158,7 +159,7 @@ contract('VestingTrustee', (accounts) => {
                 let installmentLength2 = 3 * MONTH;
                 await trustee.grant(accounts[1], value2, start2, cliff2, end2, installmentLength2, false);
 
-                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting + value + value2);
+                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value + value2).toNumber());
                 let grant2 = await getGrant(accounts[1]);
                 assert.equal(grant2.value, value2);
                 assert.equal(grant2.start, start2);
@@ -381,7 +382,7 @@ contract('VestingTrustee', (accounts) => {
     });
 
     describe('vestedTokens', async () => {
-        let balance = 10 ** 12;
+        let balance = new BigNumber(10 ** 12);
 
         beforeEach(async () => {
             await token.ownerTransfer(trustee.address, balance);
@@ -539,7 +540,7 @@ contract('VestingTrustee', (accounts) => {
         // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
         const MAX_ERROR = 10;
 
-        let balance = 10 ** 12;
+        let balance = new BigNumber(10 ** 12);
 
         beforeEach(async () => {
             await token.ownerTransfer(trustee.address, balance);
@@ -686,25 +687,25 @@ contract('VestingTrustee', (accounts) => {
                                 `${res.diff} seconds`);
 
                             // Get previous state.
-                            let totalVesting = (await trustee.totalVesting()).toNumber();
-                            let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
-                            let userBalance = (await token.balanceOf(holder)).toNumber();
-                            let transferred = (await getGrant(holder)).transferred.toNumber();
+                            let totalVesting = await trustee.totalVesting();
+                            let trusteeBalance = await token.balanceOf(trustee.address);
+                            let userBalance = await token.balanceOf(holder);
+                            let transferred = (await getGrant(holder)).transferred;
 
                             // Jump forward in time by the requested diff.
                             await time.increaseTime(res.diff);
                             await trustee.unlockVestedTokens({from: holder});
 
                             // Verify new state.
-                            let totalVesting2 = (await trustee.totalVesting()).toNumber();
-                            let trusteeBalance2 = (await token.balanceOf(trustee.address)).toNumber();
-                            let userBalance2 = (await token.balanceOf(holder)).toNumber();
-                            let transferred2 = (await getGrant(holder)).transferred.toNumber();
+                            let totalVesting2 = await trustee.totalVesting();
+                            let trusteeBalance2 = await token.balanceOf(trustee.address);
+                            let userBalance2 = await token.balanceOf(holder);
+                            let transferred2 = (await getGrant(holder)).transferred;
 
-                            assert.approximately(totalVesting2, totalVesting - res.unlocked, MAX_ERROR);
-                            assert.approximately(trusteeBalance2, trusteeBalance - res.unlocked, MAX_ERROR);
-                            assert.approximately(userBalance2, userBalance + res.unlocked, MAX_ERROR);
-                            assert.approximately(transferred2, transferred + res.unlocked, MAX_ERROR);
+                            assert.approximately(totalVesting2.toNumber(), totalVesting.sub(res.unlocked).toNumber(), MAX_ERROR);
+                            assert.approximately(trusteeBalance2.toNumber(), trusteeBalance.sub(res.unlocked).toNumber(), MAX_ERROR);
+                            assert.approximately(userBalance2.toNumber(), userBalance.add(res.unlocked).toNumber(), MAX_ERROR);
+                            assert.approximately(transferred2.toNumber(), transferred.add(res.unlocked).toNumber(), MAX_ERROR);
                         }
                     });
                 });
@@ -720,36 +721,36 @@ contract('VestingTrustee', (accounts) => {
                 {tokens: 233223, startOffset: 0, cliffOffset: 2 * MONTH, endOffset: 2 * YEAR, installmentLength: 1, holder: accounts[5]}
             ];
 
-            let granterBalance = (await token.balanceOf(granter)).toNumber();
-            let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
-            assert.equal(granterBalance, initialTokens - balance);
-            assert.equal(trusteeBalance, balance);
+            let granterBalance = await token.balanceOf(granter);
+            let trusteeBalance = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance.toNumber(), initialTokens.sub(balance).toNumber());
+            assert.equal(trusteeBalance.toNumber(), balance.toNumber());
 
-            let totalGranted = 0;
+            let totalGranted = new BigNumber(0);
 
             for (let grant of grants) {
                 await token.ownerTransfer(trustee.address, grant.tokens);
                 await trustee.grant(grant.holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
                     grant.endOffset, grant.installmentLength, true);
 
-                totalGranted += grant.tokens;
+                totalGranted = totalGranted.add(grant.tokens);
             }
 
             await token.makeTokensTransferable();
 
-            let granterBalance2 = (await token.balanceOf(granter)).toNumber();
-            let trusteeBalance2 = (await token.balanceOf(trustee.address)).toNumber();
-            assert.equal(granterBalance2, granterBalance - totalGranted);
-            assert.equal(trusteeBalance2, trusteeBalance + totalGranted);
+            let granterBalance2 = await token.balanceOf(granter);
+            let trusteeBalance2 = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance2.toNumber(), granterBalance.sub(totalGranted).toNumber());
+            assert.equal(trusteeBalance2.toNumber(), trusteeBalance.add(totalGranted).toNumber());
 
             for (let grant of grants) {
                 await trustee.revoke(grant.holder);
             }
 
-            let granterBalance3 = (await token.balanceOf(granter)).toNumber();
-            let trusteeBalance3 = (await token.balanceOf(trustee.address)).toNumber();
-            assert.equal(granterBalance3, totalGranted + granterBalance2);
-            assert.equal(trusteeBalance3, trusteeBalance2 - totalGranted);
+            let granterBalance3 = await token.balanceOf(granter);
+            let trusteeBalance3 = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance3.toNumber(), totalGranted.add(granterBalance2).toNumber());
+            assert.equal(trusteeBalance3.toNumber(), trusteeBalance2.sub(totalGranted).toNumber());
         });
     });
 

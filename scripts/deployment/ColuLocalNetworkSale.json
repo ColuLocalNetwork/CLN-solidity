@@ -1,10 +1,10 @@
 {
 	"https://ethrpc.colu.co": {
-		"owner": "0xe32aaa682df0f5097aa86872721f1cea240b15d5",
-		"fundingRecipient": "0x015beb7831af3ad183edad0ba711b3525fe0f7dc",
-		"communityPoolAddress": "0x1342dd832909c1c0c6bb97968f5994e7981f5e62",
-		"futureDevelopmentPoolAddress": "0x4dd1b7956b7acc3655abdca0d4464f72c702243e",
-		"teamPoolAddress": "0x6cfa8a400aec5e342dfeb45b2f851d90c5c15138",
+		"owner": "0x31cff11c8f8c94d8e0c87c5e01f3c1069496e6bd",
+		"fundingRecipient": "0xcf365d990101a6359953fd08564a2d70ef18004f",
+		"communityPoolAddress": "0x035db7876658583a665e3549b724556e57f986d2",
+		"futureDevelopmentPoolAddress": "0xdbab01b3ad438919d88da0da81d15a0cbfca3260",
+		"teamPoolAddress": "0x7ec3c3f5c270d2d016c84728a68d94a25e4cf81a",
 		"startTime": ""
 	},
 	"https://ropsten.colu.com": {

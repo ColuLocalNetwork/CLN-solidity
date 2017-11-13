@@ -6,7 +6,7 @@ var async = require('async')
 var fs = require('fs')
 var argv = require('yargs').argv
 
-var args = require('./TestTokenSale.json')[config.get('web3Provider')]
+var args = require('./ColuLocalNetworkSale.json')[config.get('web3Provider')]
 var owner = args.owner
 var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress
@@ -19,12 +19,12 @@ var input = {
   'ERC20.sol': fs.readFileSync(__dirname + '/../../contracts/ERC20.sol', 'utf8'),
   'Ownable.sol': fs.readFileSync(__dirname + '/../../contracts/Ownable.sol', 'utf8'),
   'SafeMath.sol': fs.readFileSync(__dirname + '/../../contracts/SafeMath.sol', 'utf8'),
-  'TestToken.sol': fs.readFileSync(__dirname + '/../../contracts/TestToken.sol', 'utf8'),
+  'ColuLocalNetwork.sol': fs.readFileSync(__dirname + '/../../contracts/ColuLocalNetwork.sol', 'utf8'),
   'TokenHolder.sol': fs.readFileSync(__dirname + '/../../contracts/TokenHolder.sol', 'utf8'),
   'UpgradeableToken.sol': fs.readFileSync(__dirname + '/../../contracts/UpgradeableToken.sol', 'utf8'),
   'UpgradeAgent.sol': fs.readFileSync(__dirname + '/../../contracts/UpgradeAgent.sol', 'utf8'),
   'VestingTrustee.sol': fs.readFileSync(__dirname + '/../../contracts/VestingTrustee.sol', 'utf8'),
-  'TestTokenSale.sol': fs.readFileSync(__dirname + '/../../contracts/TestTokenSale.sol', 'utf8'),
+  'ColuLocalNetworkSale.sol': fs.readFileSync(__dirname + '/../../contracts/ColuLocalNetworkSale.sol', 'utf8'),
 }
 
 var deployTransactionObj
@@ -49,7 +49,7 @@ async.auto({
     var constructorArguments = [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime]
     var solcSnapshot = results.loadCompilerVersion
     var contractCompiled = solc.compile({sources: input}, 1)
-    var contractObj = contractCompiled.contracts['TestTokenSale.sol:TestTokenSale']
+    var contractObj = contractCompiled.contracts['ColuLocalNetworkSale.sol:ColuLocalNetworkSale']
     var jsonInterface = JSON.parse(contractObj.interface)
     myContract = new web3.eth.Contract(jsonInterface);
     data = '0x' + contractObj.bytecode
