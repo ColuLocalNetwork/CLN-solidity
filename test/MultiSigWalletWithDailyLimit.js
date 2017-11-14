@@ -1,4 +1,5 @@
 const expectRevert = require('./helpers/expectRevert');
+const time = require('./helpers/time');
 const coder = require('web3-eth-abi');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
@@ -734,7 +735,7 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
         });
     });
 
-    describe.only('daily limit functionality', async () => {
+    describe.only('daily limit', async () => {
         let owner1 = accounts[0];
         let owner2 = accounts[1];
         let owner3 = accounts[2];
@@ -744,22 +745,23 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
 
         let wallet;
 
-        let initialFunds = 10000
+        let initialFunds = 10000;
 
         let receiver = accounts[3];
 
-        beforeEach(async () => {
+        let transferredFunds = 500;
+
+        let ONE_DAY = 24*3600;
+
+        before(async () => {
             wallet = await MultiSigWalletWithDailyLimitMock.new([owner1, owner2, owner3], requirement, dailyLimit);
             await wallet.sendTransaction({value: initialFunds});
         });
 
-        it('should successfully withdraw less than daily limit', async () => {
-            let walletBalance = web3.eth.getBalance(wallet.address).toNumber();
+        it('should successfully withdraw 1st time without confirmation (under the daily limit)', async () => {
             let receiverBalance = web3.eth.getBalance(receiver).toNumber();
 
-            let transferredFunds = 100;
-
-            await wallet.submitTransaction(receiver, transferredFunds, "", {from: owner1});
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
 
             let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
             let spentToday = (await wallet.spentToday()).toNumber();
@@ -767,12 +769,68 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
             assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
             assert.equal(dailyLimit - transferredFunds, maxWithdraw);
             assert.equal(transferredFunds, spentToday);
+            assert.equal(initialFunds - transferredFunds, web3.eth.getBalance(wallet.address).toNumber());
             assert.equal(receiverBalance + transferredFunds, web3.eth.getBalance(receiver).toNumber());
         });
 
-        // TODO withdraw more than daily limit - need confiramtion --> one test without confirmation, another with confirmation
-        // TODO withdraw multiple times - first X under limit, last one over limit
-        // TODO withdraw until limit is reached and than pass 1 day, so withdraw can successfully continue
+        it('should successfully withdraw 2nd time without confirmation (under the daily limit)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds*2, maxWithdraw);
+            assert.equal(transferredFunds*2, spentToday);
+            assert.equal(initialFunds - transferredFunds*2, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        it('should successfully withdraw 3rd time only after confirmation (over the daily limit)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+            let transactionId = await wallet.transactionId();
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds*2, maxWithdraw);
+            assert.equal(dailyLimit, spentToday);
+            assert.equal(initialFunds - transferredFunds*2, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*2, web3.eth.getBalance(receiver).toNumber());
+
+            await wallet.confirmTransaction(transactionId, {from: owner2});
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(0, maxWithdraw);
+            assert.equal(dailyLimit, spentToday);
+            assert.equal(initialFunds - transferredFunds*3, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*3, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        it('should successfully withdraw without confirmation again (one day has passed)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await time.increaseTime(ONE_DAY);
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+
+            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            let spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds, maxWithdraw);
+            assert.equal(transferredFunds, spentToday);
+            assert.equal(initialFunds - transferredFunds*4, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*4, web3.eth.getBalance(receiver).toNumber());
+        });
     });
 
     describe('events', async () => {
