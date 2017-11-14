@@ -1,4 +1,4 @@
-var config = require('./config')
+var config = require(__dirname + '/config')
 var solc = require('solc')
 var abi = require('ethereumjs-abi')
 var fs = require('fs')

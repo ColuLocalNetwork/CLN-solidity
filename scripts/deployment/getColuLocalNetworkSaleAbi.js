@@ -1,4 +1,4 @@
-var config = require('./config')
+var config = require(__dirname + '/config')
 var solc = require('solc')
 var fs = require('fs')
 
