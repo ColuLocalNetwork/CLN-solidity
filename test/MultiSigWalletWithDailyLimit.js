@@ -735,7 +735,7 @@ contract('MultiSigWalletWithDailyLimit', (accounts) => {
         });
     });
 
-    describe.only('daily limit', async () => {
+    describe('daily limit', async () => {
         let owner1 = accounts[0];
         let owner2 = accounts[1];
         let owner3 = accounts[2];
