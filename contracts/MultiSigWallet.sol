@@ -16,7 +16,7 @@ contract MultiSigWallet {
     event Deposit(address indexed sender, uint256 value);
     event OwnerAddition(address indexed owner);
     event OwnerRemoval(address indexed owner);
-    event RequirementChange(uint256 required);
+    event RequirementChange(uint8 required);
 
     /*
      *  Constants
@@ -30,7 +30,7 @@ contract MultiSigWallet {
     mapping (uint256 => mapping (address => bool)) public confirmations;
     mapping (address => bool) public isOwner;
     address[] public owners;
-    uint256 public required;
+    uint8 public required;
     uint256 public transactionCount;
 
     struct Transaction {
@@ -91,7 +91,7 @@ contract MultiSigWallet {
         _;
     }
 
-    modifier validRequirement(uint256 ownerCount, uint256 _required) {
+    modifier validRequirement(uint8 ownerCount, uint8 _required) {
         if (   ownerCount > MAX_OWNER_COUNT
             || _required > ownerCount
             || _required == 0
@@ -114,7 +114,7 @@ contract MultiSigWallet {
     /// @param _required Number of required confirmations.
     function MultiSigWallet(address[] _owners, uint8 _required)
         public
-        validRequirement(_owners.length, _required)
+        validRequirement(uint8(_owners.length), _required)
     {
         for (uint8 i=0; i<_owners.length; i++) {
             if (isOwner[_owners[i]] || _owners[i] == 0)
@@ -132,7 +132,7 @@ contract MultiSigWallet {
         onlyWallet
         ownerDoesNotExist(owner)
         notNull(owner)
-        validRequirement(owners.length + 1, required)
+        validRequirement(uint8(owners.length) + 1, required)
     {
         isOwner[owner] = true;
         owners.push(owner);
@@ -153,8 +153,8 @@ contract MultiSigWallet {
                 break;
             }
         owners.length -= 1;
-        if (required > owners.length)
-            changeRequirement(owners.length);
+        if (required > uint8(owners.length))
+            changeRequirement(uint8(owners.length));
         OwnerRemoval(owner);
     }
 
@@ -180,10 +180,10 @@ contract MultiSigWallet {
 
     /// @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
     /// @param _required Number of required confirmations.
-    function changeRequirement(uint256 _required)
+    function changeRequirement(uint8 _required)
         public
         onlyWallet
-        validRequirement(owners.length, _required)
+        validRequirement(uint8(owners.length), _required)
     {
         required = _required;
         RequirementChange(_required);
