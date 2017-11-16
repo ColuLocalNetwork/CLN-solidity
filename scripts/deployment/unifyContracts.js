@@ -1,4 +1,4 @@
-var config = require('./config')
+var config = require(__dirname + '/config')
 var fs = require('fs')
 var async = require('async')
 

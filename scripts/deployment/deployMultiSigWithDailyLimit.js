@@ -5,18 +5,22 @@ var solc = require('solc')
 var async = require('async')
 var fs = require('fs')
 var argv = require('yargs').argv
-if (!argv.owners || !argv.required) {
-  throw new Error('Must have "owners" and "required" as command line arguments')
+if (!argv.owners || !argv.required || !argv.dailyLimitWEI) {
+  throw new Error('Must have "owners", "required" and "dailyLimitWEI" as command line arguments')
 }
 var owners = argv.owners.split(',')
-var required = parseInt(argv.required)
+var required = parseInt(argv.required, 10)
+var dailyLimitWEI = parseInt(argv.dailyLimitWEI, 10)
 
-var contract = fs.readFileSync(__dirname + '/../../contracts/MultiSigWallet.sol', 'utf8')
+var input = {
+  'MultiSigWallet.sol': fs.readFileSync(__dirname + '/../../contracts/MultiSigWallet.sol', 'utf8'),
+  'MultiSigWalletWithDailyLimit.sol': fs.readFileSync(__dirname + '/../../contracts/MultiSigWalletWithDailyLimit.sol', 'utf8')
+}
 
 var deployTransactionObj
 var data
 var myContract
-var constructorArguments = [owners, required]
+var constructorArguments = [owners, required, dailyLimitWEI]
 async.auto({
   getFromAddress: function (cb) {
     if (argv.from) return cb(null, argv.from)
@@ -28,8 +32,8 @@ async.auto({
   getGasPrice: web3.eth.getGasPrice,
   estimateGas: ['loadCompilerVersion', function (results, cb) {
     var solcSnapshot = results.loadCompilerVersion
-    var contractCompiled = solcSnapshot.compile(contract, 1)
-    var contractObj = contractCompiled.contracts[':MultiSigWallet']
+    var contractCompiled = solc.compile({sources: input}, 1)
+    var contractObj = contractCompiled.contracts['MultiSigWalletWithDailyLimit.sol:MultiSigWalletWithDailyLimit']
     var jsonInterface = JSON.parse(contractObj.interface)
     myContract = new web3.eth.Contract(jsonInterface);
     data = '0x' + contractObj.bytecode

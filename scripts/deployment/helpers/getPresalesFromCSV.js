@@ -5,7 +5,7 @@ var async = require('async')
 var BigNumber = require('bignumber.js')
 BigNumber.config({ ERRORS: false })
 
-var PresaleCalculator = require(__dirname + '/../presaleCalculator')
+var PresaleCalculator = require(__dirname + '/../../presaleCalculator')
 
 var inputFile = __dirname + '/presales.csv'
 

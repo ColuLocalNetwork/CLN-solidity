@@ -1,11 +1,11 @@
 pragma solidity 0.4.18;
 
-import '../MultiSigWallet.sol';
+import '../MultiSigWalletWithDailyLimit.sol';
 
-contract MultiSigWalletMock is MultiSigWallet {
+contract MultiSigWalletWithDailyLimitMock is MultiSigWalletWithDailyLimit {
     uint256 public transactionId;
 
-    function MultiSigWalletMock(address[] _owners, uint8 _required) public MultiSigWallet(_owners, _required) {
+    function MultiSigWalletWithDailyLimitMock(address[] _owners, uint8 _required, uint256 _dailyLimit) public MultiSigWalletWithDailyLimit(_owners, _required, _dailyLimit) {
     }
 
     function submitTransaction(address _destination, uint256 _value, bytes _data) public returns (uint256 _transactionId) {

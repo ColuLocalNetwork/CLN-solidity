@@ -1,10 +1,11 @@
 const expectRevert = require('./helpers/expectRevert');
+const time = require('./helpers/time');
 const coder = require('web3-eth-abi');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
-const MultiSigWalletMock = artifacts.require('MultiSigWalletMock');
+const MultiSigWalletWithDailyLimitMock = artifacts.require('MultiSigWalletWithDailyLimitMock');
 
-contract('MultiSigWallet', (accounts) => {
+contract('MultiSigWalletWithDailyLimit', (accounts) => {
     const MAX_OWNER_COUNT = 50;
     const DEFAULT_GAS_PRICE = 100000000000;
 
@@ -58,6 +59,14 @@ contract('MultiSigWallet', (accounts) => {
                 type: 'uint8',
                 name: 'required'
             }]
+        },
+        changeDailyLimit: {
+            name: 'changeDailyLimit',
+            type: 'function',
+            inputs: [{
+                type: 'uint256',
+                name: 'dailyLimit'
+            }]
         }
     };
 
@@ -69,44 +78,45 @@ contract('MultiSigWallet', (accounts) => {
                     owners.push(i + 1);
                 }
 
-                await expectRevert(MultiSigWalletMock.new(owners, 2));
+                await expectRevert(MultiSigWalletWithDailyLimitMock.new(owners, 2, 1000));
             });
 
             it('should throw if created without any owners', async () => {
-                await expectRevert(MultiSigWalletMock.new([], 2));
+                await expectRevert(MultiSigWalletWithDailyLimitMock.new([], 2, 1000));
             });
 
             it('should throw if created without any requirements', async () => {
-                await expectRevert(MultiSigWalletMock.new([accounts[0], accounts[1]], 0));
+                await expectRevert(MultiSigWalletWithDailyLimitMock.new([accounts[0], accounts[1]], 0, 1000));
             });
 
             it('should throw if created with a requirement larger than the number of owners', async () => {
-                await expectRevert(MultiSigWalletMock.new([accounts[0], accounts[1], accounts[2]], 10));
+                await expectRevert(MultiSigWalletWithDailyLimitMock.new([accounts[0], accounts[1], accounts[2]], 10, 1000));
             });
 
             it('should throw if created with duplicate owners', async () => {
-                await expectRevert(MultiSigWalletMock.new([accounts[0], accounts[1], accounts[2], accounts[1]], 3));
+                await expectRevert(MultiSigWalletWithDailyLimitMock.new([accounts[0], accounts[1], accounts[2], accounts[1]], 3, 1000));
             });
         });
 
         context('success', async () => {
             let owners = [accounts[0], accounts[1], accounts[2]];
             let requirement = 2;
+            let dailyLimit = 1000;
 
             it('should be initialized with 0 balance', async () => {
-                let wallet = await MultiSigWalletMock.new(owners, requirement);
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
 
                 assert.equal(web3.eth.getBalance(wallet.address), 0);
             });
 
             it('should initialize owners', async () => {
-                let wallet = await MultiSigWalletMock.new(owners, requirement);
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
 
                 assert.deepEqual(owners.sort(), (await wallet.getOwners()).sort());
             });
 
             it('should initialize owners\' mapping', async () => {
-                let wallet = await MultiSigWalletMock.new(owners, requirement);
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
 
                 for (let owner of owners) {
                     assert.equal(await wallet.isOwner(owner), true);
@@ -116,15 +126,33 @@ contract('MultiSigWallet', (accounts) => {
             });
 
             it('should initialize requirement', async () => {
-                let wallet = await MultiSigWalletMock.new(owners, requirement);
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
 
                 assert.equal(requirement, (await wallet.required()).toNumber());
             });
 
             it('should initialize with empty transaction count', async () => {
-                let wallet = await MultiSigWalletMock.new(owners, requirement);
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
 
                 assert.equal((await wallet.transactionCount()).toNumber(), 0);
+            });
+
+            it('should initialize daily limit', async () => {
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
+
+                assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            });
+
+            it('should initialize with max withdraw equal to dailyLimit', async () => {
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
+
+                assert.equal(dailyLimit, (await wallet.calcMaxWithdraw()).toNumber());
+            });
+
+            it('should initialize with spent today equal to 0', async () => {
+                let wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
+
+                assert.equal((await wallet.spentToday()).toNumber(), 0);
             });
         });
     });
@@ -132,11 +160,12 @@ contract('MultiSigWallet', (accounts) => {
     describe('fallback function', async () => {
         let owners = [accounts[0], accounts[1], accounts[2]];
         let requirement = 2;
+        let dailyLimit = 1000;
         let wallet;
         let sender = accounts[3];
 
         beforeEach(async () => {
-            wallet = await MultiSigWalletMock.new(owners, requirement);
+            wallet = await MultiSigWalletWithDailyLimitMock.new(owners, requirement, dailyLimit);
         });
 
         it('should receive ETH', async () => {
@@ -179,15 +208,15 @@ contract('MultiSigWallet', (accounts) => {
 
     describe('transaction submission and confirmation', async () => {
         [
-            { owners: [accounts[1], accounts[2]], requirement: 1 },
-            { owners: [accounts[1], accounts[2]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 3 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 1 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 3 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 4 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]], requirement: 3 }
+            { owners: [accounts[1], accounts[2]], requirement: 1, dailyLimit: 1000},
+            { owners: [accounts[1], accounts[2]], requirement: 2, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 2, dailyLimit: 1000 },
+            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 3, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 1, dailyLimit: 1000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 2, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 3, dailyLimit: 1000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 4, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]], requirement: 3, dailyLimit: 1000 }
         ].forEach((spec) => {
             context(`with ${spec.owners.length} owners and requirement of ${spec.requirement}`, async () => {
                 let wallet;
@@ -200,7 +229,7 @@ contract('MultiSigWallet', (accounts) => {
                 let receiver = accounts[9];
 
                 beforeEach(async () => {
-                    wallet = await MultiSigWalletMock.new(spec.owners, spec.requirement);
+                    wallet = await MultiSigWalletWithDailyLimitMock.new(spec.owners, spec.requirement, spec.dailyLimit);
                     await wallet.sendTransaction({value: initETHBalance});
                     assert.equal(web3.eth.getBalance(wallet.address).toNumber(), initETHBalance);
 
@@ -343,7 +372,7 @@ contract('MultiSigWallet', (accounts) => {
                         for (let i = 1; i < spec.owners.length; i++) {
                             let confirmer = spec.owners[i];
 
-                            let prevWalletBalanace = await getBalance(wallet.address, coin);
+                            let prevWalletBalance = await getBalance(wallet.address, coin);
                             let prevReceiverBalance = await getBalance(receiver, coin);
 
                             // If this is not the final confirmation - don't expect any change.
@@ -358,18 +387,18 @@ contract('MultiSigWallet', (accounts) => {
                                 // Should throw an error if trying to confirm the same transaction twice.
                                 await expectRevert(wallet.confirmTransaction(transactionId, {from: confirmer}));
 
-                                let walletBalanace = await getBalance(wallet.address, coin);
+                                let walletBalance = await getBalance(wallet.address, coin);
                                 let receiverBalance = await getBalance(receiver, coin);
 
                                 if (confirmations == spec.requirement) {
                                     assert.equal(await wallet.isConfirmed(transactionId), true);
 
-                                    assert.equal(walletBalanace.toNumber(), prevWalletBalanace.minus(value).toNumber());
+                                    assert.equal(walletBalance.toNumber(), prevWalletBalance.minus(value).toNumber());
                                     assert.equal(receiverBalance.toNumber(), prevReceiverBalance.plus(value).toNumber());
                                 } else {
                                     assert.equal(await wallet.isConfirmed(transactionId), false);
 
-                                    assert.equal(walletBalanace.toNumber(), prevWalletBalanace.toNumber());
+                                    assert.equal(walletBalance.toNumber(), prevWalletBalance.toNumber());
                                     assert.equal(receiverBalance.toNumber(), prevReceiverBalance.toNumber());
                                 }
                             } else {
@@ -378,10 +407,10 @@ contract('MultiSigWallet', (accounts) => {
                                 // Should throw an error if trying to confirm an already executed transaction.
                                 await expectRevert(wallet.confirmTransaction(transactionId, {from: confirmer}));
 
-                                let walletBalanace = await getBalance(wallet.address, coin);
+                                let walletBalance = await getBalance(wallet.address, coin);
                                 let receiverBalance = await getBalance(receiver, coin);
 
-                                assert.equal(walletBalanace.toNumber(), prevWalletBalanace.toNumber());
+                                assert.equal(walletBalance.toNumber(), prevWalletBalance.toNumber());
                                 assert.equal(receiverBalance.toNumber(), prevReceiverBalance.toNumber());
                             }
                         }
@@ -395,23 +424,23 @@ contract('MultiSigWallet', (accounts) => {
         let wallet;
 
         [
-            { owners: [accounts[1], accounts[2]], requirement: 1 },
-            { owners: [accounts[1], accounts[2]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 3 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 1 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 2 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 3 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 4 },
-            { owners: [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]], requirement: 3 }
+            { owners: [accounts[1], accounts[2]], requirement: 1, dailyLimit: 1000},
+            { owners: [accounts[1], accounts[2]], requirement: 2, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 2, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3]], requirement: 3, dailyLimit: 3000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 1, dailyLimit: 1000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 2, dailyLimit: 2000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 3, dailyLimit: 3000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4]], requirement: 4, dailyLimit: 4000 },
+            { owners: [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]], requirement: 3, dailyLimit: 3000 }
         ].forEach((spec) => {
-            context(`with ${spec.owners.length} owners and requirement of ${spec.requirement}`, async () => {
+            context(`with ${spec.owners.length} owners, requirement of ${spec.requirement} and daily limit of ${spec.dailyLimit}`, async () => {
                 let wallet;
                 let notOwner = accounts[8];
                 let notOwner2 = accounts[9];
 
                 beforeEach(async () => {
-                    wallet = await MultiSigWalletMock.new(spec.owners, spec.requirement);
+                    wallet = await MultiSigWalletWithDailyLimitMock.new(spec.owners, spec.requirement, spec.dailyLimit);
                 });
 
                 describe('addOwner', async () => {
@@ -636,7 +665,171 @@ contract('MultiSigWallet', (accounts) => {
                         });
                     }
                 });
+
+                describe('changeDailyLimit', async () => {
+                    let changeDailyLimit = async (dailyLimit, from) => {
+                        let params = [dailyLimit];
+                        let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.changeDailyLimit, params);
+
+                        let transaction = await wallet.submitTransaction(wallet.address, 0, encoded, {from: from});
+                        let transactionId = await wallet.transactionId();
+
+                        let confirmations = 1;
+
+                        for (let i = 1; i < spec.owners.length; i++) {
+                            let confirmer = spec.owners[i];
+
+                            // If this is not the final confirmation - confirm.
+                            if (confirmations < spec.requirement) {
+                                transaction = await wallet.confirmTransaction(transactionId, {from: confirmer});
+                                confirmations++;
+                            }
+                        }
+
+                        for (let log of transaction.logs) {
+                            if (log.event === 'ExecutionFailure') {
+                                throw new Error('invalid opcode');
+                            }
+                        }
+                    };
+
+                    it('should throw an error, if called directly', async () => {
+                        let dailyLimit = spec.dailyLimit == 1000 ? 2000 : spec.dailyLimit - 1000;
+                        await expectRevert(wallet.changeDailyLimit(dailyLimit, {from: spec.owners[0]}));
+                    });
+
+                    it('should throw an error, if called by not an owner', async () => {
+                        let dailyLimit = spec.dailyLimit == 1000 ? 2000 : spec.dailyLimit - 1000;
+                        await expectRevert(changeDailyLimit(dailyLimit, notOwner));
+                    });
+
+                    if (spec.dailyLimit == 1000) {
+                        it('should increase daily limit by 1000', async () => {
+                            let dailyLimit = (await wallet.dailyLimit()).toNumber();
+                            assert.equal(dailyLimit, spec.dailyLimit);
+
+                            await changeDailyLimit(spec.dailyLimit + 1000, spec.owners[0]);
+
+                            let updatedDailyLimit = (await wallet.dailyLimit()).toNumber();
+                            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+
+                            assert.equal(updatedDailyLimit, spec.dailyLimit + 1000);
+                            assert.equal(maxWithdraw, spec.dailyLimit + 1000);
+                        });
+                    } else {
+                        it('should decrease daily limit by 1000', async () => {
+                            let dailyLimit = (await wallet.dailyLimit()).toNumber();
+                            assert.equal(dailyLimit, spec.dailyLimit);
+
+                            await changeDailyLimit(spec.dailyLimit - 1000, spec.owners[0]);
+
+                            let updatedDailyLimit = (await wallet.dailyLimit()).toNumber();
+                            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+
+                            assert.equal(updatedDailyLimit, spec.dailyLimit - 1000);
+                            assert.equal(maxWithdraw, spec.dailyLimit - 1000);
+                        });
+                    }
+                });
             });
+        });
+    });
+
+    describe('daily limit', async () => {
+        let owner1 = accounts[0];
+        let owner2 = accounts[1];
+        let owner3 = accounts[2];
+
+        let requirement = 2;
+        let dailyLimit = 1000;
+
+        let wallet;
+
+        let initialFunds = 10000;
+
+        let receiver = accounts[3];
+
+        let transferredFunds = 500;
+
+        let ONE_DAY = 24*3600;
+
+        before(async () => {
+            wallet = await MultiSigWalletWithDailyLimitMock.new([owner1, owner2, owner3], requirement, dailyLimit);
+            await wallet.sendTransaction({value: initialFunds});
+        });
+
+        it('should successfully withdraw 1st time without confirmation (under the daily limit)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+
+            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            let spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds, maxWithdraw);
+            assert.equal(transferredFunds, spentToday);
+            assert.equal(initialFunds - transferredFunds, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        it('should successfully withdraw 2nd time without confirmation (under the daily limit)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds*2, maxWithdraw);
+            assert.equal(transferredFunds*2, spentToday);
+            assert.equal(initialFunds - transferredFunds*2, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        it('should successfully withdraw 3rd time only after confirmation (over the daily limit)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+            let transactionId = await wallet.transactionId();
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds*2, maxWithdraw);
+            assert.equal(dailyLimit, spentToday);
+            assert.equal(initialFunds - transferredFunds*2, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*2, web3.eth.getBalance(receiver).toNumber());
+
+            await wallet.confirmTransaction(transactionId, {from: owner2});
+
+            maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(0, maxWithdraw);
+            assert.equal(dailyLimit, spentToday);
+            assert.equal(initialFunds - transferredFunds*3, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*3, web3.eth.getBalance(receiver).toNumber());
+        });
+
+        it('should successfully withdraw without confirmation again (one day has passed)', async () => {
+            let receiverBalance = web3.eth.getBalance(receiver).toNumber();
+
+            await time.increaseTime(ONE_DAY);
+
+            await wallet.submitTransaction(receiver, transferredFunds, '', {from: owner1});
+
+            let maxWithdraw = (await wallet.calcMaxWithdraw()).toNumber();
+            let spentToday = (await wallet.spentToday()).toNumber();
+
+            assert.equal(dailyLimit, (await wallet.dailyLimit()).toNumber());
+            assert.equal(dailyLimit - transferredFunds, maxWithdraw);
+            assert.equal(transferredFunds, spentToday);
+            assert.equal(initialFunds - transferredFunds*4, web3.eth.getBalance(wallet.address).toNumber());
+            assert.equal(receiverBalance + transferredFunds*4, web3.eth.getBalance(receiver).toNumber());
         });
     });
 
@@ -656,7 +849,7 @@ contract('MultiSigWallet', (accounts) => {
         let wallet;
 
         beforeEach(async () => {
-            wallet = await MultiSigWalletMock.new([owner1, owner2, owner3], 3);
+            wallet = await MultiSigWalletWithDailyLimitMock.new([owner1, owner2, owner3], 3, 1000);
             await wallet.sendTransaction({value: initialFunds});
         });
 
@@ -826,6 +1019,27 @@ contract('MultiSigWallet', (accounts) => {
             event = result.logs[1];
             assert.equal(event.event, 'Confirmation');
             assert.equal(event.args.transactionId, 2);
+        });
+
+        it('should emit events when changing daily limit', async () => {
+            let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.changeDailyLimit, [2000]);
+            await wallet.submitTransaction(wallet.address, 0, encoded, {from: owner1});
+            await wallet.confirmTransaction(0, {from: owner2});
+            let result = await wallet.confirmTransaction(0, {from: owner3});
+
+            assert.lengthOf(result.logs, 3);
+
+            let event = result.logs[0];
+            assert.equal(event.event, 'Confirmation');
+            assert.equal(event.args.transactionId, 0);
+
+            event = result.logs[1];
+            assert.equal(event.event, 'DailyLimitChange');
+            assert.equal(event.args.dailyLimit, 2000);
+
+            event = result.logs[2];
+            assert.equal(event.event, 'Execution');
+            assert.equal(event.args.transactionId, 0);
         });
     });
 });
