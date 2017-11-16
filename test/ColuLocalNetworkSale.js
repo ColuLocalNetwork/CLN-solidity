@@ -3,7 +3,7 @@ BigNumber.config({ ERRORS: false });
 const _ = require('lodash');
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
-const PresaleCalculator = require('../scripts/presaleCalculator');
+const PresaleCalculator = require('./helpers/presaleCalculator');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const ColuLocalNetworkSaleMock = artifacts.require('ColuLocalNetworkSaleMock');

@@ -5,9 +5,9 @@ var async = require('async')
 var BigNumber = require('bignumber.js')
 BigNumber.config({ ERRORS: false })
 
-var PresaleCalculator = require(__dirname + '/../../presaleCalculator')
+var PresaleCalculator = require(__dirname + '/../../test/helpers/presaleCalculator')
 
-var inputFile = __dirname + '/presales.csv'
+var inputFile = __dirname + '/config/presales.csv'
 
 var TTT_PER_ETH = 3900
 var presaleCalculator = PresaleCalculator(TTT_PER_ETH)
