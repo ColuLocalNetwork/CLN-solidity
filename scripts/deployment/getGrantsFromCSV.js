@@ -16,6 +16,8 @@ const YEAR = 12 * MONTH
 
 const grants = []
 
+let totalTokens = 0
+
 async.auto({
 	getBlockNumber: web3.eth.getBlockNumber,
 	getBlock: ['getBlockNumber', (results, cb) => {
@@ -40,19 +42,20 @@ async.auto({
 				cb()
 			}, function() {
 				let formattedGrants = grants.map(grant => {
+					totalTokens += parseInt(grant.value, 10)
 					return Object.values(grant).join(',')
 				})
 
 				fs.writeFileSync(__dirname + '/formattedGrants' + now + '.csv', formattedGrants.join('\n'), 'utf8')
+				cb()
 			})
 		})
 		fs.createReadStream(inputFile).pipe(parser)
-		cb()
 	}]
 }, (err, results) => {
 	if (err) {
 		return console.error('err =', err)
 	}
-	console.log('DONE')
+	console.log('DONE! totalTokens =', totalTokens)
 })
 
