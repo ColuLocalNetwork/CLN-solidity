@@ -32,17 +32,17 @@ async.auto({
 			async.eachSeries(data, (line, cb) => {
 				grants.push({
 					to: line[0],
-					value: line[1],
-		            start: argv.start || now,
-		            cliff: argv.cliff || (6*MONTH),
-		            end: argv.end || (now + 3*YEAR),
-		            installmentLength: argv.installmentLength || (1*MONTH),
-		            revokable: argv.revokable || true
+					tokens: line[1],
+					start: argv.start || now,
+					cliff: argv.cliff || (6*MONTH),
+					end: argv.end || (now + 3*YEAR),
+					installmentLength: argv.installmentLength || (1*MONTH),
+					revokable: argv.revokable || true
 				})
 				cb()
 			}, function() {
 				let formattedGrants = grants.map(grant => {
-					totalTokens += parseInt(grant.value, 10)
+					totalTokens += parseInt(grant.tokens, 10)
 					return Object.values(grant).join(',')
 				})
 
