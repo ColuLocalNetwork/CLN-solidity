@@ -46,9 +46,9 @@ contract VestingTrustee is Ownable {
     /// @dev Grant tokens to a specified address.
     /// @param _to address The holder address.
     /// @param _value uint256 The amount of tokens to be granted.
-    /// @param _start uint256 The beginning of the vesting period.
-    /// @param _cliff uint256 Duration of the cliff period (when the first installment is made).
-    /// @param _end uint256 The end of the vesting period.
+    /// @param _start uint256 The beginning of the vesting period (timestamp).
+    /// @param _cliff uint256 When the first installment is made (timestamp).
+    /// @param _end uint256 The end of the vesting period (timestamp).
     /// @param _installmentLength uint256 The length of each vesting installment (in seconds).
     /// @param _revokable bool Whether the grant is revokable or not.
     function grant(address _to, uint256 _value, uint256 _start, uint256 _cliff, uint256 _end,

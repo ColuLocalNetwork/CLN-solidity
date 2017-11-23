@@ -41,7 +41,7 @@ async.auto({
 					to: line[0],
 					tokens: tokensWEI.toString(10,24),
 					start: argv.start || now,
-					cliff: argv.cliff || (6*MONTH),
+					cliff: argv.cliff || (now + 6*MONTH),
 					end: argv.end || (now + 3*YEAR),
 					installmentLength: argv.installmentLength || (1*MONTH),
 					revokable: argv.revokable || true
