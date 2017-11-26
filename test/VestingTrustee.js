@@ -10,8 +10,8 @@ contract('VestingTrustee', (accounts) => {
     const MINUTE = 60;
     const HOUR = 60 * MINUTE;
     const DAY = 24 * 60;
-    const MONTH = 30 * DAY;
-    const YEAR = 12 * MONTH;
+    const YEAR = 365 * DAY;
+    const MONTH = Math.round(YEAR / 12);
 
     let now;
     let granter = accounts[0];
