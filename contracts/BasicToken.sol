@@ -2,10 +2,12 @@ pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './ERC20.sol';
+import './ERC667.sol';
+import './TokenReceiver.sol';
 
 /// @title Basic ERC20 token contract implementation.
 /// @dev Based on OpenZeppelin's StandardToken.
-contract BasicToken is ERC20 {
+contract BasicToken is ERC20, ERC677 {
     using SafeMath for uint256;
 
     uint256 public totalSupply;
@@ -74,5 +76,14 @@ contract BasicToken is ERC20 {
         Transfer(_from, _to, _value);
 
         return true;
+    }
+
+    /// @dev transfer token to a specified address and call token fallback with _data.
+    /// @param _to address The address to transfer to.
+    /// @param _value uint256 The amount to be transferred.
+    /// @param _data bytes The data to be sent to the _receiver.
+    function transferAndCall(address _receiver, uint _amount, bytes _data) public returns (bool) {
+        require(transfer(_receiver, _amount));
+        return TokenReceiver(_receiver).tokenFallback(msg.sender, _amount, _data);
     }
 }
