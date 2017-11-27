@@ -52,7 +52,7 @@ async.auto({
 					return Object.values(grant).join(',')
 				})
 
-				fs.writeFileSync(__dirname + '/formattedGrants' + now + '.csv', formattedGrants.join('\n'), 'utf8')
+				fs.writeFileSync(__dirname + '/output/formattedGrants_' + now + '.csv', formattedGrants.join('\n'), 'utf8')
 				cb()
 			})
 		})

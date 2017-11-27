@@ -26,7 +26,7 @@ const parser = parse({delimiter: ', '}, (err, data) => {
 		let formattedPresales = presaleCalculator.calcPresale(presales).map(presale => {
 			return [presale[0], presale[1].toString(10,24), presale[2]]
 		})
-		fs.writeFileSync(__dirname + '/formattedPresales' + now + '.csv', formattedPresales.join('\n'), 'utf8')
+		fs.writeFileSync(__dirname + '/output/formattedPresales_' + now + '.csv', formattedPresales.join('\n'), 'utf8')
 	})
 })
 fs.createReadStream(inputFile).pipe(parser)

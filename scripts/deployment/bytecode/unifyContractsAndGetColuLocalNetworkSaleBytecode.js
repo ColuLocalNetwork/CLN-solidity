@@ -1,13 +1,13 @@
-var config = require(__dirname + '/config')
+var config = require(__dirname + '/../config')
 var Web3 = require('web3')
 var web3 = new Web3(new Web3.providers.HttpProvider(config.get('web3Provider')))
 var solc = require('solc')
 var abi = require('ethereumjs-abi')
 var async = require('async')
 var fs = require('fs')
-var unifyContracts = require('./unifyContracts')
+var unifyContracts = require(__dirname + '/../unifyContracts')
 
-var args = require(__dirname + '/config/ColuLocalNetworkSale.json')[config.get('web3Provider')]
+var args = require(__dirname + '/../config/ColuLocalNetworkSale.json')[config.get('web3Provider')]
 var owner = args.owner
 var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress

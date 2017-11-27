@@ -17,7 +17,7 @@ var contracts = [
 var now = +new Date()
 var solidityVersion = config.get('solidity').replace('pragma solidity ', '').replace(';', '')
 var compilerVersion = config.get('compilerVersion')
-var filePath = __dirname + '/Unified_' + solidityVersion + '_' + compilerVersion + '_' + now + '.sol'
+var filePath = __dirname + '/output/Unified_' + solidityVersion + '_' + compilerVersion + '_' + now + '.sol'
 
 unifyContracts(err => {
 	if(err) return console.error('err =', err)
