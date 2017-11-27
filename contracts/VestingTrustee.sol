@@ -28,7 +28,7 @@ contract VestingTrustee is Ownable {
     // Holder to grant information mapping.
     mapping (address => Grant) public grants;
 
-    // Total tokens available for vesting.
+    // Total tokens vested.
     uint256 public totalVesting;
 
     event NewGrant(address indexed _from, address indexed _to, uint256 _value);
@@ -82,7 +82,7 @@ contract VestingTrustee is Ownable {
             revokable: _revokable
         });
 
-        // Since tokens have been granted, reduce the total amount available for vesting.
+        // Since tokens have been granted, increase the total amount vested.
         totalVesting = totalVesting.add(_value);
 
         NewGrant(msg.sender, _to, _value);
