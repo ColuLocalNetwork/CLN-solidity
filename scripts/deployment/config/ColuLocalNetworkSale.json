@@ -1,4 +1,12 @@
 {
+	"http://localhost:8545": {
+		"owner": "0x8bf20c41ee6a9fd84e81d6f6df872d9628cd08b2",
+		"fundingRecipient": "0x5BFa3c4B982c53E5a7C507Ff83D6D93e0FE83B84",
+		"communityPoolAddress": "0x1Bb8c3606A4528CA7C3dA385A59F16B32E3B8e12",
+		"futureDevelopmentPoolAddress": "0xb498b0981aF40f022E556dCEEc0Bb767e76f9Bc0",
+		"teamPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
+		"startTime": ""
+	},
 	"https://ethrpc.colu.co": {
 		"owner": "0x1342dd832909c1c0c6bb97968f5994e7981f5e62",
 		"fundingRecipient": "0x4dd1b7956b7acc3655abdca0d4464f72c702243e",
