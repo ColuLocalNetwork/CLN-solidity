@@ -1,2 +1,6 @@
 build/
 node_modules/
+formattedGrants*.csv
+formattedPresales*.csv
+Unified.sol
+scripts/deployment/output
