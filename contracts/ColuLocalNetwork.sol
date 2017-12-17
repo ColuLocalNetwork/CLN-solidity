@@ -2,12 +2,12 @@ pragma solidity 0.4.18;
 
 import './Ownable.sol';
 import './SafeMath.sol';
-import './BasicToken.sol';
+import './Standard223Token.sol';
 import './TokenHolder.sol';
 
 /// @title Colu Local Network contract.
 /// @author Tal Beja.
-contract ColuLocalNetwork is Ownable, BasicToken, TokenHolder {
+contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     using SafeMath for uint256;
 
     string public constant name = "Colu Local Network";
@@ -71,10 +71,35 @@ contract ColuLocalNetwork is Ownable, BasicToken, TokenHolder {
         return super.transferFrom(_from, _to, _value);
     }
 
+    /// @dev Same ERC223 behavior, but reverts if not transferable.
+    /// @param _to address The address to transfer to.
+    /// @param _value uint256 The amount to be transferred.
+    /// @param _data bytes data to send to reciever if it is a contract.
+    function transfer(address _to, uint _value, bytes _data) public transferable returns (bool success) {
+      return super.transfer(_to, _value, _data);
+    }
+
+    /// @dev Same ERC223 behavior, but reverts if not transferable.
+    /// @param _from address The address to send tokens from.
+    /// @param _to address The address to transfer to.
+    /// @param _value uint256 the amount of tokens to be transferred.
+    /// @param _data bytes data to send to reciever if it is a contract.
+    function transferFrom(address _from, address _to, uint _value, bytes _data) public transferable returns (bool success) {
+      return super.transferFrom(_from, _to, _value, _data);
+    }
+
     /// @dev Same ERC20 behavior, but for the contract owner transters only during the token sale.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     function ownerTransfer(address _to, uint256 _value) public onlyOwner notTransferable returns (bool) {
         return super.transfer(_to, _value);
+    }
+
+    /// @dev Same ERC223 behavior, but for the contract owner transters only during the token sale.
+    /// @param _to address The address to transfer to.
+    /// @param _value uint256 The amount to be transferred.
+    /// @param _data bytes data to send to reciever if it is a contract.
+    function ownerTransfer(address _to, uint256 _value, bytes _data) public onlyOwner notTransferable returns (bool) {
+        return super.transfer(_to, _value, bytes _data);
     }
 }
