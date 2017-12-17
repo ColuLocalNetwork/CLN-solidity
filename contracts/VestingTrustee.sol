@@ -46,7 +46,7 @@ contract VestingTrustee is TokenOwnable {
     /// @dev Allow only cln token to be tokenPayable
     /// 
     function supportsToken(address token) public constant returns (bool) {
-        return (cln == token)
+        return (cln == token);
     }
 
     /// @dev Grant tokens to a specified address.
@@ -63,7 +63,7 @@ contract VestingTrustee is TokenOwnable {
         require(_to != address(0));
         require(_to != address(this)); // Protect this contract from receiving a grant.
 
-        uint256 value = tkn.value
+        uint256 value = tkn.value;
 
         require(value > 0);
 
