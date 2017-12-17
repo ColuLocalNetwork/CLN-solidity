@@ -1,14 +1,14 @@
 pragma solidity 0.4.18;
 
 import './SafeMath.sol';
-import './Ownable.sol';
 import './ColuLocalNetwork.sol';
+import './TokenOwnable.sol';
 
 /// @title Vesting trustee contract for Colu Local Network.
 /// @dev This Contract can't be TokenHolder, since it will allow its owner to drain its vested tokens.
 /// @dev This means that any token sent to it different than ColuLocalNetwork is basicly stucked here forever.
 /// @dev ColuLocalNetwork that sent here (by mistake) can withdrawn using the grant method. 
-contract VestingTrustee is Ownable {
+contract VestingTrustee is TokenOwnable {
     using SafeMath for uint256;
 
     // Colu Local Network contract.
@@ -41,6 +41,59 @@ contract VestingTrustee is Ownable {
         require(_cln != address(0));
 
         cln = _cln;
+    }
+
+    /// @dev Allow only cln token to be tokenPayable
+    /// 
+    function supportsToken(address token) public constant returns (bool) {
+        return (cln == token)
+    }
+
+    /// @dev Grant tokens to a specified address.
+    /// @param _to address The holder address.
+    /// @param _start uint256 The beginning of the vesting period (timestamp).
+    /// @param _cliff uint256 When the first installment is made (timestamp).
+    /// @param _end uint256 The end of the vesting period (timestamp).
+    /// @param _installmentLength uint256 The length of each vesting installment (in seconds).
+    /// @param _revokable bool Whether the grant is revokable or not.
+    function grant(address _to, uint256 _start, uint256 _cliff, uint256 _end,
+        uint256 _installmentLength, bool _revokable)
+        external tokenOnlyOwner tokenPayable {
+
+        require(_to != address(0));
+        require(_to != address(this)); // Protect this contract from receiving a grant.
+
+        uint256 value = tkn.value
+
+        require(value > 0);
+
+        // Require that every holder can be granted tokens only once.
+        require(grants[_to].value == 0);
+
+        // Require for time ranges to be consistent and valid.
+        require(_start <= _cliff && _cliff <= _end);
+
+        // Require installment length to be valid and no longer than (end - start).
+        require(_installmentLength > 0 && _installmentLength <= _end.sub(_start));
+
+        // Grant must not exceed the total amount of tokens currently available for vesting.
+        require(totalVesting.add(value) <= cln.balanceOf(address(this)));
+
+        // Assign a new grant.
+        grants[_to] = Grant({
+            value: value,
+            start: _start,
+            cliff: _cliff,
+            end: _end,
+            installmentLength: _installmentLength,
+            transferred: 0,
+            revokable: _revokable
+        });
+
+        // Since tokens have been granted, increase the total amount vested.
+        totalVesting = totalVesting.add(value);
+
+        NewGrant(msg.sender, _to, value);
     }
 
     /// @dev Grant tokens to a specified address.
