@@ -2,7 +2,7 @@ pragma solidity ^0.4.8;
 
  /* Standard ERC223 Token Receiver implementing tokenFallback function and tokenPayable modifier */
 
-import "../ERC223Receiver.sol";
+import "./ERC223Receiver.sol";
 
 contract Standard223Receiver is ERC223Receiver {
   Tkn tkn;
@@ -16,7 +16,7 @@ contract Standard223Receiver is ERC223Receiver {
     bytes4 sig;
   }
 
-  function tokenFallback(address _sender, address _origin, uint _value, bytes _data) returns (bool ok) {
+  function tokenFallback(address _sender, address _origin, uint _value, bytes _data) external returns (bool ok) {
     if (!supportsToken(msg.sender)) return false;
 
     // Problem: This will do a sstore which is expensive gas wise. Find a way to keep it in memory.
@@ -41,7 +41,7 @@ contract Standard223Receiver is ERC223Receiver {
   bool __isTokenFallback;
 
   modifier tokenPayable {
-    if (!__isTokenFallback) throw;
+    require(__isTokenFallback);
     _;
   }
 

@@ -100,6 +100,6 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     /// @param _value uint256 The amount to be transferred.
     /// @param _data bytes data to send to reciever if it is a contract.
     function ownerTransfer(address _to, uint256 _value, bytes _data) public onlyOwner notTransferable returns (bool) {
-        return super.transfer(_to, _value, bytes _data);
+        return super.transfer(_to, _value, _data);
     }
 }
