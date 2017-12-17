@@ -8,6 +8,6 @@ contract ERC20 {
     function transferFrom(address _from, address _to, uint _value) public returns (bool success);
     function approve(address _spender, uint _value) public returns (bool success);
     function allowance(address _owner, address _spender) public constant returns (uint remaining);
-    event Transfer(address indexed _from, address indexed _to, uint _value);
-    event Approval(address indexed _owner, address indexed _spender, uint _value);
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
 }
