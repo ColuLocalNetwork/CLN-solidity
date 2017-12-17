@@ -10,8 +10,8 @@ import "./ERC20.sol";
 
 /// @title ERC Token Standard #677 Interface (https://github.com/ethereum/EIPs/issues/677)
 contract ERC223 is ERC20 {
-    function transfer(address to, uint value, bytes data) returns (bool ok);
-    function transferFrom(address from, address to, uint value, bytes data) returns (bool ok);
+    function transfer(address to, uint value, bytes data) public returns (bool ok);
+    function transferFrom(address from, address to, uint value, bytes data) public returns (bool ok);
 
     event Transfer(address indexed from, address indexed to, uint value, bytes data);
 }

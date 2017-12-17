@@ -2,7 +2,6 @@ pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './ERC20.sol';
-import './TokenReceiver.sol';
 
 /// @title Basic ERC20 token contract implementation.
 /// @dev Based on OpenZeppelin's StandardToken.
