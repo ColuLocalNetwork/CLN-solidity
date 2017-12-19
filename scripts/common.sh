@@ -67,24 +67,24 @@ acc=( \
     0x004ed16974d091cd5149a2300c53480f916fc62c05c493dec9b300f5d351b27b \
     )
 
-# Prepare a testrpc accounts parameter string like --account="0x11c..,1000" --account="0xc5d...,1000" ....
+# Prepare a ganache-cli accounts parameter string like --account="0x11c..,1000" --account="0xc5d...,1000" ....
 for a in ${acc[@]}; do
   accounts=$accounts$(printf ' --account="%s,%s"' "$a" "$balance")
 done
 
 # Helper funcs.
 
-# Test if testrpc is running on port $1. 
+# Test if ganache-cli is running on port $1. 
 # Result is in $?
-testrpc_running() {
+ganache-cli_running() {
   nc -z localhost $1
 }
 
-# Kills testrpc process with its PID in $testrpc_pid.
+# Kills ganache-cli process with its PID in $ganache-cli_pid.
 cleanup() {
   echo "cleaning up"
-  # Kill the testrpc instance that we started (if we started one).
-  if [ -n "$testrpc_pid" ]; then
-    kill -9 $testrpc_pid
+  # Kill the ganache-cli instance that we started (if we started one).
+  if [ -n "$ganache-cli_pid" ]; then
+    kill -9 $ganache-cli_pid
   fi
 }
