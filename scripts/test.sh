@@ -9,11 +9,11 @@ port=8545
 trap cleanup EXIT
 
 if testrpc_running $port; then
-  echo "Using existing testrpc instance"
+  echo "Using existing ganache-cli instance"
 else
-  echo "Starting our own testrpc instance" 
-  eval testrpc "$accounts" -u 0 -u 1 > /dev/null &
-  testrpc_pid=$!
+  echo "Starting our own ganache-cli instance" 
+  eval ganache-cli "$accounts" -u 0 -u 1 > /dev/null &
+  ganache-cli_pid=$!
 fi
 
 # Now run truffle test.

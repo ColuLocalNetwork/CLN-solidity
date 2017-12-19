@@ -159,7 +159,7 @@ contract('MultiSigWallet', (accounts) => {
             let token = await ColuLocalNetwork.new(tokenBalance);
 
             let value = 200;
-            await token.ownerTransfer(sender, value);
+            await token.transfer(sender, value);
             await token.makeTokensTransferable();
 
             let senderBalance = await token.balanceOf(sender);
@@ -206,7 +206,7 @@ contract('MultiSigWallet', (accounts) => {
 
                     token = await ColuLocalNetwork.new(tokenBalance);
 
-                    await token.ownerTransfer(wallet.address, initTokenBalance);
+                    await token.transfer(wallet.address, initTokenBalance);
                     await token.makeTokensTransferable();
                     assert.equal((await token.balanceOf(wallet.address)).toNumber(), initTokenBalance);
                 });

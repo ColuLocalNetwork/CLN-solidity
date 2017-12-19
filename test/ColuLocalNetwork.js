@@ -47,40 +47,40 @@ contract('ColuLocalNetwork', (accounts) => {
         });
     });
 
-    describe('ownerTransfer', async () => {
+    describe('transfer', async () => {
 
 
-        it('should update balances correctly after ownerTransfer', async () => {
+        it('should update balances correctly after transfer', async () => {
             assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
 
-            await token.ownerTransfer(to1, transferredFunds)
+            await token.transfer(to1, transferredFunds)
             ownerAmount-=transferredFunds;
 
             // Checking owner balance reduced after every owner transfer
             assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
             assert.equal((await token.balanceOf(to1)).toNumber(), transferredFunds);
 
-            await token.ownerTransfer(to2, transferredFunds)
+            await token.transfer(to2, transferredFunds)
             ownerAmount-=transferredFunds;
             assert.equal((await token.balanceOf(to2)).toNumber(), transferredFunds);
 
-            await token.ownerTransfer(to3, transferredFunds)
+            await token.transfer(to3, transferredFunds)
             ownerAmount-=transferredFunds;
             assert.equal((await token.balanceOf(to3)).toNumber(), transferredFunds);
 
             assert.equal((await token.balanceOf(owner)).toNumber(), ownerAmount);
         });
 
-        it('should not change totalSupply after ownerTransfer', async () => {
+        it('should not change totalSupply after transfer', async () => {
             assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-            await token.ownerTransfer(to1, transferredFunds);
+            await token.transfer(to1, transferredFunds);
             assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-            await token.ownerTransfer(to1, transferredFunds);
+            await token.transfer(to1, transferredFunds);
             assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
 
-            await token.ownerTransfer(to2, transferredFunds);
+            await token.transfer(to2, transferredFunds);
             assert.equal((await token.totalSupply()).toNumber(), MAX_TOKENS);
         });
 
@@ -95,13 +95,9 @@ contract('ColuLocalNetwork', (accounts) => {
             await token.makeTokensTransferable();
         });
 
-        it('should not allow to ownerTransfer after start transferable mode', async () => {
-            await token.makeTokensTransferable();
-            await expectRevert(token.ownerTransfer(to1, transferredFunds));
-        });
 
         it('should not allow approve() before start transferable mode', async () => {
-            await expectRevert(token.approve(spender, allowedAmount));
+            await expectRevert(token.approve(spender, allowedAmount, {from: spender}));
         });
 
         it('should allow approve() after start transferable mode', async () => {
@@ -110,13 +106,7 @@ contract('ColuLocalNetwork', (accounts) => {
         });
 
         it('should not allow transfer() before start transferable mode', async () => {
-            await expectRevert(token.transfer(spender, allowedAmount));
-        });
-
-        it('should allow transfer() after start transferable mode', async () => {
-            await token.ownerTransfer(owner, transferredFunds);
-            await token.makeTokensTransferable();
-            await token.transfer(to1, transferredFunds);
+            await expectRevert(token.transfer(spender, allowedAmount, {from: spender}));
         });
 
         it('should not allow transferFrom() before start transferable mode', async () => {
@@ -124,7 +114,7 @@ contract('ColuLocalNetwork', (accounts) => {
         });
 
         it('should allow transferFrom() after start transferable mode', async () => {
-            await token.ownerTransfer(owner, transferredFunds);
+            await token.transfer(owner, transferredFunds);
             await token.makeTokensTransferable();
             await token.approve(spender, allowedAmount)
             await token.transferFrom(owner, to1, allowedAmount, {from: spender})
@@ -132,10 +122,10 @@ contract('ColuLocalNetwork', (accounts) => {
     });
 
     describe('events', async () => {
-        it('should log normal transfer event on ownerTransfer', async () => {
-            let result = await token.ownerTransfer(to1, transferredFunds);
+        it('should log normal transfer event on transfer', async () => {
+            let result = await token.transfer(to1, transferredFunds);
 
-            assert.lengthOf(result.logs, 1);
+            assert.lengthOf(result.logs, 2);
             let event = result.logs[0];
             assert.equal(event.event, 'Transfer');
             assert.equal(event.args.from, owner);
