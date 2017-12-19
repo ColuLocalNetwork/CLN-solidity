@@ -23,12 +23,7 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     event TokensTransferable();
 
     modifier transferable() {
-        require(isTransferable);
-        _;
-    }
-
-    modifier notTransferable() {
-        require(!isTransferable);
+        require(msg.sender == owner || isTransferable);
         _;
     }
 
@@ -86,20 +81,5 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     /// @param _data bytes data to send to reciever if it is a contract.
     function transferFrom(address _from, address _to, uint _value, bytes _data) public transferable returns (bool success) {
       return super.transferFrom(_from, _to, _value, _data);
-    }
-
-    /// @dev Same ERC20 behavior, but for the contract owner transters only during the token sale.
-    /// @param _to address The address to transfer to.
-    /// @param _value uint256 The amount to be transferred.
-    function ownerTransfer(address _to, uint256 _value) public onlyOwner notTransferable returns (bool) {
-        return super.transfer(_to, _value);
-    }
-
-    /// @dev Same ERC223 behavior, but for the contract owner transters only during the token sale.
-    /// @param _to address The address to transfer to.
-    /// @param _value uint256 The amount to be transferred.
-    /// @param _data bytes data to send to reciever if it is a contract.
-    function ownerTransfer(address _to, uint256 _value, bytes _data) public onlyOwner notTransferable returns (bool) {
-        return super.transfer(_to, _value, _data);
     }
 }

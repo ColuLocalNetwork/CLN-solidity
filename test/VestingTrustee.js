@@ -5,6 +5,11 @@ const time = require('./helpers/time');
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const VestingTrustee = artifacts.require('VestingTrustee');
 
+const grantSigs = {
+    oneStep: 'address,uint256,uint256,uint256,uint256,bool',
+    twoStep: 'address,uint256,uint256,uint256,uint256,uint256,bool'
+}
+
 contract('VestingTrustee', (accounts) => {
     const initialTokens = new BigNumber(2 * 10 ** 12);
     const MINUTE = 60;
@@ -23,6 +28,7 @@ contract('VestingTrustee', (accounts) => {
 
         token = await ColuLocalNetwork.new(initialTokens);
         trustee = await VestingTrustee.new(token.address, {from: granter});
+        // console.log('trustee.grant[grantSigs.twoStep]', trustee.grant[grantSigs.twoStep])
     });
 
     const getGrant = async (address) => {
@@ -51,7 +57,7 @@ contract('VestingTrustee', (accounts) => {
         let balance = 1000;
         context(`with ${balance} tokens assigned to the trustee`, async () => {
             beforeEach(async () => {
-                await token.ownerTransfer(trustee.address, balance);
+                await token.transfer(trustee.address, balance);
             });
 
             it(`should equal to ${balance}`, async () => {
@@ -62,7 +68,7 @@ contract('VestingTrustee', (accounts) => {
             it('should be able to update', async () => {
                 let value = 10;
 
-                await token.ownerTransfer(trustee.address, value);
+                await token.transfer(trustee.address, value);
                 let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
                 assert.equal(trusteeBalance, balance + value);
             });
@@ -74,7 +80,7 @@ contract('VestingTrustee', (accounts) => {
 
         context(`with ${balance} tokens assigned to the trustee`, async () => {
             beforeEach(async () => {
-                await token.ownerTransfer(trustee.address, balance);
+                await token.transfer(trustee.address, balance);
             });
 
             it('should initially have no grants', async () => {
@@ -82,54 +88,54 @@ contract('VestingTrustee', (accounts) => {
             });
 
             it('should not allow granting to 0', async () => {
-                await expectRevert(trustee.grant(0, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](0, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting to self', async () => {
-                await expectRevert(trustee.grant(trustee.address, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](trustee.address, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting 0 tokens', async () => {
-                await expectRevert(trustee.grant(accounts[0], 0, now, now, now + 3 * YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now, now + 3 * YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting with a cliff before the start', async () => {
-                await expectRevert(trustee.grant(accounts[0], 0, now, now - 1, now + 10 * YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now - 1, now + 10 * YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting with a cliff after the vesting', async () => {
-                await expectRevert(trustee.grant(accounts[0], 0, now, now + YEAR, now + MONTH, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 1 * DAY, false));
             });
 
             it('should not allow granting with 0 installment', async () => {
-                await expectRevert(trustee.grant(accounts[0], 0, now, now + YEAR, now + MONTH, 0, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 0, false));
             });
 
             it('should not allow granting with installment longer than the vesting period', async () => {
-                await expectRevert(trustee.grant(accounts[0], 0, now, now + YEAR, now + MONTH, 2 * YEAR, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 2 * YEAR, false));
             });
 
             it('should not allow granting tokens more than once', async () => {
-                await trustee.grant(accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false);
+                await trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false);
 
-                await expectRevert(trustee.grant(accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting from not an owner', async () => {
-                await expectRevert(trustee.grant(accounts[0], 1000, now, now + MONTH, now + YEAR, 1 * DAY, false,
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now + MONTH, now + YEAR, 1 * DAY, false,
                     {from: accounts[1]}));
             });
 
             it('should not allow granting more than the balance in a single grant', async () => {
-                await expectRevert(trustee.grant(accounts[0], balance + 1, now, now + MONTH, now + YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], balance + 1, now, now + MONTH, now + YEAR, 1 * DAY, false));
             });
 
             it('should not allow granting more than the balance in multiple grants', async () => {
-                await trustee.grant(accounts[0], balance - 10, now, now + MONTH, now + YEAR, 1 * DAY, false);
-                await trustee.grant(accounts[1], 7, now, now + MONTH, now + YEAR, 1 * DAY, false);
-                await trustee.grant(accounts[2], 3, now, now + 5 * MONTH, now + YEAR, 1 * DAY, false);
+                await trustee.grant[grantSigs.twoStep](accounts[0], balance - 10, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                await trustee.grant[grantSigs.twoStep](accounts[1], 7, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                await trustee.grant[grantSigs.twoStep](accounts[2], 3, now, now + 5 * MONTH, now + YEAR, 1 * DAY, false);
 
-                await expectRevert(trustee.grant(accounts[3], 1, now, now, now + YEAR, 1 * DAY, false));
+                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[3], 1, now, now, now + YEAR, 1 * DAY, false));
             });
 
             it('should record a grant and increase grants count and total vesting', async () => {
@@ -141,7 +147,7 @@ contract('VestingTrustee', (accounts) => {
                 let cliff = now + MONTH;
                 let end = now + YEAR;
                 let installmentLength = 1 * DAY;
-                await trustee.grant(accounts[0], value, start, cliff, end, installmentLength, false);
+                await trustee.grant[grantSigs.twoStep](accounts[0], value, start, cliff, end, installmentLength, false);
 
                 assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value).toNumber());
                 let grant = await getGrant(accounts[0]);
@@ -157,7 +163,7 @@ contract('VestingTrustee', (accounts) => {
                 let cliff2 = now + 6 * MONTH;
                 let end2 = now + YEAR;
                 let installmentLength2 = 3 * MONTH;
-                await trustee.grant(accounts[1], value2, start2, cliff2, end2, installmentLength2, false);
+                await trustee.grant[grantSigs.twoStep](accounts[1], value2, start2, cliff2, end2, installmentLength2, false);
 
                 assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value + value2).toNumber());
                 let grant2 = await getGrant(accounts[1]);
@@ -178,10 +184,10 @@ contract('VestingTrustee', (accounts) => {
 
         context(`with ${balance} tokens assigned to the trustee`, async () => {
             beforeEach(async () => {
-                await token.ownerTransfer(trustee.address, balance);
+                await token.transfer(trustee.address, balance);
             });
 
-            context('after ownerTransfering has ended', async () => {
+            context('after transfering has ended', async () => {
                 beforeEach(async () => {
                     await token.makeTokensTransferable();
                 });
@@ -191,7 +197,7 @@ contract('VestingTrustee', (accounts) => {
                 });
 
                 it('should not be able to revoke a non-revokable grant', async () => {
-                    await trustee.grant(grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                    await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, false);
 
                     await expectRevert(trustee.revoke(grantee));
                 });
@@ -199,7 +205,7 @@ contract('VestingTrustee', (accounts) => {
                 it('should only allow revoking a grant by an owner', async () => {
                     let grantee = accounts[1];
 
-                    await trustee.grant(grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
+                    await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
                     await expectRevert(trustee.revoke(grantee, {from: accounts[9]}));
 
                     await trustee.revoke(grantee, {from: granter});
@@ -318,9 +324,9 @@ contract('VestingTrustee', (accounts) => {
                     for (let i = 0; i < grant.results.length; ++i) {
                         it(`should revoke the grant and refund tokens after ${i + 1} transactions`, async () => {
                             trustee = await VestingTrustee.new(token.address, {from: granter});
-                            await token.ownerTransfer(trustee.address, grant.tokens);
+                            await token.transfer(trustee.address, grant.tokens);
                             await token.makeTokensTransferable();
-                            await trustee.grant(holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
+                            await trustee.grant[grantSigs.twoStep](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
                                 now + grant.endOffset, grant.installmentLength, true);
 
                             // Get previous state.
@@ -385,7 +391,7 @@ contract('VestingTrustee', (accounts) => {
         let balance = new BigNumber(10 ** 12);
 
         beforeEach(async () => {
-            await token.ownerTransfer(trustee.address, balance);
+            await token.transfer(trustee.address, balance);
         });
 
         it('should return 0 for non existing grant', async () => {
@@ -522,7 +528,7 @@ contract('VestingTrustee', (accounts) => {
                 `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
 
                 beforeEach(async () => {
-                    await trustee.grant(accounts[2], grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
+                    await trustee.grant[grantSigs.twoStep](accounts[2], grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
                         now + grant.endOffset, grant.installmentLength, false);
                 });
 
@@ -543,10 +549,10 @@ contract('VestingTrustee', (accounts) => {
         let balance = new BigNumber(10 ** 12);
 
         beforeEach(async () => {
-            await token.ownerTransfer(trustee.address, balance);
+            await token.transfer(trustee.address, balance);
         });
 
-        context('after ownerTransfering has ended', async () => {
+        context('after transfering has ended', async () => {
             beforeEach(async () => {
                 await token.makeTokensTransferable();
             });
@@ -563,7 +569,7 @@ contract('VestingTrustee', (accounts) => {
             it('should not allow unlocking a rovoked grant', async () => {
                 let grantee = accounts[1];
 
-                await trustee.grant(grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
+                await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
                 await trustee.revoke(grantee, {from: granter});
 
                 await expectRevert(trustee.unlockVestedTokens({from: granter}));
@@ -677,7 +683,7 @@ contract('VestingTrustee', (accounts) => {
                     let holder = accounts[1];
 
                     beforeEach(async () => {
-                        await trustee.grant(holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
+                        await trustee.grant[grantSigs.twoStep](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
                             grant.endOffset, grant.installmentLength, false);
                     });
 
@@ -729,8 +735,8 @@ contract('VestingTrustee', (accounts) => {
             let totalGranted = new BigNumber(0);
 
             for (let grant of grants) {
-                await token.ownerTransfer(trustee.address, grant.tokens);
-                await trustee.grant(grant.holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
+                await token.transfer(trustee.address, grant.tokens);
+                await trustee.grant[grantSigs.twoStep](grant.holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
                     grant.endOffset, grant.installmentLength, true);
 
                 totalGranted = totalGranted.add(grant.tokens);
@@ -765,7 +771,7 @@ contract('VestingTrustee', (accounts) => {
         let installmentLength;
 
         beforeEach(async () => {
-            await token.ownerTransfer(trustee.address, balance);
+            await token.transfer(trustee.address, balance);
             await token.makeTokensTransferable();
 
             value = 1000;
@@ -776,7 +782,7 @@ contract('VestingTrustee', (accounts) => {
         });
 
         it('should emit events when granting vesting', async () => {
-            let result = await trustee.grant(grantee, value, start, cliff, end, installmentLength, false);
+            let result = await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, false);
 
             assert.lengthOf(result.logs, 1);
 
@@ -788,7 +794,7 @@ contract('VestingTrustee', (accounts) => {
         });
 
         it('should emit events when revoking a grant', async () => {
-            await trustee.grant(grantee, value, start, cliff, end, installmentLength, true);
+            await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, true);
             let result = await trustee.revoke(grantee);
 
             assert.lengthOf(result.logs, 1);
@@ -800,7 +806,7 @@ contract('VestingTrustee', (accounts) => {
         });
 
         it('should emit events when unlocking tokens', async () => {
-            await trustee.grant(grantee, value, start, cliff, end, installmentLength, true);
+            await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, true);
             await time.increaseTime(cliff);
             let result = await trustee.unlockVestedTokens({from: grantee});
 
