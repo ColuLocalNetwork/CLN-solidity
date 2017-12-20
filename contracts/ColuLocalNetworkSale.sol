@@ -219,8 +219,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         tokensSold = tokensSold.add(tokensToTransfer);
 
         // Transfer tokens to trustee and create grant.
-        transferTokens(trustee, tokensToTransfer);
-        trustee.grant(_recipient, tokensToTransfer, startTime.add(plan.startOffset), startTime.add(plan.cliffOffset),
+        grant(_recipient, tokensToTransfer, startTime.add(plan.startOffset), startTime.add(plan.cliffOffset),
             startTime.add(plan.endOffset), plan.installmentLength, false);
     }
 
@@ -292,20 +291,53 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         uint256 futureDevelopmentPool = FUTURE_DEVELOPMENT_POOL.add(tokensLeftInSale);
         // Future Development Pool is locked for 3 years.
-        transferTokens(trustee, futureDevelopmentPool);
-        trustee.grant(futureDevelopmentPoolAddress, futureDevelopmentPool, startTime, startTime.add(3 years),
+        grant(futureDevelopmentPoolAddress, futureDevelopmentPool, startTime, startTime.add(3 years),
             startTime.add(3 years), 1 days, false);
 
         // Make tokens Transferable, end the sale!.
         cln.makeTokensTransferable();
     }
 
+    function grant(address _grantee, uint256 _amount, uint256 _start, uint256 _cliff, uint256 _end,
+        uint256 _installmentLength, bool _revokable) private {
+        // bytes4 grantSig = bytes4(keccak256("grant(address,uint256,uint256,uint256,uint256,bool)"));
+        bytes4 grantSig = 0x5ee7e96d;
+        // 6 arguments of size 32
+        uint256 argsSize = 6 * 32;
+        // sig + arguments size
+        uint256 dataSize = 4 + argsSize;
+
+        bytes memory m_data = new bytes(dataSize);
+
+        assembly {
+            // Add the signature first to memory
+            mstore(add(m_data, 0x20), grantSig)
+            // Add the parameters
+            mstore(add(m_data, 0x24), _grantee)
+            mstore(add(m_data, 0x44), _start)
+            mstore(add(m_data, 0x64), _cliff)
+            mstore(add(m_data, 0x84), _end)
+            mstore(add(m_data, 0xa4), _installmentLength)
+            mstore(add(m_data, 0xc4), _revokable)
+        }
+
+        require(transferTokens(trustee, _amount, m_data));
+    }
+
     /// @dev Transfer tokens from the sale contract to a recipient.
     /// @param _recipient address The address of the recipient.
     /// @param _tokens uint256 The amount of tokens to transfer.
-    function transferTokens(address _recipient, uint256 _tokens) private {
+    function transferTokens(address _recipient, uint256 _tokens) private returns (bool) {
+        return (transferTokens(_recipient, _tokens, new bytes(0)));
+    }
+
+    /// @dev Transfer tokens from the sale contract to a recipient.
+    /// @param _recipient address The address of the recipient.
+    /// @param _tokens uint256 The amount of tokens to transfer.
+    /// @param _data bytes data to send to reciever if it is a contract.
+    function transferTokens(address _recipient, uint256 _tokens, bytes _data) private returns (bool ans) {
         // Request Colu Local Network contract to transfer the requested tokens for the buyer.
-        cln.transfer(_recipient, _tokens);
+        ans = cln.transfer(_recipient, _tokens, _data);
 
         TokensIssued(_recipient, _tokens);
     }
