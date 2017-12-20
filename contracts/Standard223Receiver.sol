@@ -22,8 +22,10 @@ contract Standard223Receiver is ERC223Receiver {
     // Problem: This will do a sstore which is expensive gas wise. Find a way to keep it in memory.
     tkn = Tkn(msg.sender, _sender, _origin, _value, _data, getSig(_data));
     __isTokenFallback = true;
-    if (!address(this).delegatecall(_data)) return false;
-
+    if (!address(this).delegatecall(_data)) {
+      __isTokenFallback = false;
+      return false;
+    }
     // avoid doing an overwrite to .token, which would be more expensive
     // makes accessing .tkn values outside tokenPayable functions unsafe
     __isTokenFallback = false;
