@@ -7,11 +7,16 @@ var contracts = [
 	'Ownable.sol',
 	'SafeMath.sol',
 	'ERC20.sol',
+	'ERC223.sol',
+	'ERC223Receiver.sol',
 	'BasicToken.sol',
+	'Standard223Token.sol',
 	'TokenHolder.sol',
 	'ColuLocalNetwork.sol',
+	'Standard223Receiver.sol',
+	'TokenOwnable.sol',
 	'VestingTrustee.sol',
-	'ColuLocalNetworkSale.sol',
+	'ColuLocalNetworkSale.sol'
 ]
 
 var now = +new Date()

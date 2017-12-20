@@ -1,8 +1,8 @@
-pragma solidity ^0.4.8;
+pragma solidity 0.4.18;
 
  /* Standard ERC223 Token Receiver implementing tokenFallback function and tokenPayable modifier */
 
-import "./ERC223Receiver.sol";
+import './ERC223Receiver.sol';
 
 contract Standard223Receiver is ERC223Receiver {
   Tkn tkn;
