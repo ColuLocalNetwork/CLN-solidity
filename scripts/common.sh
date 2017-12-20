@@ -1,6 +1,5 @@
-
 # A helper script that contains predefined accounts, their balance and helper funcs.
-# Usage in scripts: 
+# Usage in scripts:
 #. scripts/common.sh
 
 
@@ -74,17 +73,18 @@ done
 
 # Helper funcs.
 
-# Test if ganache-cli is running on port $1. 
+# Test if ganache-cli is running on port $1.
 # Result is in $?
-ganache-cli_running() {
+ganache_cli_running() {
+  echo "ganache_cli_running?"
   nc -z localhost $1
 }
 
-# Kills ganache-cli process with its PID in $ganache-cli_pid.
+# Kills ganache-cli process with its PID in $ganache_cli_pid.
 cleanup() {
   echo "cleaning up"
   # Kill the ganache-cli instance that we started (if we started one).
-  if [ -n "$ganache-cli_pid" ]; then
-    kill -9 $ganache-cli_pid
+  if [ -n "$ganache_cli_pid" ]; then
+    kill -9 $ganache_cli_pid
   fi
 }

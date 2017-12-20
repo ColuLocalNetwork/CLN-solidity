@@ -8,12 +8,12 @@ port=8545
 # Executes cleanup function at script exit.
 trap cleanup EXIT
 
-if testrpc_running $port; then
+if ganache_cli_running $port; then
   echo "Using existing ganache-cli instance"
 else
-  echo "Starting our own ganache-cli instance" 
+  echo "Starting our own ganache-cli instance"
   eval ganache-cli "$accounts" -u 0 -u 1 > /dev/null &
-  ganache-cli_pid=$!
+  ganache_cli_pid=$!
 fi
 
 # Now run truffle test.
