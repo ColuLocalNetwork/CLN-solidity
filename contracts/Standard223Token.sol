@@ -2,9 +2,9 @@ pragma solidity 0.4.18;
 
  /* ERC223 additions to ERC20 */
 
-import "./ERC223.sol";
-import "./ERC223Receiver.sol";
-import "./BasicToken.sol";
+import './ERC223.sol';
+import './ERC223Receiver.sol';
+import './BasicToken.sol';
 
 contract Standard223Token is ERC223, BasicToken {
   //function that is called when a user or another contract wants to transfer funds

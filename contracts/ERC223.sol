@@ -1,6 +1,6 @@
 pragma solidity 0.4.18;
 
-import "./ERC20.sol";
+import './ERC20.sol';
 
  /*
   ERC223 additions to ERC20
