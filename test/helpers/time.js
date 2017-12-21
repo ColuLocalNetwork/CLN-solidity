@@ -1,6 +1,6 @@
-// Special non-standard methods implemented by testrpc that
+// Special non-standard methods implemented by ganache-cli that
 // aren’t included within the original RPC specification.
-// See https://github.com/ethereumjs/testrpc#implemented-methods
+// See https://github.com/trufflesuite/ganache-cli#implemented-methods
 
 const increaseTime = (time) => {
     return new Promise((resolve, reject) => {

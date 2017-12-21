@@ -14,13 +14,13 @@ Please see the [contracts/](contracts) directory.
 
 ## Develop
 
-Contracts are written in [Solidity][solidity] and tested using [Truffle][truffle] and [testrpc][testrpc].
+Contracts are written in [Solidity][solidity] and tested using [Truffle][truffle] and [ganache-cli][ganache-cli].
 
 ### Depenencies
 
 ```bash
-# Install Truffle and testrpc packages globally:
-$ npm install -g truffle ethereumjs-testrpc
+# Install Truffle and ganache-cli packages globally:
+$ npm install -g truffle ganache-cli
 
 # Install local node dependencies:
 $ npm install
@@ -29,7 +29,7 @@ $ npm install
 ### Test
 
 ```bash
-# This will initialize a testrpc instance, compile and test the contracts using truffle
+# This will initialize a ganache-cli instance, compile and test the contracts using truffle
 $ npm test
 
 # Enable long tests
@@ -42,6 +42,6 @@ $ LONG_TESTS=1 truffle test
 
 [solidity]: https://solidity.readthedocs.io/en/develop/
 [truffle]: http://truffleframework.com/
-[testrpc]: https://github.com/ethereumjs/testrpc
+[ganache-cli]: https://github.com/trufflesuite/ganache-cli
 
 [docker compose]: https://docs.docker.com/compose/
