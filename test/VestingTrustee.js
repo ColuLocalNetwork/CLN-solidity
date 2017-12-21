@@ -14,7 +14,7 @@ contract('VestingTrustee', (accounts) => {
     const initialTokens = new BigNumber(2 * 10 ** 12);
     const MINUTE = 60;
     const HOUR = 60 * MINUTE;
-    const DAY = 24 * 60;
+    const DAY = 24 * HOUR;
     const YEAR = 365 * DAY;
     const MONTH = Math.round(YEAR / 12);
 
@@ -421,15 +421,14 @@ contract('VestingTrustee', (accounts) => {
                     { offset: 0, vested: 0 },
                     { offset: DAY, vested: 0 },
                     { offset: MONTH - 1, vested: 0 },
-                    { offset: MONTH, vested: Math.floor(1000 / 12) },
-                    { offset: MONTH + 1, vested: Math.floor(1000 / 12) },
-                    { offset: MONTH + 1000, vested: Math.floor(1000 / 12) },
-                    { offset: MONTH + DAY, vested: Math.floor(1000 / 12 + 1000 / 12 / 30) },
-                    { offset: 2 * MONTH, vested: 2 * Math.floor(1000 / 12) },
-                    { offset: 2 * MONTH + 1, vested: Math.floor(2 * (1000 / 12)) },
-                    { offset: 2 * MONTH + 0.5 * DAY, vested: Math.floor(2 * (1000 / 12)) },
-                    { offset: 2 * MONTH + 5 * DAY, vested: Math.floor(2 * (1000 / 12) + 5 * (1000 / 12 / 30)) },
-                    { offset: 0.5 * YEAR, vested: 1000 / 2 },
+                    { offset: MONTH, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: MONTH + 1, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: MONTH + 1000, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: MONTH + DAY, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) + Math.floor(1000 / YEAR * DAY)},
+                    { offset: 2 * MONTH, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH + 1, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH + 5 * DAY, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) + 5 * Math.floor(1000 / YEAR * DAY)},
+                    { offset: 0.5 * YEAR, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(0.5 * YEAR / DAY))},
                     { offset: YEAR, vested: 1000 },
                     { offset: YEAR + DAY, vested: 1000 }
                 ]
@@ -476,7 +475,8 @@ contract('VestingTrustee', (accounts) => {
                     { offset: 3 * YEAR, vested: 10000 * 0.75 },
                     { offset: 3 * YEAR + MONTH, vested: Math.floor(10000 * 0.75 + 10000 / 4 / 12) },
                     { offset: 3 * YEAR + 2 * MONTH, vested: Math.floor(10000 * 0.75 + 2 * (10000 / 4 / 12)) },
-                    { offset: 3 * YEAR + 3 * MONTH, vested: Math.floor(10000 * 0.75 + 3 * (10000 / 4 / 12)) },                    { offset: 4 * YEAR, vested: 10000 },
+                    { offset: 3 * YEAR + 3 * MONTH, vested: Math.floor(10000 * 0.75 + 3 * (10000 / 4 / 12)) },
+                    { offset: 4 * YEAR, vested: 10000 },
                     { offset: 4 * YEAR + MONTH, vested: 10000 }
                 ]
             },
@@ -522,7 +522,7 @@ contract('VestingTrustee', (accounts) => {
                     { offset: 2 * YEAR, vested: 100000000 },
                     { offset: 3 * YEAR, vested: 100000000 }
                 ]
-            },
+            }
         ].forEach((grant) => {
             context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
                 `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
