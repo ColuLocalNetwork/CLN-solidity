@@ -30,17 +30,18 @@ if (!String.prototype.padEnd) {
 // see scripts/ dir for more information.
 contract('ColuLocalNetworkSale', (accounts) => {
     const MINUTE = 60;
-    const HOUR = 60 * MINUTE;
-    const DAY = 24 * HOUR;
-    const WEEK = 7 * DAY;
-    const YEAR = 365 * DAY;
+    const HOUR = 60 * MINUTE; // 3,600
+    const DAY = 24 * HOUR;    // 86,400
+    const WEEK = 7 * DAY;     // 604,800
+    const YEAR = 365 * DAY;   // 31,536,000
+    const MONTH = YEAR / 12;  // 2,628,000
 
     let DEFAULT_GAS_PRICE = new BigNumber(100000000000);
     let GAS_COST_ERROR = process.env['SOLIDITY_COVERAGE'] ? 30000000000000000 : 0;
 
     const TOKEN_DECIMALS = 10 ** 18;
 
-    // Additional Lockup Allocation Pool 
+    // Additional Lockup Allocation Pool
     const ALAP = new BigNumber('47751732000000023865524178')
 
     // Maximum number of tokens in circulation.
@@ -81,10 +82,10 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
     const VESTING_PLANS = {
         'A': {startOffset: 0, cliffOffset: 0, endOffset: 1 * DAY, installmentLength: 1 * DAY, alapPercent: 0},
-        'B': {startOffset: 0, cliffOffset: 0, endOffset: 6 * 30 * DAY, installmentLength: 1 * 30 * DAY, alapPercent: 4},
-        'C': {startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 12},
-        'D': {startOffset: 0, cliffOffset: 0, endOffset: 2 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 26},
-        'E': {startOffset: 0, cliffOffset: 0, endOffset: 3 * YEAR, installmentLength: 1 * 30 * DAY, alapPercent: 35}
+        'B': {startOffset: 0, cliffOffset: 0, endOffset: 6 * MONTH, installmentLength: 1 * MONTH, alapPercent: 4},
+        'C': {startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1 * MONTH, alapPercent: 12},
+        'D': {startOffset: 0, cliffOffset: 0, endOffset: 2 * YEAR, installmentLength: 1 * MONTH, alapPercent: 26},
+        'E': {startOffset: 0, cliffOffset: 0, endOffset: 3 * YEAR, installmentLength: 1 * MONTH, alapPercent: 35}
     }
 
     const DEVELOPMENT_TOKEN_GRANT = {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 3 * YEAR, endOffset: 3 * YEAR, installmentLength: 1 * DAY, revokable: false}
@@ -303,7 +304,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     });
 
-    describe('presaleAllocation', async () => {
+    describe.only('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
@@ -335,7 +336,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
-        it('should add pre-sale token grants', async () => {
+        it.only('should add pre-sale token grants', async () => {
             await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
@@ -449,7 +450,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
             it('should test development pool token grants', async () => {
                 await sale.finalize();
-                
+
                 let tokensSold = await sale.tokensSold();
                 let tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
                 let developmentTokenGrant = _.clone(DEVELOPMENT_TOKEN_GRANT);
@@ -577,7 +578,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             contribution = tokens.div(CLN_PER_ETH);
 
             totalTokensSold = totalTokensSold.plus(tokens);
-            
+
             // Execute transaction.
 
             let transaction = await method(sale, t.value, t.from);
@@ -815,7 +816,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
                             { from: tier1Participant1, value: 10000 * TOKEN_DECIMALS },
                             { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
-                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, 
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS },
                             { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
                             { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
                             { from: tier1Participant2, value: 1212 * TOKEN_DECIMALS },
@@ -844,7 +845,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
                             { hardParticipationCap: TIER_2_CAP },
 
-                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS }, 
+                            { from: tier2Participant1, value: 1000000 * TOKEN_DECIMALS },
                             { from: tier1Participant2, value: 121 * TOKEN_DECIMALS },
                             { from: tier2Participant1, value: 5000000 * TOKEN_DECIMALS }, // 5M
                             { from: tier1Participant3, value: 131 * TOKEN_DECIMALS },
