@@ -1,5 +1,5 @@
 {
-  "name": "cln-crowdfunding",
+  "name": "CLN-solidity",
   "version": "1.0.0",
   "description": "",
   "main": "truffle.js",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/colucom/CNTCrowdfunding.git"
+    "url": "git+https://github.com/colucom/CLN-solidity.git"
   },
   "author": "Tal Beja",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/colucom/CNTCrowdfunding/issues"
+    "url": "https://github.com/colucom/CLN-solidity/issues"
   },
-  "homepage": "https://github.com/colucom/CNTCrowdfunding#readme",
+  "homepage": "https://github.com/colucom/CLN-solidity#readme",
   "dependencies": {
     "async": "^2.5.0",
     "bignumber.js": "^4.1.0",
@@ -29,7 +29,7 @@
     "ethereumjs-abi": "^0.6.4",
     "ethereumjs-testrpc": "^6.0.1",
     "solc": "0.4.18",
-    "truffle": "4.0.1",
+    "truffle": "git+https://github.com/colucom/truffle.git",
     "web3": "^1.0.0-beta.22",
     "yargs": "^9.0.1"
   },
