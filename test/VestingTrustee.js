@@ -13,10 +13,11 @@ const grantSigs = {
 contract('VestingTrustee', (accounts) => {
     const initialTokens = new BigNumber(2 * 10 ** 12);
     const MINUTE = 60;
-    const HOUR = 60 * MINUTE;
-    const DAY = 24 * HOUR;
-    const YEAR = 365 * DAY;
-    const MONTH = Math.round(YEAR / 12);
+    const HOUR = 60 * MINUTE; // 3,600
+    const DAY = 24 * HOUR;    // 86,400
+    const WEEK = 7 * DAY;     // 604,800
+    const YEAR = 365 * DAY;   // 31,536,000
+    const MONTH = YEAR / 12;  // 2,628,000
 
     let now;
     let granter = accounts[0];
