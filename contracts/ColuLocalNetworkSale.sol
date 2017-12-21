@@ -176,11 +176,13 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     function initialize() public onlyOwner notInitialized {
         initialized = true;
 
+        uint256 months = 1 years / 12;
+
         vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
-        vestingPlans.push(VestingPlan(0, 0, 6 * 30 days, 1 * 30 days, 4));
-        vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * 30 days, 12));
-        vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * 30 days, 26));
-        vestingPlans.push(VestingPlan(0, 0, 3 years, 1 * 30 days, 35));
+        vestingPlans.push(VestingPlan(0, 0, 6 * months, 1 * months, 4));
+        vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * months, 12));
+        vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * months, 26));
+        vestingPlans.push(VestingPlan(0, 0, 3 years, 1 * months, 35));
 
         // Deploy new ColuLocalNetwork contract.
         cln = new ColuLocalNetwork(MAX_TOKENS);
