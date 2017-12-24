@@ -12,7 +12,7 @@ var owner = args.owner
 var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress
 var futureDevelopmentPoolAddress = args.futureDevelopmentPoolAddress
-var teamPoolAddress = args.teamPoolAddress
+var stakeholdersPoolAddress = args.stakeholdersPoolAddress
 var startTime
 
 web3.eth.getBlockNumber(function(err, lastBlock) {
@@ -37,9 +37,9 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
         var contractObj = contractCompiled.contracts[':ColuLocalNetworkSale']
         var bytecode = contractObj.bytecode
 
-        // console.log([owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
+        // console.log([owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, startTime])
 
-        var encoded = abi.rawEncode(['address', 'address', 'address', 'address', 'address', 'uint256'], [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime])
+        var encoded = abi.rawEncode(['address', 'address', 'address', 'address', 'address', 'uint256'], [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, startTime])
         var params = encoded.toString('hex')
 
         var result = '0x' + bytecode + params

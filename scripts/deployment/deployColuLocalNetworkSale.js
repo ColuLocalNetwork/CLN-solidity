@@ -11,7 +11,7 @@ var owner = args.owner
 var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress
 var futureDevelopmentPoolAddress = args.futureDevelopmentPoolAddress
-var teamPoolAddress = args.teamPoolAddress
+var stakeholdersPoolAddress = args.stakeholdersPoolAddress
 var startTime
 
 var input = {
@@ -44,7 +44,7 @@ async.auto({
   estimateGas: ['loadCompilerVersion', 'getBlock', function (results, cb) {
     var now = results.getBlock.timestamp
     startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
-    var constructorArguments = [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, teamPoolAddress, startTime]
+    var constructorArguments = [owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, startTime]
     var solcSnapshot = results.loadCompilerVersion
     var contractCompiled = solc.compile({sources: input}, 1)
     var contractObj = contractCompiled.contracts['ColuLocalNetworkSale.sol:ColuLocalNetworkSale']
