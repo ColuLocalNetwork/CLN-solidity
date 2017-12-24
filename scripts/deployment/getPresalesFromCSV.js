@@ -26,6 +26,7 @@ const parser = parse({delimiter: ', '}, (err, data) => {
 		let formattedPresales = presaleCalculator.calcPresale(presales).map(presale => {
 			return [presale[0], presale[1].toString(10,24), presale[2]]
 		})
+		formattedPresales.unshift(['_recipient', '_etherValue', '_vestingPlanIndex'])
 		fs.writeFileSync(__dirname + '/output/formattedPresales_' + now + '.csv', formattedPresales.join('\n'), 'utf8')
 	})
 })
