@@ -4,7 +4,7 @@
 		"fundingRecipient": "0x5BFa3c4B982c53E5a7C507Ff83D6D93e0FE83B84",
 		"communityPoolAddress": "0x1Bb8c3606A4528CA7C3dA385A59F16B32E3B8e12",
 		"futureDevelopmentPoolAddress": "0xb498b0981aF40f022E556dCEEc0Bb767e76f9Bc0",
-		"teamPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
+		"stakeholdersPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
 		"startTime": ""
 	},
 	"https://ethrpc.colu.co": {
@@ -12,7 +12,7 @@
 		"fundingRecipient": "0x4dd1b7956b7acc3655abdca0d4464f72c702243e",
 		"communityPoolAddress": "0x6cfa8a400aec5e342dfeb45b2f851d90c5c15138",
 		"futureDevelopmentPoolAddress": "0x88ae631a6791646637395b97882aa2f92fd48a8c",
-		"teamPoolAddress": "0xa521de33996c586807694ced11c93323b3c86914",
+		"stakeholdersPoolAddress": "0xa521de33996c586807694ced11c93323b3c86914",
 		"startTime": ""
 	},
 	"https://ropsten.colu.com": {
@@ -20,7 +20,7 @@
 		"fundingRecipient": "0x5BFa3c4B982c53E5a7C507Ff83D6D93e0FE83B84",
 		"communityPoolAddress": "0x1Bb8c3606A4528CA7C3dA385A59F16B32E3B8e12",
 		"futureDevelopmentPoolAddress": "0xb498b0981aF40f022E556dCEEc0Bb767e76f9Bc0",
-		"teamPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
+		"stakeholdersPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
 		"startTime": ""
 	}
 }
