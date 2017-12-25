@@ -125,7 +125,7 @@ contract('ColuLocalNetwork', (accounts) => {
         it('should log normal transfer event on transfer', async () => {
             let result = await token.transfer(to1, transferredFunds);
 
-            assert.lengthOf(result.logs, 2);
+            assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'Transfer');
             assert.equal(event.args.from, owner);

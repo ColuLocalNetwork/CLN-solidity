@@ -2,12 +2,12 @@ pragma solidity 0.4.18;
 
 import './Ownable.sol';
 import './SafeMath.sol';
-import './Standard223Token.sol';
+import './Standard677Token.sol';
 import './TokenHolder.sol';
 
 /// @title Colu Local Network contract.
 /// @author Tal Beja.
-contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
+contract ColuLocalNetwork is Ownable, Standard677Token, TokenHolder {
     using SafeMath for uint256;
 
     string public constant name = "Colu Local Network";
@@ -66,20 +66,11 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
         return super.transferFrom(_from, _to, _value);
     }
 
-    /// @dev Same ERC223 behavior, but reverts if not transferable.
+    /// @dev Same ERC677 behavior, but reverts if not transferable.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     /// @param _data bytes data to send to reciever if it is a contract.
-    function transfer(address _to, uint _value, bytes _data) public transferable returns (bool success) {
-      return super.transfer(_to, _value, _data);
-    }
-
-    /// @dev Same ERC223 behavior, but reverts if not transferable.
-    /// @param _from address The address to send tokens from.
-    /// @param _to address The address to transfer to.
-    /// @param _value uint256 the amount of tokens to be transferred.
-    /// @param _data bytes data to send to reciever if it is a contract.
-    function transferFrom(address _from, address _to, uint _value, bytes _data) public transferable returns (bool success) {
-      return super.transferFrom(_from, _to, _value, _data);
+    function transferAndCall(address _to, uint _value, bytes _data) public transferable returns (bool success) {
+      return super.transferAndCall(_to, _value, _data);
     }
 }

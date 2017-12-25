@@ -191,7 +191,6 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         trustee = new VestingTrustee(cln);
 
         // allocate pool tokens:
-
         // Issue the remaining tokens to designated pools.
         transferTokens(communityPoolAddress, COMMUNITY_POOL);
 
@@ -329,8 +328,10 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     /// @dev Transfer tokens from the sale contract to a recipient.
     /// @param _recipient address The address of the recipient.
     /// @param _tokens uint256 The amount of tokens to transfer.
-    function transferTokens(address _recipient, uint256 _tokens) private returns (bool) {
-        return (transferTokens(_recipient, _tokens, new bytes(0)));
+    function transferTokens(address _recipient, uint256 _tokens) private returns (bool ans) {
+        ans = cln.transfer(_recipient, _tokens);
+
+        TokensIssued(_recipient, _tokens);
     }
 
     /// @dev Transfer tokens from the sale contract to a recipient.
@@ -339,7 +340,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     /// @param _data bytes data to send to reciever if it is a contract.
     function transferTokens(address _recipient, uint256 _tokens, bytes _data) private returns (bool ans) {
         // Request Colu Local Network contract to transfer the requested tokens for the buyer.
-        ans = cln.transfer(_recipient, _tokens, _data);
+        ans = cln.transferAndCall(_recipient, _tokens, _data);
 
         TokensIssued(_recipient, _tokens);
     }

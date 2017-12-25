@@ -238,7 +238,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, 0, now + 100));
         });
 
-        it('should be initialized with a future starting time', async () => {
+        it('should not allow to initialize with a past starting time', async () => {
             await expectRevert(ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now - 100));
         });
 
