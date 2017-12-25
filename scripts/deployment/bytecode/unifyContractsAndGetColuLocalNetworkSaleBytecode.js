@@ -48,6 +48,12 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
         fs.writeFile(bytecodeFilePath, result, {flag: 'w'}, function(err) {
           if(err) return console.error('err =', err)
           console.log('bytecode created at path =', bytecodeFilePath)
+
+          var paramsFilePath = bytecodeFilePath.replace('Unified_', 'UnifiedParams_')
+          fs.writeFile(paramsFilePath, params, {flag: 'w'}, function(err) {
+            if(err) return console.error('err =', err)
+              console.log('params created at path =', paramsFilePath)
+          })
         })
       })
     })
