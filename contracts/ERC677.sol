@@ -3,7 +3,7 @@ pragma solidity 0.4.18;
 import './ERC20.sol';
 
  /*
-  ERC223 additions to ERC20
+  ERC677 additions to ERC20
 
   Interface wise is ERC20 + data paramenter to transferAndCall.
  */
