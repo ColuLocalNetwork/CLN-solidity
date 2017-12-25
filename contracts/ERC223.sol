@@ -8,7 +8,7 @@ import './ERC20.sol';
   Interface wise is ERC20 + data paramenter to transfer and transferFrom.
  */
 
-/// @title ERC Token Standard #677 Interface (https://github.com/ethereum/EIPs/issues/677)
+/// @title ERC Token Standard #223 Interface (https://github.com/ethereum/EIPs/issues/223)
 contract ERC223 is ERC20 {
     function transfer(address to, uint value, bytes data) public returns (bool ok);
     function transferFrom(address from, address to, uint value, bytes data) public returns (bool ok);
