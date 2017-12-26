@@ -29,7 +29,6 @@ contract('VestingTrustee', (accounts) => {
 
         token = await ColuLocalNetwork.new(initialTokens);
         trustee = await VestingTrustee.new(token.address, {from: granter});
-        // console.log('trustee.grant[grantSigs.twoStep]', trustee.grant[grantSigs.twoStep])
     });
 
     const getGrant = async (address) => {
@@ -426,9 +425,9 @@ contract('VestingTrustee', (accounts) => {
                     { offset: MONTH + 1, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + 1000, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + DAY, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) + Math.floor(1000 / YEAR * DAY)},
-                    { offset: 2 * MONTH, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
-                    { offset: 2 * MONTH + 1, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
-                    { offset: 2 * MONTH + 5 * DAY, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) + 5 * Math.floor(1000 / YEAR * DAY)},
+                    { offset: 2 * MONTH, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH + 1, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH + 5 * DAY, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY) + 5 * (1000 / YEAR * DAY))},
                     { offset: 0.5 * YEAR, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(0.5 * YEAR / DAY))},
                     { offset: YEAR, vested: 1000 },
                     { offset: YEAR + DAY, vested: 1000 }
