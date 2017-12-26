@@ -1,14 +1,12 @@
 const BigNumber = require('bignumber.js');
+const coder = require('web3-eth-abi');
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const VestingTrustee = artifacts.require('VestingTrustee');
 
-const grantSigs = {
-    oneStep: 'address,uint256,uint256,uint256,uint256,bool',
-    twoStep: 'address,uint256,uint256,uint256,uint256,uint256,bool'
-}
+const grantWithValueSig = 'address,uint256,uint256,uint256,uint256,uint256,bool';
 
 contract('VestingTrustee', (accounts) => {
     const initialTokens = new BigNumber(2 * 10 ** 12);
@@ -18,6 +16,37 @@ contract('VestingTrustee', (accounts) => {
     const WEEK = 7 * DAY;     // 604,800
     const YEAR = 365 * DAY;   // 31,536,000
     const MONTH = YEAR / 12;  // 2,628,000
+
+    const VESTING_TRUSTEE_GRANT_ABI = {
+        name: 'grant',
+        type: 'function',
+        inputs: [
+          {
+            name: '_to',
+            type: 'address'
+          },
+          {
+            name: '_start',
+            type: 'uint256'
+          },
+          {
+            name: '_cliff',
+            type: 'uint256'
+          },
+          {
+            name: '_end',
+            type: 'uint256'
+          },
+          {
+            name: '_installmentLength',
+            type: 'uint256'
+          },
+          {
+            name: '_revokable',
+            type: 'bool'
+          }
+        ]
+    };
 
     let now;
     let granter = accounts[0];
@@ -29,7 +58,6 @@ contract('VestingTrustee', (accounts) => {
 
         token = await ColuLocalNetwork.new(initialTokens);
         trustee = await VestingTrustee.new(token.address, {from: granter});
-        // console.log('trustee.grant[grantSigs.twoStep]', trustee.grant[grantSigs.twoStep])
     });
 
     const getGrant = async (address) => {
@@ -44,6 +72,10 @@ contract('VestingTrustee', (accounts) => {
             transferred: grant[5],
             revokable: grant[6]
         };
+    };
+
+    const getDataForGrantUsingTransfer = function (_to, _start, _cliff, _end, _installmentLength, _revokable) {
+        return coder.encodeFunctionCall(VESTING_TRUSTEE_GRANT_ABI, [_to, _start, _cliff, _end, _installmentLength, _revokable]);
     };
 
     describe('construction', async () => {
@@ -79,101 +111,191 @@ contract('VestingTrustee', (accounts) => {
     describe('grant', async () => {
         let balance = 10000;
 
-        context(`with ${balance} tokens assigned to the trustee`, async () => {
-            beforeEach(async () => {
-                await token.transfer(trustee.address, balance);
+        context('using trustee.grant', async () => {
+            context(`with ${balance} tokens assigned to the trustee`, async () => {
+                beforeEach(async () => {
+                    await token.transfer(trustee.address, balance);
+                });
+
+                it('should initially have no grants', async () => {
+                    assert.equal((await trustee.totalVesting()).toNumber(), 0);
+                });
+
+                it('should not allow granting to 0', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](0, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting to self', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](trustee.address, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting 0 tokens', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 0, now, now, now + 3 * YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting with a cliff before the start', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 0, now, now - 1, now + 10 * YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting with a cliff after the vesting', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 0, now, now + YEAR, now + MONTH, 1 * DAY, false));
+                });
+
+                it('should not allow granting with 0 installment', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 0, now, now + YEAR, now + MONTH, 0, false));
+                });
+
+                it('should not allow granting with installment longer than the vesting period', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 0, now, now + YEAR, now + MONTH, 2 * YEAR, false));
+                });
+
+                it('should not allow granting tokens more than once', async () => {
+                    await trustee.grant[grantWithValueSig](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false);
+
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting from not an owner', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], 1000, now, now + MONTH, now + YEAR, 1 * DAY, false,
+                        {from: accounts[1]}));
+                });
+
+                it('should not allow granting more than the balance in a single grant', async () => {
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[0], balance + 1, now, now + MONTH, now + YEAR, 1 * DAY, false));
+                });
+
+                it('should not allow granting more than the balance in multiple grants', async () => {
+                    await trustee.grant[grantWithValueSig](accounts[0], balance - 10, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                    await trustee.grant[grantWithValueSig](accounts[1], 7, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                    await trustee.grant[grantWithValueSig](accounts[2], 3, now, now + 5 * MONTH, now + YEAR, 1 * DAY, false);
+
+                    await expectRevert(trustee.grant[grantWithValueSig](accounts[3], 1, now, now, now + YEAR, 1 * DAY, false));
+                });
+
+                it('should record a grant and increase grants count and total vesting', async () => {
+                    let totalVesting = await trustee.totalVesting();
+                    assert.equal(totalVesting.toNumber(), 0);
+
+                    let value = 1000;
+                    let start = now;
+                    let cliff = now + MONTH;
+                    let end = now + YEAR;
+                    let installmentLength = 1 * DAY;
+                    await trustee.grant[grantWithValueSig](accounts[0], value, start, cliff, end, installmentLength, false);
+
+                    assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value).toNumber());
+                    let grant = await getGrant(accounts[0]);
+                    assert.equal(grant.value, value);
+                    assert.equal(grant.start, start);
+                    assert.equal(grant.cliff, cliff);
+                    assert.equal(grant.end, end);
+                    assert.equal(grant.installmentLength, installmentLength);
+                    assert.equal(grant.transferred, 0);
+
+                    let value2 = 2300;
+                    let start2 = now + 2 * MONTH;
+                    let cliff2 = now + 6 * MONTH;
+                    let end2 = now + YEAR;
+                    let installmentLength2 = 3 * MONTH;
+                    await trustee.grant[grantWithValueSig](accounts[1], value2, start2, cliff2, end2, installmentLength2, false);
+
+                    assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value + value2).toNumber());
+                    let grant2 = await getGrant(accounts[1]);
+                    assert.equal(grant2.value, value2);
+                    assert.equal(grant2.start, start2);
+                    assert.equal(grant2.cliff, cliff2);
+                    assert.equal(grant2.end, end2);
+                    assert.equal(grant2.installmentLength, installmentLength2);
+                    assert.equal(grant2.transferred, 0);
+                });
             });
+        });
 
-            it('should initially have no grants', async () => {
-                assert.equal((await trustee.totalVesting()).toNumber(), 0);
-            });
+        context('using token.transfer', async () => {
+            context(`with ${balance} tokens assigned to the trustee`, async () => {
+                beforeEach(async () => {
+                    await token.transfer(trustee.address, balance);
+                });
 
-            it('should not allow granting to 0', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](0, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
-            });
+                it('should initially have no grants', async () => {
+                    assert.equal((await trustee.totalVesting()).toNumber(), 0);
+                });
 
-            it('should not allow granting to self', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](trustee.address, 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
-            });
+                it('should not allow granting to 0', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 1000, getDataForGrantUsingTransfer(0, now, now, now + 10 * YEAR, 1 * DAY, false)));
+                });
 
-            it('should not allow granting 0 tokens', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now, now + 3 * YEAR, 1 * DAY, false));
-            });
+                it('should not allow granting to self', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 1000, getDataForGrantUsingTransfer(trustee.address, now, now, now + 10 * YEAR, 1 * DAY, false)));
+                });
 
-            it('should not allow granting with a cliff before the start', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now - 1, now + 10 * YEAR, 1 * DAY, false));
-            });
+                it('should not allow granting 0 tokens', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 0, getDataForGrantUsingTransfer(accounts[0], now, now, now + 3 * YEAR, 1 * DAY, false)));
+                });
 
-            it('should not allow granting with a cliff after the vesting', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 1 * DAY, false));
-            });
+                it('should not allow granting with a cliff before the start', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 0, getDataForGrantUsingTransfer(accounts[0], now, now - 1, now + 10 * YEAR, 1 * DAY, false)));
+                });
 
-            it('should not allow granting with 0 installment', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 0, false));
-            });
+                it('should not allow granting with a cliff after the vesting', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 0, getDataForGrantUsingTransfer(accounts[0], now, now + YEAR, now + MONTH, 1 * DAY, false)));
+                });
 
-            it('should not allow granting with installment longer than the vesting period', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 0, now, now + YEAR, now + MONTH, 2 * YEAR, false));
-            });
+                it('should not allow granting with 0 installment', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 0, getDataForGrantUsingTransfer(accounts[0], now, now + YEAR, now + MONTH, 0, false)));
+                });
 
-            it('should not allow granting tokens more than once', async () => {
-                await trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false);
+                it('should not allow granting with installment longer than the vesting period', async () => {
+                    await expectRevert(token.transferAndCall(trustee.address, 0, getDataForGrantUsingTransfer(accounts[0], now, now + YEAR, now + MONTH, 2 * YEAR, false)));
+                });
 
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now, now + 10 * YEAR, 1 * DAY, false));
-            });
+                it('should not allow granting tokens more than once', async () => {
+                    await token.transferAndCall(trustee.address, 1000, getDataForGrantUsingTransfer(accounts[0], now, now, now + 10 * YEAR, 1 * DAY, false));
 
-            it('should not allow granting from not an owner', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], 1000, now, now + MONTH, now + YEAR, 1 * DAY, false,
-                    {from: accounts[1]}));
-            });
+                    await expectRevert(token.transferAndCall(trustee.address, 1000, getDataForGrantUsingTransfer(accounts[0], now, now, now + 10 * YEAR, 1 * DAY, false)));
+                });
 
-            it('should not allow granting more than the balance in a single grant', async () => {
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[0], balance + 1, now, now + MONTH, now + YEAR, 1 * DAY, false));
-            });
+                it('should not allow granting from not an owner', async () => {
+                    await token.transferAndCall(trustee.address, 1000, getDataForGrantUsingTransfer(accounts[0], now, now + MONTH, now + YEAR, 1 * DAY, false, {from: accounts[1]}));
+                    assert.equal((await trustee.totalVesting()).toNumber(), 1000);
+                });
 
-            it('should not allow granting more than the balance in multiple grants', async () => {
-                await trustee.grant[grantSigs.twoStep](accounts[0], balance - 10, now, now + MONTH, now + YEAR, 1 * DAY, false);
-                await trustee.grant[grantSigs.twoStep](accounts[1], 7, now, now + MONTH, now + YEAR, 1 * DAY, false);
-                await trustee.grant[grantSigs.twoStep](accounts[2], 3, now, now + 5 * MONTH, now + YEAR, 1 * DAY, false);
+                it('should record a grant and increase grants count and total vesting', async () => {
+                    let totalVesting = await trustee.totalVesting();
+                    assert.equal(totalVesting.toNumber(), 0);
 
-                await expectRevert(trustee.grant[grantSigs.twoStep](accounts[3], 1, now, now, now + YEAR, 1 * DAY, false));
-            });
+                    let value = 1000;
+                    let start = now;
+                    let cliff = now + MONTH;
+                    let end = now + YEAR;
+                    let installmentLength = 1 * DAY;
+                    await token.transferAndCall(trustee.address, value, getDataForGrantUsingTransfer(accounts[0], start, cliff, end, installmentLength, false));
 
-            it('should record a grant and increase grants count and total vesting', async () => {
-                let totalVesting = await trustee.totalVesting();
-                assert.equal(totalVesting.toNumber(), 0);
+                    assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value).toNumber());
+                    let grant = await getGrant(accounts[0]);
+                    assert.equal(grant.value, value);
+                    assert.equal(grant.start, start);
+                    assert.equal(grant.cliff, cliff);
+                    assert.equal(grant.end, end);
+                    assert.equal(grant.installmentLength, installmentLength);
+                    assert.equal(grant.transferred, 0);
 
-                let value = 1000;
-                let start = now;
-                let cliff = now + MONTH;
-                let end = now + YEAR;
-                let installmentLength = 1 * DAY;
-                await trustee.grant[grantSigs.twoStep](accounts[0], value, start, cliff, end, installmentLength, false);
+                    let value2 = 2300;
+                    let start2 = now + 2 * MONTH;
+                    let cliff2 = now + 6 * MONTH;
+                    let end2 = now + YEAR;
+                    let installmentLength2 = 3 * MONTH;
+                    await token.transferAndCall(trustee.address, value2, getDataForGrantUsingTransfer(accounts[1], start2, cliff2, end2, installmentLength2, false));
 
-                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value).toNumber());
-                let grant = await getGrant(accounts[0]);
-                assert.equal(grant.value, value);
-                assert.equal(grant.start, start);
-                assert.equal(grant.cliff, cliff);
-                assert.equal(grant.end, end);
-                assert.equal(grant.installmentLength, installmentLength);
-                assert.equal(grant.transferred, 0);
-
-                let value2 = 2300;
-                let start2 = now + 2 * MONTH;
-                let cliff2 = now + 6 * MONTH;
-                let end2 = now + YEAR;
-                let installmentLength2 = 3 * MONTH;
-                await trustee.grant[grantSigs.twoStep](accounts[1], value2, start2, cliff2, end2, installmentLength2, false);
-
-                assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value + value2).toNumber());
-                let grant2 = await getGrant(accounts[1]);
-                assert.equal(grant2.value, value2);
-                assert.equal(grant2.start, start2);
-                assert.equal(grant2.cliff, cliff2);
-                assert.equal(grant2.end, end2);
-                assert.equal(grant2.installmentLength, installmentLength2);
-                assert.equal(grant2.transferred, 0);
+                    assert.equal((await trustee.totalVesting()).toNumber(), totalVesting.add(value + value2).toNumber());
+                    let grant2 = await getGrant(accounts[1]);
+                    assert.equal(grant2.value, value2);
+                    assert.equal(grant2.start, start2);
+                    assert.equal(grant2.cliff, cliff2);
+                    assert.equal(grant2.end, end2);
+                    assert.equal(grant2.installmentLength, installmentLength2);
+                    assert.equal(grant2.transferred, 0);
+                });
             });
         });
     });
@@ -183,206 +305,310 @@ contract('VestingTrustee', (accounts) => {
         let notOwner = accounts[9];
         let balance = 100000;
 
-        context(`with ${balance} tokens assigned to the trustee`, async () => {
-            beforeEach(async () => {
-                await token.transfer(trustee.address, balance);
-            });
+        let grants = [
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
+                    { diff: 0, unlocked: 0 },
+                    // 1 day before the cliff.
+                    { diff: MONTH - DAY, unlocked: 0 },
+                    // At the cliff.
+                    { diff: DAY, unlocked: 83 },
+                    // 1 second after che cliff and previous unlock/withdraw.
+                    { diff: 1, unlocked: 0 },
+                    // 1 month after the cliff.
+                    { diff: MONTH - 1, unlocked: 83 },
+                    // At half of the vesting period.
+                    { diff: 4 * MONTH, unlocked: 1000 / 2 - 2 * 83 },
+                    // At the end of the vesting period.
+                    { diff: 6 * MONTH, unlocked: 1000 / 2 },
+                    // After the vesting period, with everything already unlocked and withdrawn.
+                    { diff: DAY, unlocked: 0 }
+                ]
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: DAY, results: [
+                    { diff: 0, unlocked: 0 },
+                    // 1 day before the cliff.
+                    { diff: MONTH - DAY, unlocked: 0 },
+                    // At the cliff.
+                    { diff: DAY, unlocked: 83 },
+                    // 1 second before the installment length.
+                    { diff: DAY - 1, unlocked: 0 },
+                    // Instalment length.
+                    { diff: 1, unlocked: 2 },
+                    // 1 month after the cliff.
+                    { diff: MONTH - 1, unlocked: 81 },
+                    // 1000 seconds before the installment length.
+                    { diff: DAY - 1000, unlocked: 0 },
+                     // Another instalment length.
+                    { diff: 1000, unlocked: 2 },
+                    // At half of the vesting period.
+                    { diff: 4 * MONTH, unlocked: 1000 / 2 - 83 - 2 - 81 - 2 },
+                    // At the end of the vesting period.
+                    { diff: 6 * MONTH, unlocked: 1000 / 2 },
+                    // After the vesting period, with everything already unlocked and withdrawn.
+                    { diff: DAY, unlocked: 0 }
+                ]
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
+                    { diff: 0, unlocked: 0 },
+                    // 1 day after the vesting period.
+                    { diff: YEAR + DAY, unlocked: 1000 },
+                    // 1 year after the vesting period.
+                    { diff: YEAR - DAY, unlocked: 0 }
+                ]
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: MONTH, results: [
+                    { diff: 0, unlocked: 0 },
+                    // 1 day after the vesting period.
+                    { diff: YEAR + DAY, unlocked: 1000 },
+                    // 1 year after the vesting period.
+                    { diff: YEAR - DAY, unlocked: 0 }
+                ]
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: 0, endOffset: YEAR, installmentLength: 3 * MONTH, results: [
+                    { diff: 0, unlocked: 0 },
+                    // 1 day after the start of the vesting.
+                    { diff: DAY, unlocked: 0 },
+                    // 1 month after the start of the vesting.
+                    { diff: MONTH - DAY, unlocked: 0 },
+                    // 2 months after the start of the vesting.
+                    { diff: MONTH, unlocked: 0 },
+                    // 3 months after the start of the vesting.
+                    { diff: MONTH, unlocked: 250 },
+                    { diff: MONTH, unlocked: 0 },
+                    // Another installment.
+                    { diff: 2 * MONTH, unlocked: 250 },
+                    // After the vesting period.
+                    { diff: YEAR, unlocked: 1000 - 2 * 250 }
+                ]
+            },
+            {
+                tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 1, results: [
+                    { diff: 0, unlocked: 0 },
+                    { diff: YEAR, unlocked: 1000000 / 4 },
+                    { diff: YEAR, unlocked: 1000000 / 4 },
+                    { diff: YEAR, unlocked: 1000000 / 4 },
+                    { diff: YEAR, unlocked: 1000000 / 4 },
+                    { diff: YEAR, unlocked: 0 }
+                ]
+            },
+            {
+                tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 2 * YEAR, results: [
+                    { diff: 0, unlocked: 0 },
+                    { diff: YEAR, unlocked: 0 },
+                    { diff: YEAR, unlocked: 1000000 / 2 },
+                    { diff: YEAR, unlocked: 0 },
+                    { diff: YEAR, unlocked: 1000000 / 2 },
+                    { diff: YEAR, unlocked: 0 }
+                ]
+            }
+        ];
 
-            context('after transfering has ended', async () => {
+        context('using trustee.grant', async () => {
+            context(`with ${balance} tokens assigned to the trustee`, async () => {
                 beforeEach(async () => {
-                    await token.makeTokensTransferable();
+                    await token.transfer(trustee.address, balance);
                 });
 
-                it('should throw an error when revoking a non-existing grant', async () => {
-                    await expectRevert(trustee.revoke(accounts[9]));
+                context('after transfering has ended', async () => {
+                    beforeEach(async () => {
+                        await token.makeTokensTransferable();
+                    });
+
+                    it('should throw an error when revoking a non-existing grant', async () => {
+                        await expectRevert(trustee.revoke(accounts[9]));
+                    });
+
+                    it('should not be able to revoke a non-revokable grant', async () => {
+                        await trustee.grant[grantWithValueSig](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, false);
+
+                        await expectRevert(trustee.revoke(grantee));
+                    });
+
+                    it('should only allow revoking a grant by an owner', async () => {
+                        let grantee = accounts[1];
+
+                        await trustee.grant[grantWithValueSig](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
+                        await expectRevert(trustee.revoke(grantee, {from: accounts[9]}));
+
+                        await trustee.revoke(grantee, {from: granter});
+                    });
                 });
 
-                it('should not be able to revoke a non-revokable grant', async () => {
-                    await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, false);
+                grants.forEach(async (grant, index) => {
+                    context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                        `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+                        // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
+                        const MAX_ERROR = 10;
 
-                    await expectRevert(trustee.revoke(grantee));
-                });
+                        let holder = accounts[1];
 
-                it('should only allow revoking a grant by an owner', async () => {
-                    let grantee = accounts[1];
+                        for (let i = 0; i < grant.results.length; ++i) {
+                            it(`should revoke the grant and refund tokens after ${i + 1} transactions`, async () => {
+                                trustee = await VestingTrustee.new(token.address, {from: granter});
+                                await token.transfer(trustee.address, grant.tokens);
+                                await token.makeTokensTransferable();
+                                await trustee.grant[grantWithValueSig](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
+                                    now + grant.endOffset, grant.installmentLength, true);
 
-                    await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
-                    await expectRevert(trustee.revoke(grantee, {from: accounts[9]}));
+                                // Get previous state.
+                                let totalVesting = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance = (await token.balanceOf(holder)).toNumber();
+                                let transferred = (await getGrant(holder)).transferred.toNumber();
+                                let granterBalance = (await token.balanceOf(granter)).toNumber();
 
-                    await trustee.revoke(grantee, {from: granter});
+                                let totalUnlocked = 0;
+
+                                for (let j = 0; j <= i; ++j) {
+                                    let res = grant.results[j];
+
+                                    // Jump forward in time by the requested diff.
+                                    await time.increaseTime(res.diff);
+                                    await trustee.unlockVestedTokens({from: holder});
+
+                                    totalUnlocked += res.unlocked;
+                                }
+
+                                // Verify the state after the multiple unlocks.
+                                let totalVesting2 = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance2 = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance2 = (await token.balanceOf(holder)).toNumber();
+                                let transferred2 = (await getGrant(holder)).transferred.toNumber();
+
+                                assert.approximately(totalVesting2, totalVesting - totalUnlocked, MAX_ERROR);
+                                assert.approximately(trusteeBalance2, trusteeBalance - totalUnlocked, MAX_ERROR);
+                                assert.approximately(userBalance2, userBalance + totalUnlocked, MAX_ERROR);
+                                assert.approximately(transferred2, transferred + totalUnlocked, MAX_ERROR);
+
+                                let refundTokens = grant.tokens - totalUnlocked;
+
+                                console.log(`\texpecting ${refundTokens} tokens refunded after ${i + 1} transactions`);
+
+                                let vestingGrant = await getGrant(holder);
+                                assert.equal(vestingGrant.value, grant.tokens);
+
+                                await trustee.revoke(holder);
+
+                                let totalVesting3 = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance3 = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance3 = (await token.balanceOf(holder)).toNumber();
+                                let granterBalance2 = (await token.balanceOf(granter)).toNumber();
+
+                                assert.approximately(totalVesting3, totalVesting2 - refundTokens, MAX_ERROR);
+                                assert.approximately(trusteeBalance3, trusteeBalance2 - refundTokens, MAX_ERROR);
+                                assert.approximately(userBalance3, userBalance2, MAX_ERROR);
+                                assert.approximately(granterBalance2, granterBalance + refundTokens, MAX_ERROR);
+
+                                let vestingGrant2 = await getGrant(holder);
+                                assert.equal(vestingGrant2.tokens, undefined);
+                            });
+                        }
+                    });
                 });
             });
+        });
 
-            [
-                {
-                    tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
-                        { diff: 0, unlocked: 0 },
-                        // 1 day before the cliff.
-                        { diff: MONTH - DAY, unlocked: 0 },
-                        // At the cliff.
-                        { diff: DAY, unlocked: 83 },
-                        // 1 second after che cliff and previous unlock/withdraw.
-                        { diff: 1, unlocked: 0 },
-                        // 1 month after the cliff.
-                        { diff: MONTH - 1, unlocked: 83 },
-                        // At half of the vesting period.
-                        { diff: 4 * MONTH, unlocked: 1000 / 2 - 2 * 83 },
-                        // At the end of the vesting period.
-                        { diff: 6 * MONTH, unlocked: 1000 / 2 },
-                        // After the vesting period, with everything already unlocked and withdrawn.
-                        { diff: DAY, unlocked: 0 }
-                    ]
-                },
-                {
-                    tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: DAY, results: [
-                        { diff: 0, unlocked: 0 },
-                        // 1 day before the cliff.
-                        { diff: MONTH - DAY, unlocked: 0 },
-                        // At the cliff.
-                        { diff: DAY, unlocked: 83 },
-                        // 1 second before the installment length.
-                        { diff: DAY - 1, unlocked: 0 },
-                        // Instalment length.
-                        { diff: 1, unlocked: 2 },
-                        // 1 month after the cliff.
-                        { diff: MONTH - 1, unlocked: 81 },
-                        // 1000 seconds before the installment length.
-                        { diff: DAY - 1000, unlocked: 0 },
-                         // Another instalment length.
-                        { diff: 1000, unlocked: 2 },
-                        // At half of the vesting period.
-                        { diff: 4 * MONTH, unlocked: 1000 / 2 - 83 - 2 - 81 - 2 },
-                        // At the end of the vesting period.
-                        { diff: 6 * MONTH, unlocked: 1000 / 2 },
-                        // After the vesting period, with everything already unlocked and withdrawn.
-                        { diff: DAY, unlocked: 0 }
-                    ]
-                },
-                {
-                    tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
-                        { diff: 0, unlocked: 0 },
-                        // 1 day after the vesting period.
-                        { diff: YEAR + DAY, unlocked: 1000 },
-                        // 1 year after the vesting period.
-                        { diff: YEAR - DAY, unlocked: 0 }
-                    ]
-                },
-                {
-                    tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: MONTH, results: [
-                        { diff: 0, unlocked: 0 },
-                        // 1 day after the vesting period.
-                        { diff: YEAR + DAY, unlocked: 1000 },
-                        // 1 year after the vesting period.
-                        { diff: YEAR - DAY, unlocked: 0 }
-                    ]
-                },
-                {
-                    tokens: 1000, startOffset: 0, cliffOffset: 0, endOffset: YEAR, installmentLength: 3 * MONTH, results: [
-                        { diff: 0, unlocked: 0 },
-                        // 1 day after the start of the vesting.
-                        { diff: DAY, unlocked: 0 },
-                        // 1 month after the start of the vesting.
-                        { diff: MONTH - DAY, unlocked: 0 },
-                        // 2 months after the start of the vesting.
-                        { diff: MONTH, unlocked: 0 },
-                        // 3 months after the start of the vesting.
-                        { diff: MONTH, unlocked: 250 },
-                        { diff: MONTH, unlocked: 0 },
-                        // Another installment.
-                        { diff: 2 * MONTH, unlocked: 250 },
-                        // After the vesting period.
-                        { diff: YEAR, unlocked: 1000 - 2 * 250 }
-                    ]
-                },
-                {
-                    tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 1, results: [
-                        { diff: 0, unlocked: 0 },
-                        { diff: YEAR, unlocked: 1000000 / 4 },
-                        { diff: YEAR, unlocked: 1000000 / 4 },
-                        { diff: YEAR, unlocked: 1000000 / 4 },
-                        { diff: YEAR, unlocked: 1000000 / 4 },
-                        { diff: YEAR, unlocked: 0 }
-                    ]
-                },
-                {
-                    tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 2 * YEAR, results: [
-                        { diff: 0, unlocked: 0 },
-                        { diff: YEAR, unlocked: 0 },
-                        { diff: YEAR, unlocked: 1000000 / 2 },
-                        { diff: YEAR, unlocked: 0 },
-                        { diff: YEAR, unlocked: 1000000 / 2 },
-                        { diff: YEAR, unlocked: 0 }
-                    ]
-                }
-            ].forEach(async (grant, index) => {
-                context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
-                    `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
-                    // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
-                    const MAX_ERROR = 10;
+        context('using token.transfer', async () => {
+            context(`with ${balance} tokens assigned to the trustee`, async () => {
+                beforeEach(async () => {
+                    await token.transfer(trustee.address, balance);
+                });
 
-                    let holder = accounts[1];
+                context('after transfering has ended', async () => {
+                    beforeEach(async () => {
+                        await token.makeTokensTransferable();
+                    });
 
-                    for (let i = 0; i < grant.results.length; ++i) {
-                        it(`should revoke the grant and refund tokens after ${i + 1} transactions`, async () => {
-                            trustee = await VestingTrustee.new(token.address, {from: granter});
-                            await token.transfer(trustee.address, grant.tokens);
-                            await token.makeTokensTransferable();
-                            await trustee.grant[grantSigs.twoStep](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
-                                now + grant.endOffset, grant.installmentLength, true);
+                    it('should not be able to revoke a non-revokable grant', async () => {
+                        await token.transferAndCall(trustee.address, balance, getDataForGrantUsingTransfer(grantee, now, now + MONTH, now + YEAR, 1 * DAY, false));
 
-                            // Get previous state.
-                            let totalVesting = (await trustee.totalVesting()).toNumber();
-                            let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
-                            let userBalance = (await token.balanceOf(holder)).toNumber();
-                            let transferred = (await getGrant(holder)).transferred.toNumber();
-                            let granterBalance = (await token.balanceOf(granter)).toNumber();
+                        await expectRevert(trustee.revoke(grantee));
+                    });
 
-                            let totalUnlocked = 0;
+                    it('should only allow revoking a grant by an owner', async () => {
+                        let grantee = accounts[1];
 
-                            for (let j = 0; j <= i; ++j) {
-                                let res = grant.results[j];
+                        await token.transferAndCall(trustee.address, balance, getDataForGrantUsingTransfer(grantee, now, now + MONTH, now + YEAR, 1 * DAY, true));
+                        await expectRevert(trustee.revoke(grantee, {from: accounts[9]}));
 
-                                // Jump forward in time by the requested diff.
-                                await time.increaseTime(res.diff);
-                                await trustee.unlockVestedTokens({from: holder});
+                        await trustee.revoke(grantee, {from: granter});
+                    });
+                });
 
-                                totalUnlocked += res.unlocked;
-                            }
+                grants.forEach(async (grant, index) => {
+                    context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                        `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+                        // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
+                        const MAX_ERROR = 10;
 
-                            // Verify the state after the multiple unlocks.
-                            let totalVesting2 = (await trustee.totalVesting()).toNumber();
-                            let trusteeBalance2 = (await token.balanceOf(trustee.address)).toNumber();
-                            let userBalance2 = (await token.balanceOf(holder)).toNumber();
-                            let transferred2 = (await getGrant(holder)).transferred.toNumber();
+                        let holder = accounts[1];
 
-                            assert.approximately(totalVesting2, totalVesting - totalUnlocked, MAX_ERROR);
-                            assert.approximately(trusteeBalance2, trusteeBalance - totalUnlocked, MAX_ERROR);
-                            assert.approximately(userBalance2, userBalance + totalUnlocked, MAX_ERROR);
-                            assert.approximately(transferred2, transferred + totalUnlocked, MAX_ERROR);
+                        for (let i = 0; i < grant.results.length; ++i) {
+                            it(`should revoke the grant and refund tokens after ${i + 1} transactions`, async () => {
+                                trustee = await VestingTrustee.new(token.address, {from: granter});
+                                await token.transfer(trustee.address, grant.tokens);
+                                await token.makeTokensTransferable();
+                                await token.transferAndCall(trustee.address, grant.tokens, getDataForGrantUsingTransfer(holder, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, true));
 
-                            let refundTokens = grant.tokens - totalUnlocked;
+                                // Get previous state.
+                                let totalVesting = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance = (await token.balanceOf(holder)).toNumber();
+                                let transferred = (await getGrant(holder)).transferred.toNumber();
+                                let granterBalance = (await token.balanceOf(granter)).toNumber();
 
-                            console.log(`\texpecting ${refundTokens} tokens refunded after ${i + 1} transactions`);
+                                let totalUnlocked = 0;
 
-                            let vestingGrant = await getGrant(holder);
-                            assert.equal(vestingGrant.value, grant.tokens);
+                                for (let j = 0; j <= i; ++j) {
+                                    let res = grant.results[j];
 
-                            await trustee.revoke(holder);
+                                    // Jump forward in time by the requested diff.
+                                    await time.increaseTime(res.diff);
+                                    await trustee.unlockVestedTokens({from: holder});
 
-                            let totalVesting3 = (await trustee.totalVesting()).toNumber();
-                            let trusteeBalance3 = (await token.balanceOf(trustee.address)).toNumber();
-                            let userBalance3 = (await token.balanceOf(holder)).toNumber();
-                            let granterBalance2 = (await token.balanceOf(granter)).toNumber();
+                                    totalUnlocked += res.unlocked;
+                                }
 
-                            assert.approximately(totalVesting3, totalVesting2 - refundTokens, MAX_ERROR);
-                            assert.approximately(trusteeBalance3, trusteeBalance2 - refundTokens, MAX_ERROR);
-                            assert.approximately(userBalance3, userBalance2, MAX_ERROR);
-                            assert.approximately(granterBalance2, granterBalance + refundTokens, MAX_ERROR);
+                                // Verify the state after the multiple unlocks.
+                                let totalVesting2 = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance2 = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance2 = (await token.balanceOf(holder)).toNumber();
+                                let transferred2 = (await getGrant(holder)).transferred.toNumber();
 
-                            let vestingGrant2 = await getGrant(holder);
-                            assert.equal(vestingGrant2.tokens, undefined);
-                        });
-                    }
+                                assert.approximately(totalVesting2, totalVesting - totalUnlocked, MAX_ERROR);
+                                assert.approximately(trusteeBalance2, trusteeBalance - totalUnlocked, MAX_ERROR);
+                                assert.approximately(userBalance2, userBalance + totalUnlocked, MAX_ERROR);
+                                assert.approximately(transferred2, transferred + totalUnlocked, MAX_ERROR);
+
+                                let refundTokens = grant.tokens - totalUnlocked;
+
+                                console.log(`\texpecting ${refundTokens} tokens refunded after ${i + 1} transactions`);
+
+                                let vestingGrant = await getGrant(holder);
+                                assert.equal(vestingGrant.value, grant.tokens);
+
+                                await trustee.revoke(holder);
+
+                                let totalVesting3 = (await trustee.totalVesting()).toNumber();
+                                let trusteeBalance3 = (await token.balanceOf(trustee.address)).toNumber();
+                                let userBalance3 = (await token.balanceOf(holder)).toNumber();
+                                let granterBalance2 = (await token.balanceOf(granter)).toNumber();
+
+                                assert.approximately(totalVesting3, totalVesting2 - refundTokens, MAX_ERROR);
+                                assert.approximately(trusteeBalance3, trusteeBalance2 - refundTokens, MAX_ERROR);
+                                assert.approximately(userBalance3, userBalance2, MAX_ERROR);
+                                assert.approximately(granterBalance2, granterBalance + refundTokens, MAX_ERROR);
+
+                                let vestingGrant2 = await getGrant(holder);
+                                assert.equal(vestingGrant2.tokens, undefined);
+                            });
+                        }
+                    });
                 });
             });
         });
@@ -390,20 +616,7 @@ contract('VestingTrustee', (accounts) => {
 
     describe('vestedTokens', async () => {
         let balance = new BigNumber(10 ** 12);
-
-        beforeEach(async () => {
-            await token.transfer(trustee.address, balance);
-        });
-
-        it('should return 0 for non existing grant', async () => {
-            let holder = accounts[5];
-            let grant = await getGrant(holder);
-
-            assert.equal(grant.value, 0);
-            assert.equal((await trustee.vestedTokens(holder, now + 100 * YEAR)).toNumber(), 0);
-        });
-
-        [
+        let grants = [
             {
                 tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
                     { offset: 0, vested: 0 },
@@ -426,8 +639,8 @@ contract('VestingTrustee', (accounts) => {
                     { offset: MONTH + 1, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + 1000, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + DAY, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) + Math.floor(1000 / YEAR * DAY)},
-                    { offset: 2 * MONTH, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
-                    { offset: 2 * MONTH + 1, vested: 2 * Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
+                    { offset: 2 * MONTH + 1, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: 2 * MONTH + 5 * DAY, vested: Math.floor(2 * (1000 / YEAR * DAY) * Math.floor(MONTH / DAY) + 5 * (1000 / YEAR * DAY))},
                     { offset: 0.5 * YEAR, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(0.5 * YEAR / DAY))},
                     { offset: YEAR, vested: 1000 },
@@ -524,19 +737,51 @@ contract('VestingTrustee', (accounts) => {
                     { offset: 3 * YEAR, vested: 100000000 }
                 ]
             }
-        ].forEach((grant) => {
-            context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
-                `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+        ];
 
-                beforeEach(async () => {
-                    await trustee.grant[grantSigs.twoStep](accounts[2], grant.tokens, now + grant.startOffset, now + grant.cliffOffset,
-                        now + grant.endOffset, grant.installmentLength, false);
+        beforeEach(async () => {
+            await token.transfer(trustee.address, balance);
+        });
+
+        it('should return 0 for non existing grant', async () => {
+            let holder = accounts[5];
+            let grant = await getGrant(holder);
+
+            assert.equal(grant.value, 0);
+            assert.equal((await trustee.vestedTokens(holder, now + 100 * YEAR)).toNumber(), 0);
+        });
+
+        grants.forEach((grant) => {
+            context('using trustee.grant', async () => {
+                context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                    `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+
+                    beforeEach(async () => {
+                        await trustee.grant[grantWithValueSig](accounts[2], grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, false);
+                    });
+
+                    grant.results.forEach(async (res) => {
+                        it(`should vest ${res.vested} out of ${grant.tokens} at time offset ${res.offset}`, async () => {
+                            let result = (await trustee.vestedTokens(accounts[2], now + res.offset)).toNumber();
+                            assert.equal(result, res.vested);
+                        });
+                    });
                 });
+            });
 
-                grant.results.forEach(async (res) => {
-                    it(`should vest ${res.vested} out of ${grant.tokens} at time offset ${res.offset}`, async () => {
-                        let result = (await trustee.vestedTokens(accounts[2], now + res.offset)).toNumber();
-                        assert.equal(result, res.vested);
+            context('using token.transfer', async () => {
+                context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                    `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+
+                    beforeEach(async () => {
+                        await token.transferAndCall(trustee.address, grant.tokens, getDataForGrantUsingTransfer(accounts[2], now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, false));
+                    });
+
+                    grant.results.forEach(async (res) => {
+                        it(`should vest ${res.vested} out of ${grant.tokens} at time offset ${res.offset}`, async () => {
+                            let result = (await trustee.vestedTokens(accounts[2], now + res.offset)).toNumber();
+                            assert.equal(result, res.vested);
+                        });
                     });
                 });
             });
@@ -554,29 +799,7 @@ contract('VestingTrustee', (accounts) => {
         });
 
         context('after transfering has ended', async () => {
-            beforeEach(async () => {
-                await token.makeTokensTransferable();
-            });
-
-            it('should not allow unlocking a non-existing grant', async () => {
-                let holder = accounts[5];
-                let grant = await getGrant(holder);
-
-                assert.equal(grant.value, 0);
-
-                await expectRevert(trustee.unlockVestedTokens({from: holder}));
-            });
-
-            it('should not allow unlocking a rovoked grant', async () => {
-                let grantee = accounts[1];
-
-                await trustee.grant[grantSigs.twoStep](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
-                await trustee.revoke(grantee, {from: granter});
-
-                await expectRevert(trustee.unlockVestedTokens({from: granter}));
-            });
-
-            [
+            let grants = [
                 {
                     tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
                         { diff: 0, unlocked: 0 },
@@ -677,49 +900,123 @@ contract('VestingTrustee', (accounts) => {
                         { diff: YEAR, unlocked: 0 }
                     ]
                 }
-            ].forEach(async (grant) => {
-                context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
-                    `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+            ];
 
-                    let holder = accounts[1];
+            beforeEach(async () => {
+                await token.makeTokensTransferable();
+            });
 
-                    beforeEach(async () => {
-                        await trustee.grant[grantSigs.twoStep](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
-                            grant.endOffset, grant.installmentLength, false);
+            it('should not allow unlocking a non-existing grant', async () => {
+                let holder = accounts[5];
+                let grant = await getGrant(holder);
+
+                assert.equal(grant.value, 0);
+
+                await expectRevert(trustee.unlockVestedTokens({from: holder}));
+            });
+
+            it('should not allow unlocking a rovoked grant using trustee.grant', async () => {
+                let grantee = accounts[1];
+
+                await trustee.grant[grantWithValueSig](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
+                await trustee.revoke(grantee, {from: granter});
+
+                await expectRevert(trustee.unlockVestedTokens({from: granter}));
+            });
+
+            it('should not allow unlocking a rovoked grant using token.transfer', async () => {
+                let grantee = accounts[1];
+
+                await token.transferAndCall(trustee.address, balance, getDataForGrantUsingTransfer(grantee, now, now + MONTH, now + YEAR, 1 * DAY, true));
+                await trustee.revoke(grantee, {from: granter});
+
+                await expectRevert(trustee.unlockVestedTokens({from: granter}));
+            });
+
+            grants.forEach(async (grant) => {
+                context('using trustee.grant', async () => {
+                    context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                        `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
+
+                        let holder = accounts[1];
+
+                        beforeEach(async () => {
+                            await trustee.grant[grantWithValueSig](holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, false);
+                        });
+
+                        it('should unlock tokens according to the schedule', async () => {
+                            for (let res of grant.results) {
+                                console.log(`\texpecting ${res.unlocked} tokens unlocked and transferred after another ` +
+                                    `${res.diff} seconds`);
+
+                                // Get previous state.
+                                let totalVesting = await trustee.totalVesting();
+                                let trusteeBalance = await token.balanceOf(trustee.address);
+                                let userBalance = await token.balanceOf(holder);
+                                let transferred = (await getGrant(holder)).transferred;
+
+                                // Jump forward in time by the requested diff.
+                                await time.increaseTime(res.diff);
+                                await trustee.unlockVestedTokens({from: holder});
+
+                                // Verify new state.
+                                let totalVesting2 = await trustee.totalVesting();
+                                let trusteeBalance2 = await token.balanceOf(trustee.address);
+                                let userBalance2 = await token.balanceOf(holder);
+                                let transferred2 = (await getGrant(holder)).transferred;
+
+                                assert.approximately(totalVesting2.toNumber(), totalVesting.sub(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(trusteeBalance2.toNumber(), trusteeBalance.sub(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(userBalance2.toNumber(), userBalance.add(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(transferred2.toNumber(), transferred.add(res.unlocked).toNumber(), MAX_ERROR);
+                            }
+                        });
                     });
+                });
 
-                    it('should unlock tokens according to the schedule', async () => {
-                        for (let res of grant.results) {
-                            console.log(`\texpecting ${res.unlocked} tokens unlocked and transferred after another ` +
-                                `${res.diff} seconds`);
+                context('using token.transfer', async () => {
+                    context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
+                        `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
 
-                            // Get previous state.
-                            let totalVesting = await trustee.totalVesting();
-                            let trusteeBalance = await token.balanceOf(trustee.address);
-                            let userBalance = await token.balanceOf(holder);
-                            let transferred = (await getGrant(holder)).transferred;
+                        let holder = accounts[1];
 
-                            // Jump forward in time by the requested diff.
-                            await time.increaseTime(res.diff);
-                            await trustee.unlockVestedTokens({from: holder});
+                        beforeEach(async () => {
+                            await token.transferAndCall(trustee.address, grant.tokens, getDataForGrantUsingTransfer(holder, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, false));
+                        });
 
-                            // Verify new state.
-                            let totalVesting2 = await trustee.totalVesting();
-                            let trusteeBalance2 = await token.balanceOf(trustee.address);
-                            let userBalance2 = await token.balanceOf(holder);
-                            let transferred2 = (await getGrant(holder)).transferred;
+                        it('should unlock tokens according to the schedule', async () => {
+                            for (let res of grant.results) {
+                                console.log(`\texpecting ${res.unlocked} tokens unlocked and transferred after another ` +
+                                    `${res.diff} seconds`);
 
-                            assert.approximately(totalVesting2.toNumber(), totalVesting.sub(res.unlocked).toNumber(), MAX_ERROR);
-                            assert.approximately(trusteeBalance2.toNumber(), trusteeBalance.sub(res.unlocked).toNumber(), MAX_ERROR);
-                            assert.approximately(userBalance2.toNumber(), userBalance.add(res.unlocked).toNumber(), MAX_ERROR);
-                            assert.approximately(transferred2.toNumber(), transferred.add(res.unlocked).toNumber(), MAX_ERROR);
-                        }
+                                // Get previous state.
+                                let totalVesting = await trustee.totalVesting();
+                                let trusteeBalance = await token.balanceOf(trustee.address);
+                                let userBalance = await token.balanceOf(holder);
+                                let transferred = (await getGrant(holder)).transferred;
+
+                                // Jump forward in time by the requested diff.
+                                await time.increaseTime(res.diff);
+                                await trustee.unlockVestedTokens({from: holder});
+
+                                // Verify new state.
+                                let totalVesting2 = await trustee.totalVesting();
+                                let trusteeBalance2 = await token.balanceOf(trustee.address);
+                                let userBalance2 = await token.balanceOf(holder);
+                                let transferred2 = (await getGrant(holder)).transferred;
+
+                                assert.approximately(totalVesting2.toNumber(), totalVesting.sub(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(trusteeBalance2.toNumber(), trusteeBalance.sub(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(userBalance2.toNumber(), userBalance.add(res.unlocked).toNumber(), MAX_ERROR);
+                                assert.approximately(transferred2.toNumber(), transferred.add(res.unlocked).toNumber(), MAX_ERROR);
+                            }
+                        });
                     });
                 });
             });
         });
 
-        it('should allow revoking multiple grants', async () => {
+        it('should allow revoking multiple grants using trustee.grant', async () => {
             let grants = [
                 {tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, holder: accounts[1]},
                 {tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, holder: accounts[2]},
@@ -737,8 +1034,7 @@ contract('VestingTrustee', (accounts) => {
 
             for (let grant of grants) {
                 await token.transfer(trustee.address, grant.tokens);
-                await trustee.grant[grantSigs.twoStep](grant.holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now +
-                    grant.endOffset, grant.installmentLength, true);
+                await trustee.grant[grantWithValueSig](grant.holder, grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, true);
 
                 totalGranted = totalGranted.add(grant.tokens);
             }
@@ -749,6 +1045,46 @@ contract('VestingTrustee', (accounts) => {
             let trusteeBalance2 = await token.balanceOf(trustee.address);
             assert.equal(granterBalance2.toNumber(), granterBalance.sub(totalGranted).toNumber());
             assert.equal(trusteeBalance2.toNumber(), trusteeBalance.add(totalGranted).toNumber());
+
+            for (let grant of grants) {
+                await trustee.revoke(grant.holder);
+            }
+
+            let granterBalance3 = await token.balanceOf(granter);
+            let trusteeBalance3 = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance3.toNumber(), totalGranted.add(granterBalance2).toNumber());
+            assert.equal(trusteeBalance3.toNumber(), trusteeBalance2.sub(totalGranted).toNumber());
+        });
+
+        it('should allow revoking multiple grants using token.transfer', async () => {
+            let grants = [
+                {tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, holder: accounts[1]},
+                {tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, holder: accounts[2]},
+                {tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 1, holder: accounts[3]},
+                {tokens: 1245, startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1, holder: accounts[4]},
+                {tokens: 233223, startOffset: 0, cliffOffset: 2 * MONTH, endOffset: 2 * YEAR, installmentLength: 1, holder: accounts[5]}
+            ];
+
+            let granterBalance = await token.balanceOf(granter);
+            let trusteeBalance = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance.toNumber(), initialTokens.sub(balance).toNumber());
+            assert.equal(trusteeBalance.toNumber(), balance.toNumber());
+
+            let totalGranted = new BigNumber(0);
+
+            for (let grant of grants) {
+                await token.transfer(trustee.address, grant.tokens);
+                await token.transferAndCall(trustee.address, grant.tokens, getDataForGrantUsingTransfer(grant.holder, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, true));
+
+                totalGranted = totalGranted.add(grant.tokens);
+            }
+
+            await token.makeTokensTransferable();
+
+            let granterBalance2 = await token.balanceOf(granter);
+            let trusteeBalance2 = await token.balanceOf(trustee.address);
+            assert.equal(granterBalance2.toNumber(), granterBalance.sub(2*totalGranted).toNumber());
+            assert.equal(trusteeBalance2.toNumber(), trusteeBalance.add(2*totalGranted).toNumber());
 
             for (let grant of grants) {
                 await trustee.revoke(grant.holder);
@@ -782,41 +1118,89 @@ contract('VestingTrustee', (accounts) => {
             installmentLength = 1 * DAY;
         });
 
-        it('should emit events when granting vesting', async () => {
-            let result = await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, false);
+        context('using trustee.grant', async () => {
+            it('should emit events when granting vesting', async () => {
+                let result = await trustee.grant[grantWithValueSig](grantee, value, start, cliff, end, installmentLength, false);
 
-            assert.lengthOf(result.logs, 1);
+                assert.lengthOf(result.logs, 1);
 
-            let event = result.logs[0];
-            assert.equal(event.event, 'NewGrant');
-            assert.equal(event.args._from, granter);
-            assert.equal(event.args._to, grantee);
-            assert.equal(Number(event.args._value), value);
+                let event = result.logs[0];
+                assert.equal(event.event, 'NewGrant');
+                assert.equal(event.args._from, granter);
+                assert.equal(event.args._to, grantee);
+                assert.equal(Number(event.args._value), value);
+            });
+
+            it('should emit events when revoking a grant', async () => {
+                await trustee.grant[grantWithValueSig](grantee, value, start, cliff, end, installmentLength, true);
+                let result = await trustee.revoke(grantee);
+
+                assert.lengthOf(result.logs, 1);
+
+                let event = result.logs[0];
+                assert.equal(event.event, 'GrantRevoked');
+                assert.equal(event.args._holder, grantee);
+                assert.equal(Number(event.args._refund), value);
+            });
+
+            it('should emit events when unlocking tokens', async () => {
+                await trustee.grant[grantWithValueSig](grantee, value, start, cliff, end, installmentLength, true);
+                await time.increaseTime(cliff);
+                let result = await trustee.unlockVestedTokens({from: grantee});
+
+                assert.lengthOf(result.logs, 1);
+
+                let event = result.logs[0];
+                assert.equal(event.event, 'TokensUnlocked');
+                assert.equal(event.args._to, grantee);
+                assert.equal(Number(event.args._value), value);
+            });
         });
 
-        it('should emit events when revoking a grant', async () => {
-            await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, true);
-            let result = await trustee.revoke(grantee);
+        context('using token.transfer', async () => {
+            it('should emit events when granting vesting', async () => {
+                let result = await token.transferAndCall(trustee.address, value, getDataForGrantUsingTransfer(grantee, start, cliff, end, installmentLength, false));
 
-            assert.lengthOf(result.logs, 1);
+                assert.lengthOf(result.logs, 2);
 
-            let event = result.logs[0];
-            assert.equal(event.event, 'GrantRevoked');
-            assert.equal(event.args._holder, grantee);
-            assert.equal(Number(event.args._refund), value);
-        });
+                let event1 = result.logs[0];
+                assert.equal(event1.event, 'Transfer');
+                assert.equal(event1.args.from, granter);
+                assert.equal(event1.args.to, trustee.address);
+                assert.equal(Number(event1.args.value), value);
 
-        it('should emit events when unlocking tokens', async () => {
-            await trustee.grant[grantSigs.twoStep](grantee, value, start, cliff, end, installmentLength, true);
-            await time.increaseTime(cliff);
-            let result = await trustee.unlockVestedTokens({from: grantee});
+                let event2 = result.logs[1];
+                assert.equal(event2.event, 'TransferAndCall');
+                assert.equal(event2.args.from, granter);
+                assert.equal(event2.args.to, trustee.address);
+                assert.equal(Number(event2.args.value), value);
+                assert.equal(event2.args.data, getDataForGrantUsingTransfer(grantee, start, cliff, end, installmentLength, false));
+            });
 
-            assert.lengthOf(result.logs, 1);
+            it('should emit events when revoking a grant', async () => {
+                await token.transferAndCall(trustee.address, value, getDataForGrantUsingTransfer(grantee, start, cliff, end, installmentLength, true));
+                let result = await trustee.revoke(grantee);
 
-            let event = result.logs[0];
-            assert.equal(event.event, 'TokensUnlocked');
-            assert.equal(event.args._to, grantee);
-            assert.equal(Number(event.args._value), value);
+                assert.lengthOf(result.logs, 1);
+
+                let event = result.logs[0];
+                assert.equal(event.event, 'GrantRevoked');
+                assert.equal(event.args._holder, grantee);
+                assert.equal(Number(event.args._refund), value);
+            });
+
+            it('should emit events when unlocking tokens', async () => {
+                await token.transferAndCall(trustee.address, value, getDataForGrantUsingTransfer(grantee, start, cliff, end, installmentLength, true));
+                await time.increaseTime(cliff);
+                let result = await trustee.unlockVestedTokens({from: grantee});
+
+                assert.lengthOf(result.logs, 1);
+
+                let event = result.logs[0];
+                assert.equal(event.event, 'TokensUnlocked');
+                assert.equal(event.args._to, grantee);
+                assert.equal(Number(event.args._value), value);
+            });
         });
     });
 });
