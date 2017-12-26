@@ -3,7 +3,7 @@
 port=8545
 
 # Import common variables.
-. scripts/common.sh
+source $(dirname $0)/common.sh
 
 if ganache_cli_running $port; then
   echo "Using existing ganache-cli instance"
