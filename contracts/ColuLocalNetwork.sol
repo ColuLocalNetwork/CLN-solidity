@@ -69,7 +69,7 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     /// @dev Same ERC223 behavior, but reverts if not transferable.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
-    /// @param _data bytes data to send to reciever if it is a contract.
+    /// @param _data bytes data to send to receiver if it is a contract.
     function transfer(address _to, uint _value, bytes _data) public transferable returns (bool success) {
       return super.transfer(_to, _value, _data);
     }
@@ -78,7 +78,7 @@ contract ColuLocalNetwork is Ownable, Standard223Token, TokenHolder {
     /// @param _from address The address to send tokens from.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 the amount of tokens to be transferred.
-    /// @param _data bytes data to send to reciever if it is a contract.
+    /// @param _data bytes data to send to receiver if it is a contract.
     function transferFrom(address _from, address _to, uint _value, bytes _data) public transferable returns (bool success) {
       return super.transferFrom(_from, _to, _value, _data);
     }
