@@ -18,8 +18,8 @@ contract Standard677Token is ERC677, BasicToken {
 
   //function that is called when transaction target is a contract
   function contractFallback(address _origin, address _to, uint _value, bytes _data) private returns (bool) {
-    ERC223Receiver reciever = ERC223Receiver(_to);
-    require(reciever.tokenFallback(msg.sender, _origin, _value, _data));
+    ERC223Receiver receiver = ERC223Receiver(_to);
+    require(receiver.tokenFallback(msg.sender, _origin, _value, _data));
     return true;
   }
 

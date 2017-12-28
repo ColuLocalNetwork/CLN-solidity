@@ -69,7 +69,7 @@ contract ColuLocalNetwork is Ownable, Standard677Token, TokenHolder {
     /// @dev Same ERC677 behavior, but reverts if not transferable.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
-    /// @param _data bytes data to send to reciever if it is a contract.
+    /// @param _data bytes data to send to receiver if it is a contract.
     function transferAndCall(address _to, uint _value, bytes _data) public transferable returns (bool success) {
       return super.transferAndCall(_to, _value, _data);
     }
