@@ -21,7 +21,7 @@ contract BasicToken is ERC20 {
     function approve(address _spender, uint256 _value) public returns (bool) {
         // https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
         if ((_value != 0) && (allowed[msg.sender][_spender] != 0)) {
-            revert();
+            return false;
         }
 
         allowed[msg.sender][_spender] = _value;

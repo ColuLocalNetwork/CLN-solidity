@@ -902,13 +902,13 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     }
 
-    // Generate tests for create() - Create and sell tokens to the caller.
-    generateTokenTests('using create()', async (sale, value, from) => {
+    // Generate tests for participate() - Create and sell tokens to the caller.
+    generateTokenTests('using participate()', async (sale, value, from) => {
         let account = from || accounts[0];
-        return sale.create(account, {value: value, from: account});
+        return sale.participate(account, {value: value, from: account});
     });
 
-    // Generate tests for fallback method - Should be same as create().
+    // Generate tests for fallback method - Should be same as participate().
     generateTokenTests('using fallback function', async (sale, value, from) => {
         if (from) {
             return sale.sendTransaction({value: value, from: from});
@@ -1141,9 +1141,9 @@ contract('ColuLocalNetworkSale', (accounts) => {
             assert.isBelow(now, end);
         });
 
-        let create = async (sale, value, from) => {
+        let participate = async (sale, value, from) => {
             let account = from || accounts[0];
-            return sale.create(account, {value: value, from: account});
+            return sale.participate(account, {value: value, from: account});
         };
 
         const WHITELIST_SIZE = 50000;
@@ -1187,7 +1187,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
                     transactions.push({from: tier2Participants[i], value: new BigNumber(i + 1).mul(10).mul(TOKEN_DECIMALS)});
                 }
 
-                await verifyTransactions(sale, fundRecipient, create, transactions);
+                await verifyTransactions(sale, fundRecipient, participate, transactions);
             });
 
             // This test generates very small and very large transactions. During the sale,
@@ -1220,7 +1220,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
                     }
                 }
 
-                await verifyTransactions(sale, fundRecipient, create, transactions);
+                await verifyTransactions(sale, fundRecipient, participate, transactions);
             });
         });
     });

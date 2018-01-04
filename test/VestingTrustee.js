@@ -17,6 +17,11 @@ contract('VestingTrustee', (accounts) => {
     const YEAR = 365 * DAY;   // 31,536,000
     const MONTH = YEAR / 12;  // 2,628,000
 
+    const OK = 1;
+    const ERR_INVALID_VALUE = 10001;
+    const ERR_INVALID_VESTED = 10002;
+    const ERR_INVALID_TRANSFERABLE = 10002;
+
     const VESTING_TRUSTEE_GRANT_ABI = {
         name: 'grant',
         type: 'function',
@@ -905,7 +910,11 @@ contract('VestingTrustee', (accounts) => {
 
                     assert.equal(grant.value, 0);
 
-                    await expectRevert(trustee.unlockVestedTokens({from: holder}));
+                    let result = await trustee.unlockVestedTokens({from: holder});
+                    assert.lengthOf(result.logs, 1);
+                    let event = result.logs[0];
+                    assert.equal(event.event, 'Error');
+                    assert.equal(Number(event.args.error), ERR_INVALID_VALUE);
                 });
 
                 it('should not allow unlocking a rovoked grant', async () => {
@@ -914,7 +923,11 @@ contract('VestingTrustee', (accounts) => {
                     await trustee.grant[grantWithValueSig](grantee, balance, now, now + MONTH, now + YEAR, 1 * DAY, true);
                     await trustee.revoke(grantee, {from: granter});
 
-                    await expectRevert(trustee.unlockVestedTokens({from: granter}));
+                    let result = await trustee.unlockVestedTokens({from: granter});
+                    assert.lengthOf(result.logs, 1);
+                    let event = result.logs[0];
+                    assert.equal(event.event, 'Error');
+                    assert.equal(Number(event.args.error), ERR_INVALID_VALUE);
                 });
 
                 grants.forEach(async (grant) => {
@@ -1011,7 +1024,11 @@ contract('VestingTrustee', (accounts) => {
 
                     assert.equal(grant.value, 0);
 
-                    await expectRevert(trustee.unlockVestedTokens({from: holder}));
+                    let result = await trustee.unlockVestedTokens({from: holder});
+                    assert.lengthOf(result.logs, 1);
+                    let event = result.logs[0];
+                    assert.equal(event.event, 'Error');
+                    assert.equal(Number(event.args.error), ERR_INVALID_VALUE);
                 });
 
                 it('should not allow unlocking a rovoked grant', async () => {
@@ -1020,7 +1037,11 @@ contract('VestingTrustee', (accounts) => {
                     await token.transferAndCall(trustee.address, balance, getDataForGrantUsingTransfer(grantee, now, now + MONTH, now + YEAR, 1 * DAY, true));
                     await trustee.revoke(grantee, {from: granter});
 
-                    await expectRevert(trustee.unlockVestedTokens({from: granter}));
+                    let result = await trustee.unlockVestedTokens({from: granter});
+                    assert.lengthOf(result.logs, 1);
+                    let event = result.logs[0];
+                    assert.equal(event.event, 'Error');
+                    assert.equal(Number(event.args.error), ERR_INVALID_VALUE);
                 });
 
                 grants.forEach(async (grant) => {
@@ -1104,6 +1125,72 @@ contract('VestingTrustee', (accounts) => {
             });
         });
     });
+    
+    describe('withdrawERC20', async () => {
+        let balance = 1000;
+        let token2;
+        beforeEach(async () => {
+            await token.transfer(trustee.address, balance);
+            await trustee.grant[grantWithValueSig](accounts[1], balance / 2, now, now + MONTH, now + YEAR, 1 * DAY, false);
+            token2 = await ColuLocalNetwork.new(initialTokens);
+            await token2.transfer(trustee.address, balance);
+            await token.makeTokensTransferable();
+            await token2.makeTokensTransferable();
+        });
+
+        it('should allow to withdraw all of token2 (not cln)', async () => {
+            let tokenBalance = await token2.balanceOf(accounts[0]);
+            await trustee.withdrawERC20(token2.address, balance);
+            let afterBalance = await token2.balanceOf(accounts[0]);
+            assert.equal(afterBalance.toNumber(), tokenBalance.add(balance).toNumber());
+        });
+
+        it('should allow to withdraw all of token2 (not cln) in steps', async () => {
+            let tokenBalance = await token2.balanceOf(accounts[0]);
+            await trustee.withdrawERC20(token2.address, balance / 2);
+            assert.equal((await token2.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance / 2).toNumber());
+            await trustee.withdrawERC20(token2.address, balance / 2);
+            assert.equal((await token2.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance).toNumber());
+        });
+
+        it('should not allow to withdraw token2 (not cln), non owner', async () => {
+            await expectRevert(trustee.withdrawERC20(token2.address, balance, {from: accounts[1]}));
+        });
+
+        it('should not allow to withdraw more than available token2 (not cln) twice', async () => {
+            let tokenBalance = await token2.balanceOf(accounts[0]);
+            await trustee.withdrawERC20(token2.address, balance);
+            assert.equal((await token2.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance).toNumber());
+            await expectRevert(trustee.withdrawERC20(token2.address, balance + 1));
+        });
+
+        it('should not allow to withdraw more than available token2 (not cln)', async () => {
+            await expectRevert(trustee.withdrawERC20(token2.address, balance + 1));
+        });
+
+        it('should allow to withdraw available cln', async () => {
+            let tokenBalance = await token.balanceOf(accounts[0]);
+            await trustee.withdrawERC20(token.address, balance / 2);
+            assert.equal((await token.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance / 2).toNumber());
+        });
+
+        it('should allow to withdraw available cln in steps', async () => {
+            let tokenBalance = await token.balanceOf(accounts[0]);
+            let availableCLN = (await token.balanceOf(trustee.address)).sub(await trustee.totalVesting());
+            await trustee.withdrawERC20(token.address, balance / 4);
+            assert.equal((await token.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance / 4).toNumber());
+            await trustee.withdrawERC20(token.address, balance / 4);
+            assert.equal((await token.balanceOf(accounts[0])).toNumber(), tokenBalance.add(balance / 2).toNumber());
+        });
+
+        it('should not allow to withdraw available cln, non owner', async () => {
+            await expectRevert(trustee.withdrawERC20(token.address, balance / 2, {from: accounts[1]}));
+        });
+
+        it('should not allow to withdraw more than available cln', async () => {
+            await expectRevert(trustee.withdrawERC20(token.address, (balance / 2) + 1));
+        });
+    })
 
     describe('events', async () => {
         const balance = 10000;

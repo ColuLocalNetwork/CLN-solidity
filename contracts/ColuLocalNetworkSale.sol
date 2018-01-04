@@ -241,14 +241,14 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         hardParticipationCap = _cap;
     }
 
-    /// @dev Fallback function that will delegate the request to create().
+    /// @dev Fallback function that will delegate the request to participate().
     function () external payable onlyDuringSale isInitialized {
-        create(msg.sender);
+        participate(msg.sender);
     }
 
     /// @dev Create and sell tokens to the caller.
     /// @param _recipient address The address of the recipient receiving the tokens.
-    function create(address _recipient) public payable onlyDuringSale isInitialized {
+    function participate(address _recipient) public payable onlyDuringSale isInitialized {
         require(_recipient != address(0));
 
         // Enforce participation cap (in WEI received).
