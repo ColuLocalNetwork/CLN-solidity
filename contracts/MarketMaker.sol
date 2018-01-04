@@ -9,12 +9,12 @@ contract MarketMaker is ERC223Receiver {
   uint public S2;
   uint public precision;
 
-  function getPrice(address _fromToken, address _toToken) public constant returns (uint _price);
-  function changeAllowance(address _fromToken, address _toToken, uint _amount) public returns (uint _returnAmount);
-  function changeAllowance(address _fromToken, address _toToken, uint _amount, uint _minReturn) public returns (uint _returnAmount);
-  function change223(address _fromToken, address _toToken, uint _amount) public returns (uint _returnAmount);
-  function change223(address _fromToken, address _toToken, uint _amount, uint _minReturn) public returns (uint _returnAmount);
-  function quote(address _fromToken, address _toToken, uint _amount) public constant returns (uint _returnAmount);
+  function getPrice() public constant returns (uint _price);
+  function change(address _fromToken, uint _amount, address _toToken) public returns (uint _returnAmount);
+  function change(address _fromToken, uint _amount, address _toToken, uint _minReturn) public returns (uint _returnAmount);
+  function change(address _toToken) public returns (uint _returnAmount);
+  function change(address _toToken, uint _minReturn) public returns (uint _returnAmount);
+  function quote(address _fromToken, uint _amount, address _toToken) public constant returns (uint _returnAmount);
 
   event Change(address indexed fromToken, uint inAmount, address indexed toToken, uint returnAmount, address indexed account);
 }

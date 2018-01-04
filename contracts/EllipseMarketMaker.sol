@@ -8,7 +8,7 @@ import './TokenOwnable.sol';
 contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     using SafeMath for uint256;
 
-    uint256 public constant precision = 10 ** 6;
+    uint256 public constant precision = 10 ** 18;
 
     ERC223 public token1;
     ERC223 public token2;
@@ -46,6 +46,8 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     function EllipseMarketMaker(address _token1, address _token2) public {
       require(_token1 != address(0));
       require(_token2 != address(0));
+      require(_token1 != _token2);
+
       token1 = ERC223(_token1);
       token2 = ERC223(_token2);
       R1 = 0;
@@ -66,11 +68,13 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     }
 
     function initializeAfterTransfer() public notOperational onlyOwner returns (bool) {
-      return initialize();
+      require(initialize());
+      return true;
     }
 
     function initializeOnTransfer() public notOperational tokenOnlyOwner tokenPayable returns (bool) {
-      return initialize();
+      require(initialize());
+      return true;
     }
 
     function initialize() private returns (bool success) {
@@ -84,15 +88,15 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
 
     function getPrice() public constant isOperational returns (uint256 price) {
       return precision
-      .mul(S1.sub(R1))
-      .mul(S2)
-      .mul(S2)
-      .div(S2.sub(R2))
-      .div(S1)
-      .div(S1);
+        .mul(S1.sub(R1))
+        .div(S2.sub(R2))
+        .mul(S2)
+        .div(S1)
+        .mul(S2)
+        .div(S1);
     }
 
-    function quote(address _fromToken, address _toToken, uint256 _inAmount) public constant isOperational returns (uint256 returnAmount) {
+    function quote(address _fromToken, uint256 _inAmount, address _toToken) public constant isOperational returns (uint256 returnAmount) {
       uint256 _R1;
       uint256 _S1;
       uint256 _S2;
@@ -122,7 +126,7 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
           .toPower2()
         )
         .sqrt();
-      
+
       uint256 secondRoot = precision
         .mul(precision)
         .sub(
@@ -139,13 +143,13 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       returnAmount = _S2.mul(firstRoot.sub(secondRoot)).div(precision);
     }
 
-    function changeAllowance(address _fromToken, address _toToken, uint256 _inAmount) public canTrade returns (uint256 returnAmount) {
-      return changeAllowance(_fromToken, _toToken, _inAmount, 0);
+    function change(address _fromToken, uint256 _inAmount, address _toToken) public canTrade returns (uint256 returnAmount) {
+      return change(_fromToken, _inAmount, _toToken, 0);
     }
 
-    function changeAllowance(address _fromToken, address _toToken, uint256 _inAmount, uint256 _minReturn) public canTrade returns (uint256 returnAmount) {
+    function change(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) public canTrade returns (uint256 returnAmount) {
       require(ERC223(_fromToken).transferFrom(msg.sender, this, _inAmount));
-      returnAmount = change(_fromToken, _toToken, _inAmount, _minReturn);
+      returnAmount = exchange(_fromToken, _inAmount, _toToken, _minReturn);
       if (returnAmount == 0) {
         revert();
       }
@@ -154,27 +158,28 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       Change(_fromToken, _inAmount, _toToken, returnAmount, msg.sender);
     }
 
-    function change223(address _fromToken, address _toToken) public canTrade223 tokenPayable returns (uint256 returnAmount) {
-      require(tkn.addr == _fromToken);
-      return change223(_fromToken, _toToken, 0);
+    function change(address _toToken) public canTrade223 tokenPayable returns (uint256 returnAmount) {
+      return change(_toToken, 0);
     }
 
-    function change223(address _fromToken, address _toToken, uint256 _minReturn) public canTrade223 tokenPayable returns (uint256 returnAmount) {
-      require(tkn.addr == _fromToken);
-      returnAmount = change(_fromToken, _toToken, tkn.value, _minReturn);
+    function change(address _toToken, uint256 _minReturn) public canTrade223 tokenPayable returns (uint256 returnAmount) {
+      address fromToken = tkn.addr;
+      uint256 inAmount = tkn.value;
+      returnAmount = exchange(fromToken, inAmount, _toToken, _minReturn);
       if (returnAmount == 0) {
         revert();
       }
       ERC223(_toToken).transfer(tkn.sender, returnAmount);
       require(validateReserves());
-      Change(_fromToken, tkn.value, _toToken, returnAmount, tkn.sender);
+      Change(fromToken, inAmount, _toToken, returnAmount, tkn.sender);
     }
 
-    function change(address _fromToken, address _toToken, uint256 _inAmount, uint256 _minReturn) private returns (uint256 returnAmount) {
-      returnAmount = quote(_fromToken, _toToken, _inAmount);
+    function exchange(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) private returns (uint256 returnAmount) {
+      returnAmount = quote(_fromToken, _inAmount, _toToken);
       if (returnAmount == 0 || returnAmount < _minReturn) {
         return 0;
-      } 
+      }
+
       updateReserve(_fromToken, _inAmount, true);
       updateReserve(_toToken, returnAmount, false);
     }

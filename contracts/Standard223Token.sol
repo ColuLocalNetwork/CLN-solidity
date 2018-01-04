@@ -16,19 +16,8 @@ contract Standard223Token is ERC223, BasicToken {
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint _value, bytes _data) public returns (bool success) {
-    require(super.transferFrom(_from, _to, _value)); // do a normal token transfer
-    Transfer(_from, _to, _value, _data);
-    if (isContract(_to)) return contractFallback(_from, _to, _value, _data);
-    return true;
-  }
-
   function transfer(address _to, uint _value) public returns (bool success) {
     return transfer(_to, _value, new bytes(0));
-  }
-
-  function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
-    return transferFrom(_from, _to, _value, new bytes(0));
   }
 
   //function that is called when transaction target is a contract
