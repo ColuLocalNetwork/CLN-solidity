@@ -13,7 +13,7 @@ var fundingRecipient = args.fundingRecipient
 var communityPoolAddress = args.communityPoolAddress
 var futureDevelopmentPoolAddress = args.futureDevelopmentPoolAddress
 var stakeholdersPoolAddress = args.stakeholdersPoolAddress
-var startTime
+var startTime = 1515589200 // Wednesday, January 10, 2018 3:00:00 PM GMT+02:00
 
 web3.eth.getBlockNumber(function(err, lastBlock) {
   if(err) return console.error("err =", err)

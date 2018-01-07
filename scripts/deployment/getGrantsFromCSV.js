@@ -41,10 +41,10 @@ async.auto({
 				grants.push({
 					to: line[0],
 					tokens: tokensWEI.toString(10,24),
-					start: argv.start || now,
-					cliff: argv.cliff || (now + 6*MONTH),
-					end: argv.end || (now + 3*YEAR),
-					installmentLength: argv.installmentLength || (1*MONTH),
+					start: 1515589200, // Wednesday, January 10, 2018 3:00:00 PM GMT+02:00
+					cliff: 1515589200 + 3 * DAY,
+					end: 1515589200 + 1 * WEEK,
+					installmentLength: 1 * DAY,
 					revokable: argv.revokable || true
 				})
 				cb()

@@ -57,7 +57,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     uint256 public constant CLN_PER_ETH = 3900;
 
     // Sale start, end blocks (time ranges)
-    uint256 public constant SALE_DURATION = 7 days;
+    uint256 public constant SALE_DURATION = 23 hours;
     uint256 public startTime;
     uint256 public endTime;
 
@@ -180,8 +180,8 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         uint256 months = 1 years / 12;
 
         vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
-        vestingPlans.push(VestingPlan(0, 0, 6 * months, 1 * months, 4));
-        vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * months, 12));
+        vestingPlans.push(VestingPlan(0, 0, 3 days, 1 days, 4));
+        vestingPlans.push(VestingPlan(0, 0, 7 days, 1 days, 12));
         vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * months, 26));
         vestingPlans.push(VestingPlan(0, 0, 3 years, 1 * months, 35));
 
@@ -293,8 +293,8 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         uint256 futureDevelopmentPool = FUTURE_DEVELOPMENT_POOL.add(tokensLeftInSale);
         // Future Development Pool is locked for 3 years.
-        grant(futureDevelopmentPoolAddress, futureDevelopmentPool, startTime, startTime.add(3 years),
-            startTime.add(3 years), 1 days, false);
+        grant(futureDevelopmentPoolAddress, futureDevelopmentPool, startTime, startTime.add(7 days),
+            startTime.add(7 days), 1 days, false);
 
         // Make tokens Transferable, end the sale!.
         cln.makeTokensTransferable();
