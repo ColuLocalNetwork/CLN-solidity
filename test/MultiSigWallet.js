@@ -55,7 +55,7 @@ contract('MultiSigWallet', (accounts) => {
             name: 'changeRequirement',
             type: 'function',
             inputs: [{
-                type: 'uint8',
+                type: 'uint256',
                 name: 'required'
             }]
         }

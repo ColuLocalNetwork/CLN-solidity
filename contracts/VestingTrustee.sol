@@ -36,12 +36,12 @@ contract VestingTrustee is TokenOwnable {
     event TokensUnlocked(address indexed _to, uint256 _value);
     event GrantRevoked(address indexed _holder, uint256 _refund);
 
-    uint16 constant OK = 1;
-    uint16 constant ERR_INVALID_VALUE = 10001;
-    uint16 constant ERR_INVALID_VESTED = 10002;
-    uint16 constant ERR_INVALID_TRANSFERABLE = 10002;
+    uint constant OK = 1;
+    uint constant ERR_INVALID_VALUE = 10001;
+    uint constant ERR_INVALID_VESTED = 10002;
+    uint constant ERR_INVALID_TRANSFERABLE = 10002;
 
-    event Error(address indexed sender, uint16 error);
+    event Error(address indexed sender, uint error);
 
     /// @dev Constructor that initializes the address of the Colu Local Network contract.
     /// @param _cln ColuLocalNetwork The address of the previously deployed Colu Local Network contract.
@@ -227,8 +227,8 @@ contract VestingTrustee is TokenOwnable {
     }
 
     /// @dev Unlock vested tokens and transfer them to the grantee.
-    /// @return a uint256 Representing the amount of vested tokens transferred to their holder.
-    function unlockVestedTokens() external returns (uint16) {
+    /// @return a uint The success or error code.
+    function unlockVestedTokens() external returns (uint) {
         Grant storage grant = grants[msg.sender];
 
         // Make sure the grant has tokens available.

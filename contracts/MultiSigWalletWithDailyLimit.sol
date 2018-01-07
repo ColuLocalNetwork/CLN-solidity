@@ -9,14 +9,14 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
     /*
      *  Events
      */
-    event DailyLimitChange(uint256 dailyLimit);
+    event DailyLimitChange(uint dailyLimit);
 
     /*
      *  Storage
      */
-    uint256 public dailyLimit;
-    uint256 public lastDay;
-    uint256 public spentToday;
+    uint public dailyLimit;
+    uint public lastDay;
+    uint public spentToday;
 
     /*
      * Public functions
@@ -25,7 +25,7 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
     /// @param _owners List of initial owners.
     /// @param _required Number of required confirmations.
     /// @param _dailyLimit Amount in wei, which can be withdrawn without confirmations on a daily basis.
-    function MultiSigWalletWithDailyLimit(address[] _owners, uint8 _required, uint256 _dailyLimit)
+    function MultiSigWalletWithDailyLimit(address[] _owners, uint _required, uint _dailyLimit)
         public
         MultiSigWallet(_owners, _required)
     {
@@ -34,7 +34,7 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
 
     /// @dev Allows to change the daily limit. Transaction has to be sent by wallet.
     /// @param _dailyLimit Amount in wei.
-    function changeDailyLimit(uint256 _dailyLimit)
+    function changeDailyLimit(uint _dailyLimit)
         public
         onlyWallet
     {
@@ -44,7 +44,7 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
 
     /// @dev Allows anyone to execute a confirmed transaction or ether withdraws until daily limit is reached.
     /// @param transactionId Transaction ID.
-    function executeTransaction(uint256 transactionId)
+    function executeTransaction(uint transactionId)
         public
         ownerExists(msg.sender)
         confirmed(transactionId, msg.sender)
@@ -73,7 +73,7 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
     /// @dev Returns if amount is within daily limit and resets spentToday after one day.
     /// @param amount Amount to withdraw.
     /// @return Returns if amount is under daily limit.
-    function isUnderLimit(uint256 amount)
+    function isUnderLimit(uint amount)
         internal
         returns (bool)
     {
@@ -94,7 +94,7 @@ contract MultiSigWalletWithDailyLimit is MultiSigWallet {
     function calcMaxWithdraw()
         public
         constant
-        returns (uint256)
+        returns (uint)
     {
         if (now > lastDay + 24 hours)
             return dailyLimit;

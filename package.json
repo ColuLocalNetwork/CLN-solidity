@@ -31,7 +31,8 @@
     "solc": "0.4.18",
     "truffle": "git+https://github.com/colucom/truffle.git",
     "web3": "^1.0.0-beta.22",
-    "yargs": "^9.0.1"
+    "yargs": "^9.0.1",
+    "zeppelin-solidity": "^1.5.0"
   },
   "devDependencies": {
     "solidity-coverage": "^0.2.7"
