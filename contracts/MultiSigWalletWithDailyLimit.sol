@@ -1,6 +1,6 @@
 pragma solidity 0.4.18;
-import './MultiSigWallet.sol';
 
+import './MultiSigWallet.sol';
 
 /// @title Multisignature wallet with daily limit - Allows an owner to withdraw a daily limit without multisig.
 /// @dev Based on https://github.com/gnosis/MultiSigWallet.

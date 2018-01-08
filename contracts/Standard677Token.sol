@@ -1,10 +1,10 @@
 pragma solidity 0.4.18;
 
- /* ERC677 additions to ERC20 */
-
 import './ERC677.sol';
 import './ERC223Receiver.sol';
 import './BasicToken.sol';
+
+/// @title Standard677Token implentation, base on https://github.com/ethereum/EIPs/issues/677
 
 contract Standard677Token is ERC677, BasicToken {
 
