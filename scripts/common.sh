@@ -1,6 +1,6 @@
 # A helper script that contains predefined accounts, their balance and helper funcs.
 # Usage in scripts:
-#. scripts/common.sh
+# source $(dirname $0)/common.sh
 
 
 # We define 10 accounts with balance 10B ether, needed for high-value tests.

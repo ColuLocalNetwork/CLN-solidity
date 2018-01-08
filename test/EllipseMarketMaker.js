@@ -131,7 +131,7 @@ contract('EllipseMarketMaker', (accounts) => {
         });
 
         it('should be able to change state to operational on transfer', async () => {
-            await cc.transfer["address,uint256,bytes"](marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
+            await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
             assert(await marketMaker.operational());
             assert(await marketMaker.bootstrap());
         });
@@ -142,7 +142,7 @@ contract('EllipseMarketMaker', (accounts) => {
         });
 
         it('should not be able to change state to operational on transfer. non owner', async () => {
-            await expectRevert(cc.transfer["address,uint256,bytes"](marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA, {from: accounts[1]}));
+            await expectRevert(cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA, {from: accounts[1]}));
         });
     });
 
@@ -151,7 +151,7 @@ contract('EllipseMarketMaker', (accounts) => {
         let someExchange = async () => {
             assert.equal(await cc.balanceOf(owner), 0);
             let changeData = encodeChangeData(cc.address);
-            await cln.transfer["address,uint256,bytes"](marketMaker.address, amount, changeData);
+            await cln.transferAndCall(marketMaker.address, amount, changeData);
             let ccAmount = await cc.balanceOf(owner);
             assert.isAbove(ccAmount, 0);
         }
@@ -162,7 +162,7 @@ contract('EllipseMarketMaker', (accounts) => {
             marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
-            await cc.transfer["address,uint256,bytes"](marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
+            await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
             assert(await marketMaker.operational());
             assert(await marketMaker.bootstrap());
         });
@@ -202,7 +202,7 @@ contract('EllipseMarketMaker', (accounts) => {
         it('should be able to change using 223, owner', async () => {
             assert.equal(await cc.balanceOf(owner), 0);
             let changeData = encodeChangeData(cc.address);
-            await cln.transfer["address,uint256,bytes"](marketMaker.address, amount, changeData);
+            await cln.transferAndCall(marketMaker.address, amount, changeData);
             let ccAmount = await cc.balanceOf(owner);
             assert.isAbove(ccAmount, 0);
         });
@@ -222,11 +222,9 @@ contract('EllipseMarketMaker', (accounts) => {
             assert.equal(await cc.balanceOf(nonOwner), 0);
             assert.equal(await cln.balanceOf(nonOwner), amount);
             let changeData = encodeChangeData(cc.address);
-            // await expectRevert(cln.transfer["address,uint256,bytes"](marketMaker.address, amount, changeData, {from: nonOwner}));
-            await cln.transfer["address,uint256,bytes"](marketMaker.address, amount, changeData, {from: nonOwner});
+            await expectRevert(cln.transferAndCall(marketMaker.address, amount, changeData, {from: nonOwner}));
             assert.equal(await cc.balanceOf(nonOwner), 0);
-            // assert.equal(await cln.balanceOf(nonOwner), amount);
-            // TODO: change this to 677 to make this pass.
+            assert.equal(await cln.balanceOf(nonOwner), amount);
         });
     });
 });

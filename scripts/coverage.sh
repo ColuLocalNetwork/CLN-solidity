@@ -3,7 +3,7 @@
 port=8555
 
 # Import common variables.
-. scripts/common.sh
+source $(dirname $0)/common.sh
 
 # Executes cleanup function at script exit.
 trap cleanup EXIT

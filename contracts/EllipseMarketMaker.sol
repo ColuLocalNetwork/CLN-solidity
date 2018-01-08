@@ -2,7 +2,7 @@ pragma solidity 0.4.18;
 
 import './SafeMath.sol';
 import './MarketMaker.sol';
-import './ERC223.sol';
+import './ERC677.sol';
 import './TokenOwnable.sol';
 
 contract EllipseMarketMaker is MarketMaker, TokenOwnable{
@@ -10,8 +10,8 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
 
     uint256 public constant precision = 10 ** 18;
 
-    ERC223 public token1;
-    ERC223 public token2;
+    ERC677 public token1;
+    ERC677 public token2;
 
     uint256 public R1;
     uint256 public R2;
@@ -48,8 +48,8 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       require(_token2 != address(0));
       require(_token1 != _token2);
 
-      token1 = ERC223(_token1);
-      token2 = ERC223(_token2);
+      token1 = ERC677(_token1);
+      token2 = ERC677(_token2);
       R1 = 0;
       R2 = 0;
       S1 = token1.totalSupply();
@@ -148,12 +148,12 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     }
 
     function change(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) public canTrade returns (uint256 returnAmount) {
-      require(ERC223(_fromToken).transferFrom(msg.sender, this, _inAmount));
+      require(ERC677(_fromToken).transferFrom(msg.sender, this, _inAmount));
       returnAmount = exchange(_fromToken, _inAmount, _toToken, _minReturn);
       if (returnAmount == 0) {
         revert();
       }
-      ERC223(_toToken).transfer(msg.sender, returnAmount);
+      ERC677(_toToken).transfer(msg.sender, returnAmount);
       require(validateReserves());
       Change(_fromToken, _inAmount, _toToken, returnAmount, msg.sender);
     }
@@ -169,7 +169,7 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       if (returnAmount == 0) {
         revert();
       }
-      ERC223(_toToken).transfer(tkn.sender, returnAmount);
+      ERC677(_toToken).transfer(tkn.sender, returnAmount);
       require(validateReserves());
       Change(fromToken, inAmount, _toToken, returnAmount, tkn.sender);
     }

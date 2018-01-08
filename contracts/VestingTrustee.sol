@@ -3,6 +3,7 @@ pragma solidity 0.4.18;
 import './SafeMath.sol';
 import './ColuLocalNetwork.sol';
 import './TokenOwnable.sol';
+import './ERC20.sol';
 
 /// @title Vesting trustee contract for Colu Local Network.
 /// @dev This Contract can't be TokenHolder, since it will allow its owner to drain its vested tokens.
@@ -34,6 +35,13 @@ contract VestingTrustee is TokenOwnable {
     event NewGrant(address indexed _from, address indexed _to, uint256 _value);
     event TokensUnlocked(address indexed _to, uint256 _value);
     event GrantRevoked(address indexed _holder, uint256 _refund);
+
+    uint constant OK = 1;
+    uint constant ERR_INVALID_VALUE = 10001;
+    uint constant ERR_INVALID_VESTED = 10002;
+    uint constant ERR_INVALID_TRANSFERABLE = 10002;
+
+    event Error(address indexed sender, uint error);
 
     /// @dev Constructor that initializes the address of the Colu Local Network contract.
     /// @param _cln ColuLocalNetwork The address of the previously deployed Colu Local Network contract.
@@ -160,7 +168,7 @@ contract VestingTrustee is TokenOwnable {
             // Update transferred and total vesting amount, then transfer remaining vested funds to holder.
             grant.transferred = grant.transferred.add(transferable);
             totalVesting = totalVesting.sub(transferable);
-            cln.transfer(_holder, transferable);
+            require(cln.transfer(_holder, transferable));
 
             TokensUnlocked(_holder, transferable);
         }
@@ -173,7 +181,7 @@ contract VestingTrustee is TokenOwnable {
 
         // Update total vesting amount and transfer previously calculated tokens to owner.
         totalVesting = totalVesting.sub(refund);
-        cln.transfer(msg.sender, refund);
+        require(cln.transfer(msg.sender, refund));
 
         GrantRevoked(_holder, refund);
     }
@@ -219,30 +227,48 @@ contract VestingTrustee is TokenOwnable {
     }
 
     /// @dev Unlock vested tokens and transfer them to the grantee.
-    /// @return a uint256 Representing the amount of vested tokens transferred to their holder.
-    function unlockVestedTokens() external {
+    /// @return a uint The success or error code.
+    function unlockVestedTokens() external returns (uint) {
         Grant storage grant = grants[msg.sender];
 
         // Make sure the grant has tokens available.
-        require(grant.value != 0);
+        if (grant.value == 0) {
+            Error(msg.sender, ERR_INVALID_VALUE);
+            return ERR_INVALID_VALUE;
+        }
 
         // Get the total amount of vested tokens, acccording to grant.
         uint256 vested = calculateVestedTokens(grant, now);
         if (vested == 0) {
-            return;
+            Error(msg.sender, ERR_INVALID_VESTED);
+            return ERR_INVALID_VESTED;
         }
 
         // Make sure the holder doesn't transfer more than what he already has.
         uint256 transferable = vested.sub(grant.transferred);
         if (transferable == 0) {
-            return;
+            Error(msg.sender, ERR_INVALID_TRANSFERABLE);
+            return ERR_INVALID_TRANSFERABLE;
         }
 
         // Update transferred and total vesting amount, then transfer remaining vested funds to holder.
         grant.transferred = grant.transferred.add(transferable);
         totalVesting = totalVesting.sub(transferable);
-        cln.transfer(msg.sender, transferable);
+        require(cln.transfer(msg.sender, transferable));
 
         TokensUnlocked(msg.sender, transferable);
+        return OK;
+    }
+
+    /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.
+    /// @param _tokenAddress address The address of the ERC20 contract.
+    /// @param _amount uint256 The amount of tokens to be transferred.
+    function withdrawERC20(address _tokenAddress, uint256 _amount) public onlyOwner returns (bool success) {
+        if (_tokenAddress == address(cln)) {
+            // If the token is cln, allow to withdraw only non vested tokens.
+            uint256 availableCLN = cln.balanceOf(this).sub(totalVesting);
+            require(_amount <= availableCLN);
+        }
+        return ERC20(_tokenAddress).transfer(owner, _amount);
     }
 }
