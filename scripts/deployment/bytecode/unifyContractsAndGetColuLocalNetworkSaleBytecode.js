@@ -21,7 +21,7 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
     if(err) return console.error("err =", err)
     var now = data.timestamp
 
-    startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
+    // startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
 
     unifyContracts.unify(function(err, filePath) {
       if(err) return console.error('err =', err)
