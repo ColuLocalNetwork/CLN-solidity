@@ -19,7 +19,7 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
   if(err) return console.error("err =", err)
   web3.eth.getBlock(lastBlock, function(err, data) {
     if(err) return console.error("err =", err)
-    var now = data.timestamp
+    // var now = data.timestamp
 
     // startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
 

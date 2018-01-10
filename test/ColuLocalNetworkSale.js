@@ -42,7 +42,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    const ALAP = new BigNumber('47751732000000023865524178')
+    const ALAP = new BigNumber('56387784051724178357919713')
 
     // Maximum number of tokens in circulation.
     const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
@@ -72,7 +72,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const stakeholdersPoolAddress = accounts[4];
 
     // CLN to ETH ratio.
-    const CLN_PER_ETH = 3900;
+    const CLN_PER_ETH = 13804;
     const presaleCalculator = PresaleCalculator(CLN_PER_ETH);
 
     const TIER_1_CAP = 300 * CLN_PER_ETH * TOKEN_DECIMALS;
@@ -82,18 +82,18 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
     const VESTING_PLANS = {
         'A': {startOffset: 0, cliffOffset: 0, endOffset: 1 * DAY, installmentLength: 1 * DAY, alapPercent: 0},
-        'B': {startOffset: 0, cliffOffset: 0, endOffset: 6 * MONTH, installmentLength: 1 * MONTH, alapPercent: 4},
-        'C': {startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1 * MONTH, alapPercent: 12},
+        'B': {startOffset: 0, cliffOffset: 0, endOffset: 3 * DAY, installmentLength: 1 * DAY, alapPercent: 4},
+        'C': {startOffset: 0, cliffOffset: 0, endOffset: 7 * DAY, installmentLength: 1 * DAY, alapPercent: 12},
         'D': {startOffset: 0, cliffOffset: 0, endOffset: 2 * YEAR, installmentLength: 1 * MONTH, alapPercent: 26},
         'E': {startOffset: 0, cliffOffset: 0, endOffset: 3 * YEAR, installmentLength: 1 * MONTH, alapPercent: 35}
     }
 
-    const DEVELOPMENT_TOKEN_GRANT = {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 3 * YEAR, endOffset: 3 * YEAR, installmentLength: 1 * DAY, revokable: false}
+    const DEVELOPMENT_TOKEN_GRANT = {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 7 * DAY, endOffset: 7 * DAY, installmentLength: 1 * DAY, revokable: false}
 
     const PRESALES = [
-        {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000,  plan: 'B'},
-        {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000,  plan: 'A'},
-        {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1000000, plan: 'C'},
+        {recipient: '0xA1018fEDe70680732c2464Ea689FE9dEE09E2E32', dolarInvest: 200000,  plan: 'B'},
+        {recipient: '0x9AC4F6e64d56043991F486E375994F67ECbfdDE0', dolarInvest: 200000,  plan: 'A'},
+        {recipient: '0x4DcBde0E4Fd2E3a80F2b054d69e8476967833db7', dolarInvest: 1734800, plan: 'C'},
         {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 1433400, plan: 'C'},
         {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 1147300, plan: 'B'},
         {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 1672200, plan: 'E'},
@@ -177,11 +177,16 @@ contract('ColuLocalNetworkSale', (accounts) => {
 
     const calcGrantFromPresale = (presale) => {
         let formatedPresale = presaleCalculator.calcPresale([presale])[0];
+
+        console.log('formatedPresale', formatedPresale)
+
         let plan = VESTING_PLANS[presale.plan];
 
         let ALAPPerEth = new BigNumber(CLN_PER_ETH).mul(plan.alapPercent).div(100).floor();
         let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
+
+        console.log('!!!!!', ALAPPerEth, tokensAndALAPPerEth, tokensAmount)
 
         return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
     }
@@ -304,7 +309,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     });
 
-    describe('presaleAllocation', async () => {
+    describe.only('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
@@ -336,7 +341,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
-        it('should add pre-sale token grants', async () => {
+        it.only('should add pre-sale token grants', async () => {
             await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
