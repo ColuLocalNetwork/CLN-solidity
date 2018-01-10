@@ -11,7 +11,7 @@ const inputFile = __dirname + '/config/presales.csv'
 
 const now = +new Date()
 
-const CLN_PER_ETH = 3900
+const CLN_PER_ETH = 13804
 const presaleCalculator = PresaleCalculator(CLN_PER_ETH)
 const presales = []
 
