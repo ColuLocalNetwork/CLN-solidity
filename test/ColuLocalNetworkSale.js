@@ -93,7 +93,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const PRESALES = [
         {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000,  plan: 'B'},
         {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000,  plan: 'A'},
-        {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1000000, plan: 'C'},
+        {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1734800, plan: 'C'},
         {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 1433400, plan: 'C'},
         {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 1147300, plan: 'B'},
         {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 1672200, plan: 'E'},
