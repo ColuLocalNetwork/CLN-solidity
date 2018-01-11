@@ -139,6 +139,10 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
           .toPower2()
         )
         .sqrt();
+
+      if (secondRoot > 0) {
+        secondRoot = secondRoot.add(1);
+      }
       
       returnAmount = _S2.mul(firstRoot.sub(secondRoot)).div(precision);
     }

@@ -195,7 +195,7 @@ contract('EllipseMarketMaker', (accounts) => {
             assert.equal(await cc.balanceOf(owner), 0);
             await cln.approve(marketMaker.address, amount);
             await marketMaker.change[CHANGE_SIGS.afterApprove](cln.address, amount, cc.address);
-            let ccAmount = await cc.balanceOf(owner);
+            let ccAmount = (await cc.balanceOf(owner)).toNumber();
             assert.isAbove(ccAmount, 0);
         });
 
@@ -226,5 +226,17 @@ contract('EllipseMarketMaker', (accounts) => {
             assert.equal(await cc.balanceOf(nonOwner), 0);
             assert.equal(await cln.balanceOf(nonOwner), amount);
         });
+
+        it('should let owner to exchange back his cln fully (returning all the cc)', async () => {
+            assert.equal(await cc.balanceOf(owner), 0);
+            let amountBefore = (await cln.balanceOf(owner)).toNumber();
+            await cln.approve(marketMaker.address, amount);
+            await marketMaker.change[CHANGE_SIGS.afterApprove](cln.address, amount, cc.address);
+            let ccAmount = (await cc.balanceOf(owner)).toNumber();
+            assert.isAbove(ccAmount, 0);
+            await cc.approve(marketMaker.address, ccAmount);
+            await marketMaker.change[CHANGE_SIGS.afterApprove](cc.address, ccAmount, cln.address);
+            assert.equal(amountBefore, (await cln.balanceOf(owner)).toNumber());
+        })
     });
 });
