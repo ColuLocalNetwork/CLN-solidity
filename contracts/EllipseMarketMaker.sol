@@ -59,9 +59,11 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       bootstrap = true;
     }
 
-    function endBootstrap() public onlyOwner isOperational {
+    function openForPublicTrade() public onlyOwner isOperational returns (bool success) {
       bootstrap = false;
+      return true;
     }
+
 
     function supportsToken(address token) public constant returns (bool) {
         return (token1 == token || token2 == token);
