@@ -179,7 +179,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         let formatedPresale = presaleCalculator.calcPresale([presale])[0];
         let plan = VESTING_PLANS[presale.plan];
 
-        let ALAPPerEth = new BigNumber(CLN_PER_ETH).mul(plan.alapPercent).div(100);
+        let ALAPPerEth = new BigNumber(CLN_PER_ETH).mul(plan.alapPercent).div(100).floor();
         let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
 
