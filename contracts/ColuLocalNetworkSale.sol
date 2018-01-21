@@ -330,8 +330,9 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     /// @param _tokens uint256 The amount of tokens to transfer.
     function transferTokens(address _recipient, uint256 _tokens) private returns (bool ans) {
         ans = cln.transfer(_recipient, _tokens);
-
-        TokensIssued(_recipient, _tokens);
+        if (ans) {
+            TokensIssued(_recipient, _tokens);
+        }
     }
 
     /// @dev Transfer tokens from the sale contract to a recipient.
@@ -341,8 +342,9 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     function transferTokens(address _recipient, uint256 _tokens, bytes _data) private returns (bool ans) {
         // Request Colu Local Network contract to transfer the requested tokens for the buyer.
         ans = cln.transferAndCall(_recipient, _tokens, _data);
-
-        TokensIssued(_recipient, _tokens);
+        if (ans) {
+            TokensIssued(_recipient, _tokens);
+        }
     }
 
     /// @dev Requests to transfer control of the Colu Local Network contract to a new owner.
