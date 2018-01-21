@@ -8,7 +8,7 @@ import './TokenOwnable.sol';
 contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     using SafeMath for uint256;
 
-    uint256 public constant precision = 10 ** 18;
+    uint256 public constant precision = 2 ** 127;
 
     ERC677 public token1;
     ERC677 public token2;
@@ -22,6 +22,9 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     bool public operational;
 
     bool public bootstrap;
+
+    uint256 private l_R1;
+    uint256 private l_R2;
 
     modifier isOperational() {
       require(operational);
@@ -102,60 +105,81 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
         .div(S1);
     }
 
-    function quote(address _fromToken, uint256 _inAmount, address _toToken) public constant isOperational returns (uint256 returnAmount) {
-      uint256 _R1;
-      uint256 _S1;
-      uint256 _S2;
-      
+    function quoteAndReserves(address _fromToken, uint256 _inAmount, address _toToken) public isOperational returns (uint256 returnAmount) {
       if (token1 == _fromToken && token2 == _toToken) {
-        _R1 = R1;
-        _S1 = S1;
-        _S2 = S2;
+        l_R1 = R1.add(_inAmount);
+        l_R2 = calcReserve(l_R1, S1, S2);
+        if (l_R2 > R2) {
+          return 0;
+        }
+        returnAmount = R2.sub(l_R2);
       } else if (token2 == _fromToken && token1 == _toToken) {
-        _R1 = R2;
-        _S1 = S2;
-        _S2 = S1;
+        l_R2 = R2.add(_inAmount);
+        l_R1 = calcReserve(l_R2, S2, S1);
+        if (l_R1 > R1) {
+          return 0;
+        }
+        returnAmount = R1.sub(l_R1);
       } else {
         return 0;
       }
-      
-      uint256 firstRoot = precision
-        .mul(precision)
-        .sub(
-          precision
-          .mul(
-            _S1
-            .sub(_R1)
-            .sub(_inAmount)
-          )
-          .div(_S1)
-          .toPower2()
-        )
-        .sqrt();
+    }
 
-      uint256 secondRoot = precision
-        .mul(precision)
-        .sub(
-          precision
-          .mul(
-            _S1
-            .sub(_R1)
-          )
-          .div(_S1)
-          .toPower2()
-        )
-        .sqrt();
+    function quote(address _fromToken, uint256 _inAmount, address _toToken) public constant isOperational returns (uint256 returnAmount) {
+      uint256 _R1;
+      uint256 _R2;
 
-      if (secondRoot > 0) {
-        secondRoot = secondRoot.add(1);
+      if (token1 == _fromToken && token2 == _toToken) {
+        _R1 = R1.add(_inAmount);
+        _R2 = calcReserve(_R1, S1, S2);
+        if (_R2 > R2) {
+          return 0;
+        }
+        returnAmount = R2.sub(_R2);
+      } else if (token2 == _fromToken && token1 == _toToken) {
+        _R2 = R2.add(_inAmount);
+        _R1 = calcReserve(_R2, S2, S1);
+        if (_R1 > R1) {
+          return 0;
+        }
+        returnAmount = R1.sub(_R1);
+      } else {
+        return 0;
       }
-      
-      returnAmount = _S2.mul(firstRoot.sub(secondRoot)).div(precision);
+    }
+
+    function calcReserve(uint256 _R1, uint256 _S1, uint256 _S2) public pure returns (uint256 _R2) {
+      _R2 = _S2
+        .mul(
+          _S1
+          .sub(
+            _R1
+            .mul(_S1)
+            .mul(2)
+            .sub(
+              _R1
+              .toPower2()  
+            )
+            .sqrt()
+          )
+        )
+        .div(_S1);
+    }
+
+    function roundTripDiff(uint256 _R1) public constant returns (uint256 diff) {
+      uint256 _R2 = calcReserve(_R1, S1, S2);
+      uint256 _R11 = calcReserve(_R2, S2, S1);
+      if (_R11 >= _R1) {
+        diff = _R11.sub(_R1);
+      } else {
+        diff = _R1.sub(_R11);
+      }
     }
 
     function change(address _fromToken, uint256 _inAmount, address _toToken) public canTrade returns (uint256 returnAmount) {
       return change(_fromToken, _inAmount, _toToken, 0);
     }
+
 
     function change(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) public canTrade returns (uint256 returnAmount) {
       require(ERC677(_fromToken).transferFrom(msg.sender, this, _inAmount));
@@ -185,30 +209,17 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
     }
 
     function exchange(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) private returns (uint256 returnAmount) {
-      returnAmount = quote(_fromToken, _inAmount, _toToken);
+      returnAmount = quoteAndReserves(_fromToken, _inAmount, _toToken);
       if (returnAmount == 0 || returnAmount < _minReturn) {
         return 0;
       }
 
-      updateReserve(_fromToken, _inAmount, true);
-      updateReserve(_toToken, returnAmount, false);
+      updateReserve();
     }
 
-    function updateReserve(address _token, uint256 _amount, bool _add) private {
-      if (token1 == _token) {
-        if (_add) {
-          R1 = R1.add(_amount);
-        } else {
-          R1 = R1.sub(_amount);
-        }
-      }
-      if (token2 == _token) {
-        if (_add) {
-          R2 = R2.add(_amount);
-        } else {
-          R2 = R2.sub(_amount);
-        }
-      }
+    function updateReserve() private {
+      R1 = l_R1;
+      R2 = l_R2;
     }
 
     function validateReserves() public view returns (bool) {

@@ -11,11 +11,12 @@ BigNumber.config({ ERRORS: false })
 
 const inputFile = __dirname + '/config/grants.csv'
 
-const MINUTE = 60
-const HOUR = 60 * MINUTE
-const DAY = 24 * HOUR
-const MONTH = 30 * DAY
-const YEAR = 12 * MONTH
+const MINUTE = 60;
+const HOUR = 60 * MINUTE; // 3,600
+const DAY = 24 * HOUR;    // 86,400
+const WEEK = 7 * DAY;     // 604,800
+const YEAR = 365 * DAY;   // 31,536,000
+const MONTH = YEAR / 12;  // 2,628,000
 
 const decimals = 10 ** 18
 
