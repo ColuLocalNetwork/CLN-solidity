@@ -79,6 +79,10 @@ contract EllipseMarketMaker is MarketMaker, TokenOwnable{
       return true;
     }
 
+    function isOpenForPublic() public returns (bool success) {
+      return !bootstrap && operational;
+    }
+
     function initialize() private returns (bool success) {
       R1 = token1.balanceOf(this);
       R2 = token2.balanceOf(this);
