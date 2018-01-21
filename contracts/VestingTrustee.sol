@@ -39,7 +39,7 @@ contract VestingTrustee is TokenOwnable {
     uint constant OK = 1;
     uint constant ERR_INVALID_VALUE = 10001;
     uint constant ERR_INVALID_VESTED = 10002;
-    uint constant ERR_INVALID_TRANSFERABLE = 10002;
+    uint constant ERR_INVALID_TRANSFERABLE = 10003;
 
     event Error(address indexed sender, uint error);
 

@@ -20,7 +20,7 @@ contract('VestingTrustee', (accounts) => {
     const OK = 1;
     const ERR_INVALID_VALUE = 10001;
     const ERR_INVALID_VESTED = 10002;
-    const ERR_INVALID_TRANSFERABLE = 10002;
+    const ERR_INVALID_TRANSFERABLE = 10003;
 
     const VESTING_TRUSTEE_GRANT_ABI = {
         name: 'grant',
