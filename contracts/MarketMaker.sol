@@ -3,11 +3,6 @@ pragma solidity 0.4.18;
 import './ERC223Receiver.sol';
 
 contract MarketMaker is ERC223Receiver {
-  uint public R1;
-  uint public R2;
-  uint public S1;
-  uint public S2;
-  uint public precision;
 
   function getPrice() public constant returns (uint _price);
   function change(address _fromToken, uint _amount, address _toToken) public returns (uint _returnAmount);
