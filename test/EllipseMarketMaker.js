@@ -5,6 +5,7 @@ BigNumber.config({ ERRORS: false });
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const EllipseMarketMaker = artifacts.require('EllipseMarketMaker');
+const EllipseMarketMakerLib = artifacts.require('EllipseMarketMakerLib');
 
 const TOKEN_DECIMALS = 10 ** 18;
 
@@ -67,6 +68,7 @@ const encodeChangeData = (toToken, minReturn) => {
 contract('EllipseMarketMaker', (accounts) => {
     let cln;
     let cc;
+    let lib;
 
     let marketMaker;
 
@@ -76,33 +78,48 @@ contract('EllipseMarketMaker', (accounts) => {
     let amount = 10000000 * TOKEN_DECIMALS;
 
     beforeEach(async () => {
+        lib = await EllipseMarketMakerLib.new();
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         cc = await ColuLocalNetwork.new(CC_MAX_TOKENS);
     });
 
     describe('construction', async () => {
+        it('should not constract with lib null', async () => {
+            await expectRevert(EllipseMarketMaker.new(null, cln.address, cc.address, {from: accounts[0]}));
+        });
+        
+        it('should not constract with lib 0', async () => {
+            await expectRevert(EllipseMarketMaker.new(0, cln.address, cc.address, {from: accounts[0]}));
+        });
+
         it('should not constract with token1 null', async () => {
-            await expectRevert(EllipseMarketMaker.new(null, cc.address, {from: accounts[0]}));
+            await expectRevert(EllipseMarketMaker.new(lib.address, null, cc.address, {from: accounts[0]}));
         });
         
         it('should not constract with token1 0', async () => {
-            await expectRevert(EllipseMarketMaker.new(0, cc.address, {from: accounts[0]}));
+            await expectRevert(EllipseMarketMaker.new(lib.address, 0, cc.address, {from: accounts[0]}));
         });
         
         it('should not constract with token2 null', async () => {
-            await expectRevert(EllipseMarketMaker.new(cln.address, null, {from: accounts[0]}));
+            await expectRevert(EllipseMarketMaker.new(lib.address, cln.address, null, {from: accounts[0]}));
         });
         
         it('should not constract with token2 0', async () => {
-            await expectRevert(EllipseMarketMaker.new(cln.address, 0, {from: accounts[0]}));
+            await expectRevert(EllipseMarketMaker.new(lib.address, cln.address, 0, {from: accounts[0]}));
         });
         
         it('should not constract same token', async () => {
-            await expectRevert(EllipseMarketMaker.new(cc.address, cc.address, {from: accounts[0]}));
+            await expectRevert(EllipseMarketMaker.new(lib.address, cc.address, cc.address, {from: accounts[0]}));
         });
 
         it('should constract with in non operational mode', async () => {
-            marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
+            marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
+            console.log('operational', await marketMaker.operational());
+            console.log('bootstrap', await marketMaker.bootstrap());
+            console.log('R1', await marketMaker.R1());
+            console.log('R2', await marketMaker.R2());
+            console.log('S1', await marketMaker.S1());
+            console.log('S2', await marketMaker.S2());
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
         });
@@ -112,7 +129,7 @@ contract('EllipseMarketMaker', (accounts) => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             await cc.makeTokensTransferable();
-            marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
+            marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
         });
@@ -161,7 +178,7 @@ contract('EllipseMarketMaker', (accounts) => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             await cc.makeTokensTransferable();
-            marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
+            marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
@@ -246,7 +263,7 @@ contract('EllipseMarketMaker', (accounts) => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             await cc.makeTokensTransferable();
-            marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
+            marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
@@ -380,7 +397,7 @@ contract('EllipseMarketMaker', (accounts) => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             await cc.makeTokensTransferable();
-            marketMaker = await EllipseMarketMaker.new(cln.address, cc.address);
+            marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             assert(!(await marketMaker.operational()));
             assert(await marketMaker.bootstrap());
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
