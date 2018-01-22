@@ -16,7 +16,7 @@ contract EllipseMarketMaker is TokenOwnable {
   uint256 public S2;
 
   bool public operational;
-  bool public bootstrap;
+  bool public openForPublic;
 
   address public mmLib;
 
@@ -53,7 +53,7 @@ contract EllipseMarketMaker is TokenOwnable {
     return (token1.balanceOf(this) >= R1 && token2.balanceOf(this) >= R2);
   }
 
-  function endBootstrap() public returns (bool) {
+  function openForPublicTrade() public returns (bool) {
     return delegateWithReturn(1) == 1;
   }
 

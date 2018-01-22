@@ -116,14 +116,8 @@ contract('EllipseMarketMaker', (accounts) => {
         it('should constract with in non operational mode', async () => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
-            console.log('operational', await marketMaker.operational());
-            console.log('bootstrap', await marketMaker.bootstrap());
-            console.log('R1', await marketMaker.R1());
-            console.log('R2', await marketMaker.R2());
-            console.log('S1', await marketMaker.S1());
-            console.log('S2', await marketMaker.S2());
             assert(!(await marketMaker.operational()));
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
         });
     });
 
@@ -134,7 +128,7 @@ contract('EllipseMarketMaker', (accounts) => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
             assert(!(await marketMaker.operational()));
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
         });
 
         it('should not be able to change state to operational without preconditions, using after transfer', async () => {
@@ -149,13 +143,13 @@ contract('EllipseMarketMaker', (accounts) => {
             await cc.transfer(marketMaker.address, await cc.totalSupply());
             await marketMaker.initializeAfterTransfer();
             assert(await marketMaker.operational());
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
         });
 
         it('should be able to change state to operational on transfer', async () => {
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
             assert(await marketMaker.operational());
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
         });
 
         it('should not be able to change state to operational after transfer, non owner', async () => {
@@ -184,10 +178,10 @@ contract('EllipseMarketMaker', (accounts) => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
             assert(!(await marketMaker.operational()));
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
             assert(await marketMaker.operational());
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
         });
 
         it('should be able to get price', async () => {
@@ -270,17 +264,17 @@ contract('EllipseMarketMaker', (accounts) => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
             assert(!(await marketMaker.operational()));
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
             assert(await marketMaker.operational());
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
             let changeData = encodeChangeData(cc.address);
             await cln.transferAndCall(marketMaker.address, amount, changeData);
             let ccAmount = await cc.balanceOf(owner);
             assert.isAbove(ccAmount, 0);
-            assert(await marketMaker.endBootstrap());
+            assert(await marketMaker.openForPublicTrade());
             assert(await marketMaker.operational());
-            assert(!(await marketMaker.bootstrap()));
+            assert(await marketMaker.openForPublic());
         });
 
         it('should be able to get price', async () => {
@@ -405,11 +399,11 @@ contract('EllipseMarketMaker', (accounts) => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
             assert(!(await marketMaker.operational()));
-            assert(await marketMaker.bootstrap());
+            assert(!(await marketMaker.openForPublic()));
             await cc.transferAndCall(marketMaker.address, await cc.totalSupply(), INITIALIZE_ON_TRANSFER_DATA);
-            assert(await marketMaker.endBootstrap());
+            assert(await marketMaker.openForPublicTrade());
             assert(await marketMaker.operational());
-            assert(!(await marketMaker.bootstrap()));
+            assert(await marketMaker.openForPublic());
             await cln.transfer(accounts[1], new BigNumber('10000').mul(TOKEN_DECIMALS));
             await cln.transfer(accounts[2], new BigNumber('10000').mul(TOKEN_DECIMALS));
             await cln.transfer(accounts[3], new BigNumber('10000').mul(TOKEN_DECIMALS));

@@ -22,12 +22,12 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   modifier canTrade() {
-    require(!bootstrap || msg.sender == owner);
+    require(openForPublic || msg.sender == owner);
     _;
   }
 
   modifier canTrade223() {
-    require (!bootstrap || tkn.sender == owner);
+    require (openForPublic || tkn.sender == owner);
     _;
   }
 
@@ -46,14 +46,18 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
     S2 = token2.totalSupply();
 
     operational = false;
-    bootstrap = true;
+    openForPublic = false;
 
     return true;
   }
 
-  function endBootstrap() public onlyOwner isOperational returns (bool) {
-    bootstrap = false;
+  function openForPublicTrade() public onlyOwner isOperational returns (bool) {
+    openForPublic = true;
     return true;
+  }
+
+  function isOpenForPublic() public onlyOwner returns (bool) {
+    return (openForPublic && operational);
   }
 
   function supportsToken(address token) public constant returns (bool) {

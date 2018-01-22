@@ -17,7 +17,7 @@ contract IEllipseMarketMaker is MarketMaker {
     uint256 public S2;
 
     bool public operational;
-    bool public bootstrap;
+    bool public openForPublic;
 
     address public mmLib;
 
@@ -29,10 +29,7 @@ contract IEllipseMarketMaker is MarketMaker {
 
     function withdrawExcessReserves() public returns (uint256);
 
-    function endBootstrap() public returns (bool);
-
     function initializeAfterTransfer() public returns (bool);
 
     function initializeOnTransfer() public returns (bool);
-
 }
