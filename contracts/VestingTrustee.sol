@@ -186,11 +186,30 @@ contract VestingTrustee is TokenOwnable {
         GrantRevoked(_holder, refund);
     }
 
+    /// @dev Calculate the amount of ready tokens of a holder.
+    /// @param _holder address The address of the holder.
+    /// @return a uint256 Representing a holder's total amount of vested tokens.
+    function readyTokens(address _holder) public constant returns (uint256) {
+        Grant memory grant = grants[_holder];
+        
+        if (grant.value == 0) {
+            return 0;
+        }
+
+        uint256 vested = calculateVestedTokens(grant, now);
+        
+        if (vested == 0) {
+            return 0;
+        }
+
+        return vested.sub(grant.transferred);
+    }
+
     /// @dev Calculate the total amount of vested tokens of a holder at a given time.
     /// @param _holder address The address of the holder.
     /// @param _time uint256 The specific time to calculate against.
     /// @return a uint256 Representing a holder's total amount of vested tokens.
-    function vestedTokens(address _holder, uint256 _time) external constant returns (uint256) {
+    function vestedTokens(address _holder, uint256 _time) public constant returns (uint256) {
         Grant memory grant = grants[_holder];
         if (grant.value == 0) {
             return 0;
@@ -229,35 +248,52 @@ contract VestingTrustee is TokenOwnable {
     /// @dev Unlock vested tokens and transfer them to the grantee.
     /// @return a uint The success or error code.
     function unlockVestedTokens() external returns (uint) {
-        Grant storage grant = grants[msg.sender];
+        unlockVestedTokens(msg.sender);
+    }
+
+    /// @dev Unlock vested tokens and transfer them to the grantee (helper function).
+    /// @param _grantee address The address of the grantee.
+    /// @return a uint The success or error code.
+    function unlockVestedTokens(address _grantee) private returns (uint) {
+        Grant storage grant = grants[_grantee];
 
         // Make sure the grant has tokens available.
         if (grant.value == 0) {
-            Error(msg.sender, ERR_INVALID_VALUE);
+            Error(_grantee, ERR_INVALID_VALUE);
             return ERR_INVALID_VALUE;
         }
 
         // Get the total amount of vested tokens, acccording to grant.
         uint256 vested = calculateVestedTokens(grant, now);
         if (vested == 0) {
-            Error(msg.sender, ERR_INVALID_VESTED);
+            Error(_grantee, ERR_INVALID_VESTED);
             return ERR_INVALID_VESTED;
         }
 
         // Make sure the holder doesn't transfer more than what he already has.
         uint256 transferable = vested.sub(grant.transferred);
         if (transferable == 0) {
-            Error(msg.sender, ERR_INVALID_TRANSFERABLE);
+            Error(_grantee, ERR_INVALID_TRANSFERABLE);
             return ERR_INVALID_TRANSFERABLE;
         }
 
         // Update transferred and total vesting amount, then transfer remaining vested funds to holder.
         grant.transferred = grant.transferred.add(transferable);
         totalVesting = totalVesting.sub(transferable);
-        require(cln.transfer(msg.sender, transferable));
+        require(cln.transfer(_grantee, transferable));
 
-        TokensUnlocked(msg.sender, transferable);
-        return OK;
+        TokensUnlocked(_grantee, transferable);
+        return OK; 
+    }
+
+    /// @dev batchUnlockVestedTokens vested tokens and transfer them to the grantees.
+    /// @param _grantees address[] The addresses of the grantees.
+    /// @return a boo if success.
+    function batchUnlockVestedTokens(address[] _grantees) external onlyOwner returns (bool success) {
+        for (uint i=0; i<_grantees.length; i++) {
+            unlockVestedTokens(_grantees[i]);
+        }
+        return true;
     }
 
     /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.

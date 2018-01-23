@@ -93,6 +93,7 @@ contract MultiSigWallet {
 
     /// @dev Fallback function allows to deposit ether.
     function()
+        public 
         payable
     {
         if (msg.value > 0)
