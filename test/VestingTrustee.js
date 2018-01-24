@@ -17,6 +17,8 @@ contract('VestingTrustee', (accounts) => {
     const YEAR = 365 * DAY;   // 31,536,000
     const MONTH = YEAR / 12;  // 2,628,000
 
+    const MAX_ERROR = 10;
+
     const OK = 1;
     const ERR_INVALID_VALUE = 10001;
     const ERR_INVALID_VESTED = 10002;
@@ -59,7 +61,7 @@ contract('VestingTrustee', (accounts) => {
     let trustee;
 
     beforeEach(async () => {
-        now = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
 
         token = await ColuLocalNetwork.new(initialTokens);
         trustee = await VestingTrustee.new(token.address, {from: granter});
@@ -444,7 +446,6 @@ contract('VestingTrustee', (accounts) => {
                     context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
                         `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
                         // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
-                        const MAX_ERROR = 10;
 
                         let holder = accounts[1];
 
@@ -541,7 +542,6 @@ contract('VestingTrustee', (accounts) => {
                     context(`grant: ${grant.tokens}, startOffset: ${grant.startOffset}, cliffOffset: ${grant.cliffOffset}, ` +
                         `endOffset: ${grant.endOffset}, installmentLength: ${grant.installmentLength}`, async () => {
                         // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
-                        const MAX_ERROR = 10;
 
                         let holder = accounts[1];
 
@@ -611,13 +611,13 @@ contract('VestingTrustee', (accounts) => {
         });
     });
 
-    describe('vestedTokens', async () => {
+    describe('vestedTokens + readyTokens', async () => {
         let balance = new BigNumber(10 ** 12);
         let grants = [
             {
                 tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1, results: [
                     { offset: 0, vested: 0 },
-                    { offset: MONTH - 1, vested: 0 },
+                    { offset: MONTH - 5, vested: 0 },
                     { offset: MONTH, vested: Math.floor(1000 / 12) },
                     { offset: MONTH + 0.5 * DAY, vested: Math.floor(1000 / 12) + Math.floor(0.5 * (1000 / 12 / 30)) },
                     { offset: 2 * MONTH, vested: 2 * Math.floor(1000 / 12) },
@@ -631,7 +631,7 @@ contract('VestingTrustee', (accounts) => {
                 tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: DAY, results: [
                     { offset: 0, vested: 0 },
                     { offset: DAY, vested: 0 },
-                    { offset: MONTH - 1, vested: 0 },
+                    { offset: MONTH - 5, vested: 0 },
                     { offset: MONTH, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + 1, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
                     { offset: MONTH + 1000, vested: Math.floor((1000 / YEAR * DAY) * Math.floor(MONTH / DAY)) },
@@ -744,6 +744,16 @@ contract('VestingTrustee', (accounts) => {
             assert.equal((await trustee.vestedTokens(holder, now + 100 * YEAR)).toNumber(), 0);
         });
 
+        it('should return 0 for non existing grant (now)', async () => {
+            let holder = accounts[5];
+            let grant = await getGrant(holder);
+
+            assert.equal(grant.value, 0);
+            await time.increaseTime(100 * YEAR);
+            await time.mine();
+            assert.equal((await trustee.readyTokens(holder)).toNumber(), 0);
+        });
+
         grants.forEach((grant) => {
             context('using trustee.grant', async () => {
                 beforeEach(async () => {
@@ -762,6 +772,13 @@ contract('VestingTrustee', (accounts) => {
                             let result = (await trustee.vestedTokens(accounts[2], now + res.offset)).toNumber();
                             assert.equal(result, res.vested);
                         });
+
+                        it(`should ready ${res.vested} out of ${grant.tokens} at time offset ${res.offset} (now)`, async () => {
+                            await time.increaseTime(res.offset);
+                            await time.mine();
+                            let result = (await trustee.readyTokens(accounts[2])).toNumber();
+                            assert.approximately(result, res.vested, grant.tokens/1000);
+                        });
                     });
                 });
             });
@@ -779,6 +796,13 @@ contract('VestingTrustee', (accounts) => {
                             let result = (await trustee.vestedTokens(accounts[2], now + res.offset)).toNumber();
                             assert.equal(result, res.vested);
                         });
+
+                        it(`should ready ${res.vested} out of ${grant.tokens} at time offset ${res.offset} (now)`, async () => {
+                            await time.increaseTime(res.offset);
+                            await time.mine();
+                            let result = (await trustee.readyTokens(accounts[2])).toNumber();
+                            assert.approximately(result, res.vested, grant.tokens/1000);
+                        });
                     });
                 });
             });
@@ -787,7 +811,6 @@ contract('VestingTrustee', (accounts) => {
 
     describe('unlockVestedTokens', async () => {
         // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
-        const MAX_ERROR = 10;
 
         let balance = new BigNumber(10 ** 12);
 
@@ -1126,6 +1149,100 @@ contract('VestingTrustee', (accounts) => {
         });
     });
     
+    describe('batchUnlockVestedTokens', async () => {
+        // We'd allow (up to) 10 tokens vesting error, due to possible timing differences during the tests.
+
+        let balance = new BigNumber(10 ** 12);
+
+        let grants = [
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: DAY
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: 1
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: MONTH, endOffset: YEAR, installmentLength: MONTH
+            },
+            {
+                tokens: 1000, startOffset: 0, cliffOffset: 0, endOffset: YEAR, installmentLength: 3 * MONTH
+            },
+            {
+                tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 1
+            },
+            {
+                tokens: 1000000, startOffset: 0, cliffOffset: 0, endOffset: 4 * YEAR, installmentLength: 2 * YEAR
+            }
+        ];
+
+        beforeEach(async () => {
+            await token.transfer(trustee.address, balance);
+            await token.makeTokensTransferable();
+        });
+
+        it('should not allow unlocking a non-existing grants', async () => {
+            let holder1 = accounts[5];
+            let grant1 = await getGrant(holder1);
+
+            assert.equal(grant1.value, 0);
+
+            let balance1 = (await token.balanceOf(holder1)).toNumber();
+
+            let holder2 = accounts[6];
+            let grant2 = await getGrant(holder2);
+
+            assert.equal(grant1.value, 0);
+
+            let balance2 = (await token.balanceOf(holder2)).toNumber();
+
+            await trustee.batchUnlockVestedTokens([holder1, holder2], {from: granter});
+
+            assert.equal(balance1, (await token.balanceOf(holder1)).toNumber());
+            assert.equal(balance2, (await token.balanceOf(holder2)).toNumber());
+        });
+
+        it('should not allow unlocking a rovoked grants', async () => {
+            let grantee1 = accounts[1];
+            let grantee2 = accounts[2];
+            await trustee.grant[grantWithValueSig](grantee1, 1000, now, now + MONTH, now + YEAR, 1 * DAY, true);
+            await trustee.revoke(grantee1, {from: granter});
+
+            await trustee.grant[grantWithValueSig](grantee2, 1000, now, now + MONTH, now + YEAR, 1 * DAY, true);
+            await trustee.revoke(grantee2, {from: granter});
+
+            let balance1 = (await token.balanceOf(grantee1)).toNumber();
+            let balance2 = (await token.balanceOf(grantee2)).toNumber();
+
+            await trustee.batchUnlockVestedTokens([grantee1, grantee2], {from: granter});
+            
+            assert.equal(balance1, (await token.balanceOf(grantee1)).toNumber());
+            assert.equal(balance2, (await token.balanceOf(grantee2)).toNumber());
+        });
+
+        it('should unlock vesting each month', async () => {
+            let holders = [];
+            for (let i = 0; i < grants.length; i++) {
+                let grant = grants[i];
+                holders.push(accounts[i + 1]);
+                await trustee.grant[grantWithValueSig](holders[i], grant.tokens, now + grant.startOffset, now + grant.cliffOffset, now + grant.endOffset, grant.installmentLength, false);
+            }
+
+            for (let offset = 0; offset <= 4 * YEAR + MONTH; offset+=MONTH) {
+                let holderBalances = await Promise.all(holders.map(async (holder) => { return (await token.balanceOf(holder)).toNumber(); }));
+                let holderReady = await Promise.all(holders.map(async (holder) => { return (await trustee.readyTokens(holder)).toNumber(); }));
+                await trustee.batchUnlockVestedTokens(holders, {from: granter});
+                for (let i = 0; i < grants.length; i++) {
+                    assert.approximately(holderBalances[i] + holderReady[i], (await token.balanceOf(holders[i])).toNumber(), MAX_ERROR);
+                };
+                await time.increaseTime(MONTH);
+                await time.mine();
+            }
+        });
+    });
+
     describe('withdrawERC20', async () => {
         let balance = 1000;
         let token2;
