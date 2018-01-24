@@ -3,23 +3,35 @@ pragma solidity 0.4.18;
 import './ERC20.sol';
 import './TokenOwnable.sol';
 
+/// @title Ellipse Market Maker contract.
+/// @dev market maker, using ellipse equation.
+/// @author Tal Beja.
 contract EllipseMarketMaker is TokenOwnable {
-  uint256 public constant precision = 2 ** 127;
 
+  // precision for price representation (as in ether or tokens).
+  uint8 public constant decimals = 18;
+  uint256 public constant precision = 18 ** decimals;
+
+  // The tokens pair.
   ERC20 public token1;
   ERC20 public token2;
 
+  // The tokens reserves.
   uint256 public R1;
   uint256 public R2;
 
+  // The tokens full suplly.
   uint256 public S1;
   uint256 public S2;
 
+  // State flags.
   bool public operational;
   bool public openForPublic;
 
+  // Library contract address.
   address public mmLib;
 
+  /// @dev Constractor calling the library contract using delegate.
   function EllipseMarketMaker(address _mmLib, address _token1, address _token2) public {
     require(_mmLib != address(0));
     // Signature of the mmLib's constructor function
@@ -42,6 +54,7 @@ contract EllipseMarketMaker is TokenOwnable {
         mstore(add(m_data, 0x64), _token2)
     }
 
+    // delegatecall to the library contract
     require(_mmLib.delegatecall(m_data));
   }
 
@@ -49,7 +62,7 @@ contract EllipseMarketMaker is TokenOwnable {
     return (token1 == token || token2 == token);
   }
 
-  // gets called when no other function matches, delegat to the lib contract.
+  /// @dev gets called when no other function matches, delegat to the lib contract.
   function() public {
     address _mmLib = mmLib;
     if (msg.data.length > 0) {
