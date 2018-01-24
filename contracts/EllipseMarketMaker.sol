@@ -9,8 +9,7 @@ import './TokenOwnable.sol';
 contract EllipseMarketMaker is TokenOwnable {
 
   // precision for price representation (as in ether or tokens).
-  uint8 public constant decimals = 18;
-  uint256 public constant precision = 18 ** decimals;
+  uint256 public constant PRECISION = 10 ** 18;
 
   // The tokens pair.
   ERC20 public token1;

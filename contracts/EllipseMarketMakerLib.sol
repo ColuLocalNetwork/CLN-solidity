@@ -103,7 +103,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
 
   /// @dev the price pf token1 in terms of token2, represented in 18 decimals.
   function getPrice() public constant isOperational returns (uint256 price) {
-    return precision
+    return PRECISION
       .mul(S1.sub(R1))
       .div(S2.sub(R2))
       .mul(S2)
