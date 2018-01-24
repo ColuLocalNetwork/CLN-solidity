@@ -49,36 +49,15 @@ contract EllipseMarketMaker is TokenOwnable {
     return (token1 == token || token2 == token);
   }
 
-  function validateReserves() public constant returns (bool) {
-    return (token1.balanceOf(this) >= R1 && token2.balanceOf(this) >= R2);
-  }
-
-  function openForPublicTrade() public returns (bool) {
-    return delegateWithReturn(1) == 1;
-  }
-
-  function initializeAfterTransfer() public returns (bool) {
-    return delegateWithReturn(1) == 1;
-  }
-
-  function initializeOnTransfer() public returns (bool) {
-    return delegateWithReturn(1) == 1;
-  }
-
-  function delegateWithReturn(uint256 _returnSize) private constant returns (uint256) {
+  // gets called when no other function matches, delegat to the lib contract.
+  function() public {
     address _mmLib = mmLib;
     if (msg.data.length > 0) {
       assembly {
         calldatacopy(0xff, 0, calldatasize)
-        let retVal := delegatecall(gas, _mmLib, 0xff, calldatasize, 0, _returnSize)
-        switch retVal case 0 { revert(0,0) } default { return(0, _returnSize) }
+        let retVal := delegatecall(gas, _mmLib, 0xff, calldatasize, 0, 0x20)
+        switch retVal case 0 { revert(0,0) } default { return(0, 0x20) }
       }
     }
-  }
-
-  // gets called when no other function matches
-  function() public {
-    if (msg.data.length > 0)
-      delegateWithReturn(32);
   }
 }
