@@ -40,4 +40,6 @@ contract IEllipseMarketMaker is MarketMaker {
     function initializeAfterTransfer() public returns (bool);
 
     function initializeOnTransfer() public returns (bool);
+
+    function getPrice(uint256 _R1, uint256 _R2, uint256 _S1, uint256 _S2) public constant returns (uint256);
 }

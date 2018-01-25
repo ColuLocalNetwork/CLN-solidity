@@ -76,7 +76,7 @@ contract('EllipseMarketMaker', (accounts) => {
     let owner = accounts[0];
     let nonOwner = accounts[1];
 
-    let amount = 10000000 * TOKEN_DECIMALS;
+    let amount = 1000 * TOKEN_DECIMALS;
 
     beforeEach(async () => {
         lib = await EllipseMarketMakerLib.new();
@@ -85,35 +85,35 @@ contract('EllipseMarketMaker', (accounts) => {
     });
 
     describe('construction', async () => {
-        it('should not constract with lib null', async () => {
+        it('should not construct with lib null', async () => {
             await expectRevert(EllipseMarketMaker.new(null, cln.address, cc.address, {from: accounts[0]}));
         });
         
-        it('should not constract with lib 0', async () => {
+        it('should not construct with lib 0', async () => {
             await expectRevert(EllipseMarketMaker.new(0, cln.address, cc.address, {from: accounts[0]}));
         });
 
-        it('should not constract with token1 null', async () => {
+        it('should not construct with token1 null', async () => {
             await expectRevert(EllipseMarketMaker.new(lib.address, null, cc.address, {from: accounts[0]}));
         });
         
-        it('should not constract with token1 0', async () => {
+        it('should not construct with token1 0', async () => {
             await expectRevert(EllipseMarketMaker.new(lib.address, 0, cc.address, {from: accounts[0]}));
         });
         
-        it('should not constract with token2 null', async () => {
+        it('should not construct with token2 null', async () => {
             await expectRevert(EllipseMarketMaker.new(lib.address, cln.address, null, {from: accounts[0]}));
         });
         
-        it('should not constract with token2 0', async () => {
+        it('should not construct with token2 0', async () => {
             await expectRevert(EllipseMarketMaker.new(lib.address, cln.address, 0, {from: accounts[0]}));
         });
         
-        it('should not constract same token', async () => {
+        it('should not construct same token', async () => {
             await expectRevert(EllipseMarketMaker.new(lib.address, cc.address, cc.address, {from: accounts[0]}));
         });
 
-        it('should constract with in non operational mode', async () => {
+        it('should construct with in non operational mode', async () => {
             marketMaker = await EllipseMarketMaker.new(lib.address, cln.address, cc.address);
             marketMaker = IEllipseMarketMaker.at(marketMaker.address);
             assert(!(await marketMaker.operational()));
@@ -184,16 +184,27 @@ contract('EllipseMarketMaker', (accounts) => {
             assert(!(await marketMaker.openForPublic()));
         });
 
-        it('should be able to get price', async () => {
+        it('should be able to get current price', async () => {
             await someExchange();
-            let price = await marketMaker.getPrice();
-            assert(price);
+            let currentPrice = await marketMaker.getCurrentPrice();
+            assert(currentPrice);
         });
 
-        it('should be able to get price, non owner', async () => {
+        it('should be able to get current price, non owner', async () => {
             await someExchange();
-            let price = await marketMaker.getPrice({from: nonOwner});
-            assert(price);
+            let currentPrice = await marketMaker.getCurrentPrice({from: nonOwner});
+            assert(currentPrice);
+        });
+
+        it('should get price of the current reserves and it should be equal to the current price', async () => {
+            await someExchange();
+            let currentPrice = await marketMaker.getCurrentPrice();
+            let R1 = await marketMaker.R1();
+            let R2 = await marketMaker.R2();
+            let S1 = await marketMaker.S1();
+            let S2 = await marketMaker.S2();
+            let price = await marketMaker.getPrice(R1, R2, S1, S2);
+            assert.equal(currentPrice.toNumber(), price.toNumber());
         });
 
         it('should be able to get quote', async () => {
@@ -278,12 +289,12 @@ contract('EllipseMarketMaker', (accounts) => {
         });
 
         it('should be able to get price', async () => {
-            let price = await marketMaker.getPrice();
+            let price = await marketMaker.getCurrentPrice();
             assert(price);
         });
 
         it('should be able to get price, non owner', async () => {
-            let price = await marketMaker.getPrice({from: nonOwner});
+            let price = await marketMaker.getCurrentPrice({from: nonOwner});
             assert(price);
         });
 
@@ -413,7 +424,7 @@ contract('EllipseMarketMaker', (accounts) => {
             let maxErr = new BigNumber(1e+0);
             let baseToken;
             let returnToken;
-            it('should test verius exchanges', async () => {
+            it('should test various exchanges', async () => {
                 for (let i = 0; i < exchanges.length; i++) {
                     let exchange = exchanges[i];
                     console.log(`\texchanging ${exchange.direction} amount ${exchange.amount}`);
@@ -450,7 +461,7 @@ contract('EllipseMarketMaker', (accounts) => {
             let maxErr = new BigNumber(1e+0);
             let baseToken;
             let returnToken;
-            it('should test verius exchanges', async () => {
+            it('should test various exchanges', async () => {
                 for (let i = 0; i < exchanges.length; i++) {
                     let exchange = exchanges[i];
                     console.log(`\texchanging ${exchange.direction} amount ${exchange.amount}`);

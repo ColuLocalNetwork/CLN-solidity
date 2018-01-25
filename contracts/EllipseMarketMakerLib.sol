@@ -101,18 +101,23 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
     }
   }
 
-  /// @dev the price pf token1 in terms of token2, represented in 18 decimals.
-  function getPrice() public constant isOperational returns (uint256 price) {
-    return PRECISION
-      .mul(S1.sub(R1))
-      .div(S2.sub(R2))
-      .mul(S2)
-      .div(S1)
-      .mul(S2)
-      .div(S1);
+  /// @dev the price of token1 in terms of token2, represented in 18 decimals.
+  function getCurrentPrice() public constant isOperational returns (uint256) {
+    return getPrice(R1, R2, S1, S2);
   }
 
-  /// @dev get a quate for exchanging and update temporary reserves.
+  /// @dev the price of token1 in terms of token2, represented in 18 decimals.
+  function getPrice(uint256 _R1, uint256 _R2, uint256 _S1, uint256 _S2) public constant returns (uint256 price) {
+    price = PRECISION;
+    price = price.mul(_S1.sub(_R1));
+    price = price.div(_S2.sub(_R2));
+    price = price.mul(_S2);
+    price = price.div(_S1);
+    price = price.mul(_S2);
+    price = price.div(_S1);
+  }
+
+  /// @dev get a quote for exchanging and update temporary reserves.
   /// @param _fromToken the token to sell from
   /// @param _inAmount the amount to sell
   /// @param _toToken the token to buy
@@ -127,7 +132,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
       if (l_R2 > R2) {
         return 0;
       }
-      // the returnAmount is the other reserve deference
+      // the returnAmount is the other reserve difference
       returnAmount = R2.sub(l_R2);
     } 
     // if buying token1 from token2
@@ -139,14 +144,14 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
       if (l_R1 > R1) {
         return 0;
       }
-      // the returnAmount is the other reserve deference
+      // the returnAmount is the other reserve difference
       returnAmount = R1.sub(l_R1);
     } else {
       return 0;
     }
   }
 
-  /// @dev get a quate for exchanging.
+  /// @dev get a quote for exchanging.
   /// @param _fromToken the token to sell from
   /// @param _inAmount the amount to sell
   /// @param _toToken the token to buy
@@ -163,7 +168,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
       if (_R2 > R2) {
         return 0;
       }
-      // the returnAmount is the other reserve deference
+      // the returnAmount is the other reserve difference
       returnAmount = R2.sub(_R2);
     }
     // if buying token1 from token2
@@ -175,7 +180,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
       if (_R1 > R1) {
         return 0;
       }
-      // the returnAmount is the other reserve deference
+      // the returnAmount is the other reserve difference
       returnAmount = R1.sub(_R1);
     } else {
       return 0;
@@ -272,7 +277,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   /// @param _minReturn the munimum token to buy
   /// @return the return amount of the buying token
   function exchange(address _fromToken, uint256 _inAmount, address _toToken, uint256 _minReturn) private returns (uint256 returnAmount) {
-    // get quate and update temo reserves
+    // get quote and update temp reserves
     returnAmount = quoteAndReserves(_fromToken, _inAmount, _toToken);
     // if the return amount is lower than minimum return, don't buy
     if (returnAmount == 0 || returnAmount < _minReturn) {
@@ -294,7 +299,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
     return (token1.balanceOf(this) >= R1 && token2.balanceOf(this) >= R2);
   }
 
-  /// @dev allow admin to withraw excess tokens accumolated due to precision
+  /// @dev allow admin to withraw excess tokens accumulated due to precision
   function withdrawExcessReserves() public onlyOwner returns (uint256 returnAmount) {
     // if there is excess of token 1, transfer it to the owner
     if (token1.balanceOf(this) > R1) {
