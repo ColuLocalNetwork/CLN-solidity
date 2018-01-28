@@ -8,8 +8,7 @@ import './MarketMaker.sol';
 contract IEllipseMarketMaker is MarketMaker {
     
     // precision for price representation (as in ether or tokens).
-    uint8 public constant decimals = 18;
-    uint256 public constant precision = 18 ** decimals;
+    uint256 public constant PRECISION = 10 ** 18;
 
     // The tokens pair.
     ERC20 public token1;
@@ -41,4 +40,6 @@ contract IEllipseMarketMaker is MarketMaker {
     function initializeAfterTransfer() public returns (bool);
 
     function initializeOnTransfer() public returns (bool);
+
+    function getPrice(uint256 _R1, uint256 _R2, uint256 _S1, uint256 _S2) public constant returns (uint256);
 }

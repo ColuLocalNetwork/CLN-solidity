@@ -9,8 +9,7 @@ import './TokenOwnable.sol';
 contract EllipseMarketMaker is TokenOwnable {
 
   // precision for price representation (as in ether or tokens).
-  uint8 public constant decimals = 18;
-  uint256 public constant precision = 18 ** decimals;
+  uint256 public constant PRECISION = 10 ** 18;
 
   // The tokens pair.
   ERC20 public token1;
@@ -31,7 +30,7 @@ contract EllipseMarketMaker is TokenOwnable {
   // Library contract address.
   address public mmLib;
 
-  /// @dev Constractor calling the library contract using delegate.
+  /// @dev Constructor calling the library contract using delegate.
   function EllipseMarketMaker(address _mmLib, address _token1, address _token2) public {
     require(_mmLib != address(0));
     // Signature of the mmLib's constructor function
@@ -63,7 +62,7 @@ contract EllipseMarketMaker is TokenOwnable {
     return (token1 == token || token2 == token);
   }
 
-  /// @dev gets called when no other function matches, delegat to the lib contract.
+  /// @dev gets called when no other function matches, delegate to the lib contract.
   function() public {
     address _mmLib = mmLib;
     if (msg.data.length > 0) {

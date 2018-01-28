@@ -6,8 +6,7 @@ import './ERC223Receiver.sol';
 /// @author Tal Beja.
 contract MarketMaker is ERC223Receiver {
 
-
-  function getPrice() public constant returns (uint _price);
+  function getCurrentPrice() public constant returns (uint _price);
   function change(address _fromToken, uint _amount, address _toToken) public returns (uint _returnAmount);
   function change(address _fromToken, uint _amount, address _toToken, uint _minReturn) public returns (uint _returnAmount);
   function change(address _toToken) public returns (uint _returnAmount);
