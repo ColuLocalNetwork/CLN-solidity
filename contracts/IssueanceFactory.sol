@@ -27,7 +27,7 @@ contract IssueanceFactory is CurrencyFactory{
     uint256 startTime;
     uint256 endTime;
     uint256 targetPrice;
-    bool isOpen;
+    uint256 clnRaised;
   }
 
   //map of Market Maker owners
@@ -35,10 +35,15 @@ contract IssueanceFactory is CurrencyFactory{
   // total supply of CLN
   uint256 public CLNTotalSupply;
 
+  event CLNRaised(address indexed token, address indexed participant, uint256 amount);
+  event CLNRefunded(address indexed token, address indexed participant, uint256 amount);
+
+  event SaleFinalized(address indexed token, uint256 clnRaised);
 
   // sale has begun based on time and status 
-  modifier hasStarted(address _token) { 
-  	require((now >= issueMap[_token].startTime) && issueMap[_token].isOpen);
+  modifier saleOpen(address _token) { 
+  	require((now >= issueMap[_token].startTime && issueMap[_token].endTime >= now));
+    require(issueMap[_token].clnRaised < issueMap[_token].hardcap);
   	_; 
   }
   // sale is passed its endtime 
@@ -46,20 +51,15 @@ contract IssueanceFactory is CurrencyFactory{
     require(issueMap[_token].endTime < now);
   	_; 
   }
-  // sale has not yet reached hardcap
-  modifier underHardcap(address _token, uint256 amount) { 
-  	require(ERC20(clnAddress).balanceOf(currencyMap[_token].mmAddress)  < issueMap[_token].hardcap);
-  	_; 
-  }
   
   // sale considerd succlessful when it raised equal to or more than the softcap
   modifier saleWasSuccessfull(address _token) { 
-  	require(ERC20(clnAddress).balanceOf(currencyMap[_token].mmAddress) >= issueMap[_token].reserve);
+  	require(issueMap[_token].clnRaised >= issueMap[_token].reserve);
   	_; 
   }
    // sale considerd failed when it raised less than the softcap
   modifier saleHasFailed(address _token) { 
-  	require(ERC20(clnAddress).balanceOf(currencyMap[_token].mmAddress) < issueMap[_token].reserve);
+  	require(issueMap[_token].clnRaised < issueMap[_token].reserve);
   	_; 
   }
   // checks if the instance of market maker contract is open for public 
@@ -67,15 +67,12 @@ contract IssueanceFactory is CurrencyFactory{
   	require(!MarketMaker(currencyMap[_token].mmAddress).isOpenForPublic()); 
   	_; 
   }
-  
-  
-  
   /// @dev constructor
   /// @param _mmLib address for the deployed elipse market maker contract
   /// @param _clnAddress address for the deployed CLN ERC20 token
   function IssueanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
     CLNTotalSupply = ERC20(_clnAddress).totalSupply();
-    precision = _mmLib.PRECISION;
+    precision = IEllipseMarketMaker(_mmLib).PRECISION();
   }
   
   function createIssueance( uint256 _startTime, 
@@ -113,9 +110,9 @@ contract IssueanceFactory is CurrencyFactory{
                     uint256 _targetPrice) private {
   	issueMap[_token] = IssueanceStruct({ hardcap: _hardcap, 
     																				 reserve: _reserveAmount,
-    																				 isOpen: true , 
     																				 startTime: _startTime, 
     																				 endTime: _endTime,
+                                             clnRaised: 0,
     																				 targetPrice: _targetPrice});
   }
 
@@ -124,22 +121,22 @@ contract IssueanceFactory is CurrencyFactory{
   /// @param _clnAmount uint256 amount of CLN to try and participate
   function participate(address _token, 
   											uint256 _clnAmount) public 
-  											hasStarted(_token) 
-  											underHardcap(_token, _clnAmount) 
-  											returns (bool) {
+  											saleOpen(_token) 
+  											returns (uint256 releaseAmount) {
   	require(_clnAmount > 0);
     
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
     // how much do we need to actually send to mm of the incomming amount
     // and how much of the amount can participate
-    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(marketMakerAddress, _clnAmount, _token);
+    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(_clnAmount, _token);
     // send what we need to the market maker for reserve
     require(ERC20(clnAddress).transferFrom(msg.sender, this, participationAmount));
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // pay back to participant with the participated amount * price
-    var releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
+    CLNRaised(_token, msg.sender, participationAmount);
     require(ERC20(_token).transfer(msg.sender, releaseAmount));
-    return true;
   }
 
 
@@ -149,22 +146,22 @@ contract IssueanceFactory is CurrencyFactory{
   function participate(address _token) 
   											public 
   											tokenPayable
-  											hasStarted(_token) 
-  											underHardcap(_token, tkn.value) 
-  											returns (bool) {
+  											saleOpen(_token) 
+  											returns (uint256 releaseAmount) {
   	require(tkn.value > 0 && msg.sender == clnAddress);
     //check if we need to send cln to mm or save it
-    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(marketMakerAddress, tkn.value, _token);
+    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(tkn.value, _token);
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
 
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // transfer only what we need
-    var releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
+    CLNRaised(_token, tkn.sender, participationAmount);
     require(ERC20(_token).transfer(tkn.sender, releaseAmount));
     // send CLN change to the participent since its transferAndCall
     if(tkn.value > participationAmount)
        require(ERC20(clnAddress).transfer(tkn.sender, tkn.value.sub(participationAmount)));
-    return true;
   }
 
   /// @dev called by the creator to finish the sale, open the market maker and get his tokens
@@ -178,12 +175,14 @@ contract IssueanceFactory is CurrencyFactory{
   							returns (bool) {
     // move all CC and CLN that were raised and not in the reserves to the issuer
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
-    uint256 clnAmount = ERC20(clnAddress).balanceOf(this);
+    uint256 clnAmount = issueMap[_token].clnRaised.sub(issueMap[_token].reserve);
     uint256 ccAmount = ERC20(_token).balanceOf(this);
-    require(ERC20(_token).transfer(msg.sender, ccAmount));
-    require(ERC20(clnAddress).transfer(msg.sender, clnAmount));
     // open Market Maker for public trade.
     require(MarketMaker(marketMakerAddress).openForPublicTrade());
+
+    require(ERC20(_token).transfer(msg.sender, ccAmount));
+    require(ERC20(clnAddress).transfer(msg.sender, clnAmount));
+    SaleFinalized(_token, issueMap[_token].clnRaised);
     return true;
 	}
 
@@ -204,6 +203,8 @@ contract IssueanceFactory is CurrencyFactory{
   	require(MarketMaker(marketMakerAddress).change(_token, factoryCCAmount, clnAddress) > 0);
     
   	var returnAmount = _ccAmount.mul(precision).div(issueMap[_token].targetPrice);
+    issueMap[_token].clnRaised = issueMap[_token].clnRaised.sub(returnAmount);
+    CLNRefunded(_token, msg.sender, returnAmount);
   	require(ERC20(clnAddress).transfer(msg.sender, returnAmount));
     return true;
 
@@ -224,6 +225,8 @@ contract IssueanceFactory is CurrencyFactory{
   	require(MarketMaker(marketMakerAddress).change(msg.sender, factoryCCAmount, clnAddress) > 0);
     
   	var returnAmount = tkn.value.mul(precision).div(issueMap[msg.sender].targetPrice);
+    issueMap[msg.sender].clnRaised = issueMap[msg.sender].clnRaised.sub(returnAmount);
+    CLNRefunded(msg.sender, tkn.sender, returnAmount);
   	require(ERC20(clnAddress).transfer(tkn.sender, returnAmount));
     return true;
 
@@ -272,7 +275,7 @@ contract IssueanceFactory is CurrencyFactory{
   function isValidIssueance(uint256 _hardcap, 
                             uint256 _price, 
                             uint256 _S2, 
-                            uint256 _R2) private pure 
+                            uint256 _R2) private view 
                             returns (bool) {
  	  return (_S2 > _R2 && _S2.sub(_R2).mul(precision) >= _hardcap.mul(_price));
   }
@@ -303,28 +306,18 @@ contract IssueanceFactory is CurrencyFactory{
 
   /// @dev helper function participation with CLN
   /// @dev returns the amount to send to reserve and amount to participate
-  /// @param _marketMakerAddress address deployed market maker for this CC
   /// @param _clnAmount amount of cln the user wants to participate with
   /// @param _token address token address for this issueance (same as CC adress)
-  function getParticipationAmounts(address _marketMakerAddress, 
-                                   uint256 _clnAmount, 
+  function getParticipationAmounts(uint256 _clnAmount, 
                                    address _token) private view 
-                                   returns (uint256, uint256){
-    uint256 mmBalance = ERC20(clnAddress).balanceOf(_marketMakerAddress);
+                                   returns (uint256 transferToReserveAmount, uint256 participationAmount){
+    uint256 clnRaised = issueMap[_token].clnRaised;
     uint256 reserve = issueMap[_token].reserve;
     uint256 hardcap = issueMap[_token].hardcap;
-    uint256 participationAmount = SafeMath.min256(_clnAmount, hardcap.sub(mmBalance));
-    if(mmBalance + participationAmount > reserve) {
-      if(mmBalance < reserve) {
-        // some cln to reserve, some or all cln participate
-        return (reserve.sub(mmBalance), participationAmount);
-      }
-      // no cln to reserve some or all cln participate
-      return (0, participationAmount);
+    participationAmount = SafeMath.min256(_clnAmount, hardcap.sub(clnRaised));
+    if (reserve > clnRaised) {
+      transferToReserveAmount = SafeMath.min256(participationAmount, reserve.sub(clnRaised));
     }
-    // all cln to reserve all cln participate
-    return (participationAmount, participationAmount);
   }
-
 }
 
