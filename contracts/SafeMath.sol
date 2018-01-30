@@ -41,4 +41,18 @@ library SafeMath {
     function min256(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
+    function toPower2(uint256 a) internal pure returns (uint256) {
+        return mul(a, a);
+    }
+
+    function sqrt(uint256 a) internal pure returns (uint256) {
+        uint256 c = (a + 1) / 2;
+        uint256 b = a;
+        while (c < b) {
+            b = c;
+            c = (a / c + c) / 2;
+        }
+        return b;
+    }
 }

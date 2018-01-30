@@ -51,6 +51,7 @@ contract BasicToken is ERC20 {
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     function transfer(address _to, uint256 _value) public returns (bool) {
+        require(_to != address(0));
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
 
@@ -64,6 +65,7 @@ contract BasicToken is ERC20 {
     /// @param _to address The address which you want to transfer to.
     /// @param _value uint256 the amount of tokens to be transferred.
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+        require(_to != address(0));
         var _allowance = allowed[_from][msg.sender];
 
         balances[_from] = balances[_from].sub(_value);

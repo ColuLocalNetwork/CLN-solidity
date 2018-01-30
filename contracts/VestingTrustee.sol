@@ -66,7 +66,7 @@ contract VestingTrustee is TokenOwnable {
     /// @param _revokable bool Whether the grant is revokable or not.
     function grant(address _to, uint256 _start, uint256 _cliff, uint256 _end,
         uint256 _installmentLength, bool _revokable)
-        external tokenOnlyOwner tokenPayable {
+        external onlyTokenOwner tokenPayable {
 
         require(_to != address(0));
         require(_to != address(this)); // Protect this contract from receiving a grant.
