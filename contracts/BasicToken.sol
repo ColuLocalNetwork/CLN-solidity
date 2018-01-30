@@ -47,7 +47,7 @@ contract BasicToken is ERC20 {
         return balances[_owner];
     }
 
-    /// @dev transfer token to a specified address.
+    /// @dev Transfer token to a specified address.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     function transfer(address _to, uint256 _value) public returns (bool) {
