@@ -19,15 +19,12 @@ const CC_MAX_TOKENS = 15 * 10 ** 6 * TOKEN_DECIMALS;
 
 const STRUCT_SIZE = 5;
 
-
-
 const INSERT_TO_MM_AND_TRANSFER_WITH_MIN_ABI = {
     name: 'insertCLNtoMarketMaker',
     type: 'function',
     inputs: [{
         type: 'address',
         name: 'token'
-
     }],
     outputs: [
         {
@@ -35,8 +32,6 @@ const INSERT_TO_MM_AND_TRANSFER_WITH_MIN_ABI = {
             name: 'success'
         }
     ]
-
-
 }
 
 const EXTRACT_FROM_MM_AND_TRANSFER_WITH_MIN_ABI = {
@@ -104,11 +99,9 @@ contract('CurrencyFactory', (accounts) => {
             await expectRevert(Factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
-
         it('should not be able to create with zero decimals', async () => {
             await expectRevert(Factory.createCurrency('Some Name', 'SON', 0, CC_MAX_TOKENS, {from: accounts[0]}));
         });
-
 
         it('should not be able to create with zero supply', async () => {
             await expectRevert(Factory.createCurrency('Some Name', 'SON', 18, 0, {from: accounts[0]}));
@@ -120,11 +113,9 @@ contract('CurrencyFactory', (accounts) => {
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
         });
-
     });
 
     describe('Interact with MarketMaker through factory before opening market', async () => {
-
 
         beforeEach(async () => {           
             Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: accounts[0]} )
@@ -153,7 +144,7 @@ contract('CurrencyFactory', (accounts) => {
         it('should be able to insert cln if owner (approve, transfer)', async () => {
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currecnyMap(tokenAddress);
+            var ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[0])).toNumber(), 0);
         });
@@ -162,7 +153,7 @@ contract('CurrencyFactory', (accounts) => {
             var clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currecnyMap(tokenAddress);
+            var ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE -1])
             var ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
@@ -173,12 +164,11 @@ contract('CurrencyFactory', (accounts) => {
             assert.equal(newclnValue.toNumber(), clnvalue.toNumber())
         });
 
-
         it('should not be able to insert cc if not owner and get back cln', async () => {
             var clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currecnyMap(tokenAddress);
+            var ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE -1])
             var ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
@@ -188,7 +178,6 @@ contract('CurrencyFactory', (accounts) => {
             await expectRevert(Factory.extractCLNfromMarketMaker['address,uint256'](tokenAddress, ccvalue, {from: accounts[1]}))
             assert.equal(ccvalue.toNumber(), (await cc.balanceOf(accounts[1])).toNumber());
         });
-
 
         it('should be able to insert cln if owner (callAndTransfer)', async () => {
             let changeData = encodeData(tokenAddress);
@@ -204,11 +193,5 @@ contract('CurrencyFactory', (accounts) => {
         it('should be able to open market if owner', async () => {
             await Factory.openMarket(tokenAddress, {from: accounts[0]})
         })
-
-
-
-
-        
     });
-
 });

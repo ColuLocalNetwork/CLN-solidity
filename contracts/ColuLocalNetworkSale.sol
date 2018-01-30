@@ -74,6 +74,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     mapping (address => uint256) public participationPresaleHistory;
 
     // Maximum amount that each particular is allowed to contribute (in ETH-WEI).
+    // Defaults to zero. Serving as a functional whitelist. 
     mapping (address => uint256) public participationCaps;
 
     // Maximum amount ANYONE is currently allowed to contribute. Set to max uint256 so no limitation other than personal participationCaps.

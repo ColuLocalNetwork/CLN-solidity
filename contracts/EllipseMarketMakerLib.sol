@@ -85,7 +85,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev initialize the contract during erc223/erc677 transfer of all of the tokens form the pair
-  function initializeOnTransfer() public notOperational tokenOnlyOwner tokenPayable returns (bool) {
+  function initializeOnTransfer() public notOperational onlyTokenOwner tokenPayable returns (bool) {
     require(initialize());
     return true;
   }
