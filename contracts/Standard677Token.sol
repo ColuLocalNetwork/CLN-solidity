@@ -9,7 +9,6 @@ import './BasicToken.sol';
 contract Standard677Token is ERC677, BasicToken {
 
   /// @dev ERC223 safe token transfer from one address to another
-  /// @param _from address the address which you want to send tokens from.
   /// @param _to address the address which you want to transfer to.
   /// @param _value uint256 the amount of tokens to be transferred.
   /// @param _data bytes data that can be attached to the token transation

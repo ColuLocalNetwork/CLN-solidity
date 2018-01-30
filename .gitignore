@@ -1,6 +1,11 @@
 build/
 node_modules/
-formattedGrants*.csv
-formattedPresales*.csv
+
+coverage/
+coverage.json
+
 Unified.sol
 scripts/deployment/output
+
+formattedGrants*.csv
+formattedPresales*.csv
