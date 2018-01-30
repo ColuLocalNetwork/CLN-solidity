@@ -72,11 +72,14 @@ contract('IssueanceFactory', (accounts) => {
     let amount = 50 * TOKEN_DECIMALS;
     let tokenAddress;
 
+    before(async () => {
+        mmlib = await EllipseMarketMakerLib.new();
+    });
+
     beforeEach(async () => {
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         await cln.makeTokensTransferable();
         await cln.transfer(accounts[1], THOUSAND_CLN * 1000);
-        mmlib = await EllipseMarketMakerLib.new();
        // await cln.transfer(accounts[2], THOUSAND_CLN * 1000); 
        // await cln.transfer(accounts[3], THOUSAND_CLN * 1000);         
     });
