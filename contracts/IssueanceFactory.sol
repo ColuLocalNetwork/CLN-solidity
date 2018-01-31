@@ -7,7 +7,6 @@ import './ERC20.sol';
 import './Ownable.sol';
 import './Standard223Receiver.sol';
 
-
 /**
  * The IssueanceFactory creates an issuence contract that accpets on one side CLN
  * locks then up in an elipse market maker up to the supplied softcap
@@ -29,6 +28,8 @@ contract IssueanceFactory is CurrencyFactory{
     uint256 targetPrice;
     uint256 clnRaised;
   }
+
+  uint256 public totalCLNcustodian;
 
   //map of Market Maker owners
   mapping (address => IssueanceStruct) public issueMap;
@@ -86,17 +87,17 @@ contract IssueanceFactory is CurrencyFactory{
                             returns (address) {
     require(_startTime > now);
     require(_durationTime > 0);
-    var R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
-    var targetPrice =  IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
+    uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
+    uint256 targetPrice =  IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
     require(isValidIssueance(_hardcap, targetPrice, _totalSupply, R2));
-    var tokenAddress = super.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
+    address tokenAddress = super.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
     addToMap(tokenAddress, _startTime, _startTime + _durationTime, _hardcap, _reserveAmount, targetPrice);
 
     return tokenAddress;
   }
 
   /// @dev internal helper to add all the data to the map
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @param _token address token address for this issuance (same as CC adress)
   /// @param _startTime uint256 blocktime for sale start
   /// @param _endTime uint256 blocktime for sale end
   /// @param _hardcap uint256 sale hardcap
@@ -116,8 +117,8 @@ contract IssueanceFactory is CurrencyFactory{
     																				 targetPrice: _targetPrice});
   }
 
-  /// @dev particiapte in the CLN based issueance
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @dev particiapte in the CLN based issuance
+  /// @param _token address token address for this issuance (same as CC adress)
   /// @param _clnAmount uint256 amount of CLN to try and participate
   function participate(address _token, 
   											uint256 _clnAmount) public 
@@ -128,21 +129,24 @@ contract IssueanceFactory is CurrencyFactory{
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
     // how much do we need to actually send to mm of the incomming amount
     // and how much of the amount can participate
-    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(_clnAmount, _token);
+    uint256 transferToReserveAmount;
+    uint256 participationAmount;
+    (transferToReserveAmount, participationAmount) = getParticipationAmounts(_clnAmount, _token);
     // send what we need to the market maker for reserve
     require(ERC20(clnAddress).transferFrom(msg.sender, this, participationAmount));
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // pay back to participant with the participated amount * price
     releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
+    totalCLNcustodian = totalCLNcustodian.add(participationAmount);
     CLNRaised(_token, msg.sender, participationAmount);
     require(ERC20(_token).transfer(msg.sender, releaseAmount));
   }
 
 
 
-  /// @dev particiapte in the CLN based issueance
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @dev particiapte in the CLN based issuance
+  /// @param _token address token address for this issuance (same as CC adress)
   function participate(address _token) 
   											public 
   											tokenPayable
@@ -150,13 +154,16 @@ contract IssueanceFactory is CurrencyFactory{
   											returns (uint256 releaseAmount) {
   	require(tkn.value > 0 && msg.sender == clnAddress);
     //check if we need to send cln to mm or save it
-    var (transferToReserveAmount, participationAmount) = getParticipationAmounts(tkn.value, _token);
+    uint256 transferToReserveAmount;
+    uint256 participationAmount;
+    (transferToReserveAmount, participationAmount) = getParticipationAmounts(tkn.value, _token);
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
 
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // transfer only what we need
     releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
+    totalCLNcustodian = totalCLNcustodian.add(participationAmount);
     CLNRaised(_token, tkn.sender, participationAmount);
     require(ERC20(_token).transfer(tkn.sender, releaseAmount));
     // send CLN change to the participent since its transferAndCall
@@ -166,7 +173,7 @@ contract IssueanceFactory is CurrencyFactory{
 
   /// @dev called by the creator to finish the sale, open the market maker and get his tokens
   /// @dev can only be called after the sale end time and if the sale passed the softcap
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @param _token address token address for this issuance (same as CC adress)
   function finalize(address _token) public
   							tokenIssuerOnly(_token, msg.sender) 
   							hasEnded(_token) 
@@ -176,6 +183,7 @@ contract IssueanceFactory is CurrencyFactory{
     // move all CC and CLN that were raised and not in the reserves to the issuer
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
     uint256 clnAmount = issueMap[_token].clnRaised.sub(issueMap[_token].reserve);
+    totalCLNcustodian = totalCLNcustodian.sub(clnAmount);
     uint256 ccAmount = ERC20(_token).balanceOf(this);
     // open Market Maker for public trade.
     require(MarketMaker(marketMakerAddress).openForPublicTrade());
@@ -187,7 +195,7 @@ contract IssueanceFactory is CurrencyFactory{
 	}
 
   /// @dev give back cc and get a rfund back in CLN, can only be called after sale ended and if softcap not reached
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @param _token address token address for this issuance (same as CC adress)
   /// @param _ccAmount uint256 amount of CC to try and refund
   function refund(address _token,
                   uint256 _ccAmount) public 
@@ -202,12 +210,12 @@ contract IssueanceFactory is CurrencyFactory{
   	require(ERC20(_token).approve(marketMakerAddress, factoryCCAmount));
   	require(MarketMaker(marketMakerAddress).change(_token, factoryCCAmount, clnAddress) > 0);
     
-  	var returnAmount = _ccAmount.mul(precision).div(issueMap[_token].targetPrice);
+  	uint256 returnAmount = _ccAmount.mul(precision).div(issueMap[_token].targetPrice);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.sub(returnAmount);
+    totalCLNcustodian = totalCLNcustodian.sub(returnAmount);
     CLNRefunded(_token, msg.sender, returnAmount);
   	require(ERC20(clnAddress).transfer(msg.sender, returnAmount));
     return true;
-
   }
 
 
@@ -224,8 +232,9 @@ contract IssueanceFactory is CurrencyFactory{
   	require(ERC20(msg.sender).approve(marketMakerAddress, factoryCCAmount));
   	require(MarketMaker(marketMakerAddress).change(msg.sender, factoryCCAmount, clnAddress) > 0);
     
-  	var returnAmount = tkn.value.mul(precision).div(issueMap[msg.sender].targetPrice);
+  	uint256 returnAmount = tkn.value.mul(precision).div(issueMap[msg.sender].targetPrice);
     issueMap[msg.sender].clnRaised = issueMap[msg.sender].clnRaised.sub(returnAmount);
+    totalCLNcustodian = totalCLNcustodian.sub(returnAmount);
     CLNRefunded(msg.sender, tkn.sender, returnAmount);
   	require(ERC20(clnAddress).transfer(tkn.sender, returnAmount));
     return true;
@@ -268,7 +277,7 @@ contract IssueanceFactory is CurrencyFactory{
   }
 
   /// @dev checks if the parameters that were sent to the create are valid for a promised price and buyback
-  /// @param _hardcap uint256 CLN hardcap for issueance
+  /// @param _hardcap uint256 CLN hardcap for issuance
   /// @param _price uint256 computed through the market maker using the supplies and reserves
   /// @param _S2 uint256 supply of the CC token 
   /// @param _R2 uint256 reserve of the CC token
@@ -282,7 +291,7 @@ contract IssueanceFactory is CurrencyFactory{
 
 
   /// @dev helper function to fetch market maker contract address deploed with the CC
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @param _token address token address for this issuance (same as CC adress)
   function getMarketMakerAddressFromToken(address _token) public constant returns (address) {
   	return currencyMap[_token].mmAddress;
   }
@@ -307,7 +316,7 @@ contract IssueanceFactory is CurrencyFactory{
   /// @dev helper function participation with CLN
   /// @dev returns the amount to send to reserve and amount to participate
   /// @param _clnAmount amount of cln the user wants to participate with
-  /// @param _token address token address for this issueance (same as CC adress)
+  /// @param _token address token address for this issuance (same as CC adress)
   function getParticipationAmounts(uint256 _clnAmount, 
                                    address _token) private view 
                                    returns (uint256 transferToReserveAmount, uint256 participationAmount){
@@ -319,5 +328,75 @@ contract IssueanceFactory is CurrencyFactory{
       transferToReserveAmount = SafeMath.min256(participationAmount, reserve.sub(clnRaised));
     }
   }
-}
 
+  /// @dev Returns total number of issuances after filers are applied.
+  /// @param pending Include pending issuances.
+  /// @param started Include started issuances.
+  /// @param succlessful Include succlessful issuances.
+  /// @param failed Include failed issuances.
+  /// @return Total number of issuances after filters are applied.
+  function getIssuanceCount(bool pending, bool started, bool succlessful, bool failed)
+    public
+    constant
+    returns (uint count)
+  {
+    for (uint i=0; i<tokens.length; i++) {
+      IssueanceStruct memory issuance = issueMap[tokens[i]];      
+      if (pending && issuance.startTime < now
+        || started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap
+        || succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve
+        || succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap
+        || failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve)
+        count += 1;
+    }
+  }
+
+  /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filers are applied.
+  /// @param from Index start position of issuance ids array.
+  /// @param to Index end position of issuance ids array.
+  /// @param pending Include pending issuances.
+  /// @param started Include started issuances.
+  /// @param succlessful Include succlessful issuances.
+  /// @param failed Include failed issuances..
+  /// @return Returns array of issuance ids.
+  function getIssuanceIds(uint from, uint to, bool pending, bool started, bool succlessful, bool failed)
+    public
+    constant
+    returns (address[] _issuanceIds)
+  {
+    uint[] memory issuanceIdsTemp = new uint[](tokens.length);
+    uint count = 0;
+    uint i;
+    for (i=0; i<tokens.length; i++) {
+      IssueanceStruct memory issuance = issueMap[tokens[i]];
+      if (pending && issuance.startTime < now
+        || started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap
+        || succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve
+        || succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap
+        || failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve)
+      {
+        issuanceIdsTemp[count] = i;
+        count += 1;
+      }
+    }
+    _issuanceIds = new address[](to - from);
+    for (i=from; i<to; i++)
+      _issuanceIds[i - from] = tokens[issuanceIdsTemp[i]];
+  }
+
+  /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.
+  /// @param _tokenAddress address The address of the ERC20 contract.
+  /// @param _amount uint256 The amount of tokens to be transferred.
+  function transferAnyERC20Token(address _tokenAddress, uint256 _amount) public onlyOwner returns (bool success) {
+    if (_tokenAddress == clnAddress) {
+      uint256 excessCLN = ERC20(clnAddress).balanceOf(this).sub(totalCLNcustodian);
+      require(excessCLN <= _amount);
+    }
+    
+    if (issueMap[_tokenAddress].hardcap > 0) {
+      require(MarketMaker(currencyMap[_tokenAddress].mmAddress).isOpenForPublic());
+    }
+
+    return ERC20(_tokenAddress).transfer(owner, _amount);
+  }
+}

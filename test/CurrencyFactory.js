@@ -122,7 +122,7 @@ contract('CurrencyFactory', (accounts) => {
 
         beforeEach(async () => {           
             Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: accounts[0]} )
-            assert.equal((await Factory.clnAddress()) ,cln.address);
+            assert.equal(await Factory.clnAddress() ,cln.address);
             let result = await Factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
@@ -147,34 +147,35 @@ contract('CurrencyFactory', (accounts) => {
         it('should be able to insert cln if owner (approve, transfer)', async () => {
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currencyMap(tokenAddress);
+            let ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[0])).toNumber(), 0);
         });
 
         it('should be able to insert cc if owner and get back cln', async () => {
-            var clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
+            let clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
-            assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currencyMap(tokenAddress);
+            // assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
+            await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]})
+            let ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE -1])
-            var ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
-            assert.notEqual(ccvalue, 0);
+            let ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
+            assert.notEqual(ccvalue.toNumber(), 0);
             await cc.approve(Factory.address, ccvalue, {from: accounts[0]})
             assert(await Factory.extractCLNfromMarketMaker['address,uint256'](tokenAddress, ccvalue, {from: accounts[0]}))
-            var newclnValue = BigNumber(await cln.balanceOf(accounts[0]))
+            let newclnValue = BigNumber(await cln.balanceOf(accounts[0]))
             assert.equal(newclnValue.toNumber(), clnvalue.toNumber())
         });
 
         it('should not be able to insert cc if not owner and get back cln', async () => {
-            var clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
+            let clnvalue = BigNumber(await cln.balanceOf(accounts[0]));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
-            var ccadder = await Factory.currencyMap(tokenAddress);
+            let ccadder = await Factory.currencyMap(tokenAddress);
             cc = await ColuLocalCurrency.at(tokenAddress)
             mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE -1])
-            var ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
+            let ccvalue = BigNumber(await cc.balanceOf(accounts[0]));
             assert.notEqual(ccvalue, 0);
             await cc.transfer(accounts[1], ccvalue, {from: accounts[0]})
             await cc.approve(Factory.address, ccvalue, {from: accounts[1]})
