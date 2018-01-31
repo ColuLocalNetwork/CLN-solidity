@@ -13,16 +13,16 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
 
   event MarketOpen(address indexed marketMaker);
   event TokenCreated(address indexed token, address indexed owner);
-  
+
   // modifier to check if called by issuer of the token
   modifier tokenIssuerOnly(address token, address owner) {
   	require(currencyMap[token].owner == owner);
-  	_; 
+  	_;
   }
-  // modifier to only accept transferAndCall from CLN token 
+  // modifier to only accept transferAndCall from CLN token
   modifier CLNOnly() {
   	require(msg.sender == clnAddress);
-  	_; 
+  	_;
   }
 
   struct CurrencyStruct {
@@ -32,9 +32,9 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     address owner;
     address mmAddress;
   }
-  
 
-  // map of Market Maker owners
+
+  // map of Market Maker owners: token address => currency struct
   mapping (address => CurrencyStruct) public currencyMap;
   // address of the deployed CLN contract (ERC20 Token)
   address public clnAddress;
@@ -56,15 +56,15 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _symbol string symbol for CC token that is created.
   /// @param _decimals uint8 percison for CC token that is created.
   /// @param _totalSupply uint256 total supply of the CC token that is created.
-  function createCurrency(string _name, 
-                          string _symbol, 
-                          uint8 _decimals, 
-                          uint256 _totalSupply) public 
+  function createCurrency(string _name,
+                          string _symbol,
+                          uint8 _decimals,
+                          uint256 _totalSupply) public
                           returns(address) {
 
   	var subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
   	var newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
-  	//set allowance 
+  	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
   	require(IEllipseMarketMaker(newMarketMaker).initializeAfterTransfer());
   	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply , mmAddress: newMarketMaker, owner: msg.sender});
@@ -76,9 +76,9 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @dev sending CLN will return CC from the reserve to the sender.
   /// @param _token address address of the cc token managed by this factory.
   /// @param _clnAmount uint256 amount of CLN to transfer into the Market Maker reserve.
-  function insertCLNtoMarketMaker(address _token, 
-                                  uint256 _clnAmount) public 
-                                  tokenIssuerOnly(_token, msg.sender) 
+  function insertCLNtoMarketMaker(address _token,
+                                  uint256 _clnAmount) public
+                                  tokenIssuerOnly(_token, msg.sender)
                                   returns (uint256 _subTokenAmount) {
   	require(_clnAmount > 0);
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
@@ -91,24 +91,24 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @dev ERC223 transferAndCall, send cln to the market maker contract can only be called by owner (see MarketMaker)
   /// @dev sending CLN will return CC from the reserve to the sender.
   /// @param _token address address of the cc token managed by this factory.
-  function insertCLNtoMarketMaker(address _token) public 
-                                  tokenPayable 
-                                  CLNOnly 
-                                  tokenIssuerOnly(_token, tkn.sender) 
+  function insertCLNtoMarketMaker(address _token) public
+                                  tokenPayable
+                                  CLNOnly
+                                  tokenIssuerOnly(_token, tkn.sender)
                                   returns (uint256 _subTokenAmount) {
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(ERC20(clnAddress).approve(marketMakerAddress, tkn.value));
   	_subTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(clnAddress, tkn.value, _token);
     require(ERC20(_token).transfer(tkn.sender, _subTokenAmount));
   }
-  
+
   /// @dev normal send cc to the market maker contract, sender must approve() before calling method. can only be called by owner
   /// @dev sending CC will return CLN from the reserve to the sender.
   /// @param _token address address of the cc token managed by this factory.
-  /// @param _ccAmount uint256 amount of CC to transfer into the Market Maker reserve.          
-  function extractCLNfromMarketMaker(address _token, 
-                                     uint256 _ccAmount) public 
-                                     tokenIssuerOnly(_token, msg.sender) 
+  /// @param _ccAmount uint256 amount of CC to transfer into the Market Maker reserve.
+  function extractCLNfromMarketMaker(address _token,
+                                     uint256 _ccAmount) public
+                                     tokenIssuerOnly(_token, msg.sender)
                                      returns (uint256 _clnTokenAmount) {
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(ERC20(_token).transferFrom(msg.sender, this, _ccAmount));
@@ -117,23 +117,23 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	require(ERC20(clnAddress).transfer(msg.sender, _clnTokenAmount));
   }
 
-  /// @dev ERC223 transferAndCall, send cc to the market maker contract can only be called by owner (see MarketMaker)
+  /// @dev ERC223 transferAndCall, send CC to the market maker contract can only be called by owner (see MarketMaker)
   /// @dev sending CC will return CLN from the reserve to the sender.
-  function extractCLNfromMarketMaker() public 
-                                    tokenPayable 
-                                    tokenIssuerOnly(msg.sender, tkn.sender) 
+  function extractCLNfromMarketMaker() public
+                                    tokenPayable
+                                    tokenIssuerOnly(msg.sender, tkn.sender)
                                     returns (uint256 _clnTokenAmount) {
   	address marketMakerAddress = getMarketMakerAddressFromToken(msg.sender);
   	require(ERC20(msg.sender).approve(marketMakerAddress, tkn.value));
   	_clnTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(msg.sender, tkn.value, clnAddress );
   	require(ERC20(clnAddress).transfer(tkn.sender, _clnTokenAmount));
   }
-  
+
   /// @dev opens the Market Maker to recvice transactions from all sources.
   /// @dev Request to transfer ownership of Market Maker contract to Owner instead of factory.
   /// @param _token address address of the cc token managed by this factory.
-  function openMarket(address _token) public 
-                      tokenIssuerOnly(_token, msg.sender) 
+  function openMarket(address _token) public
+                      tokenIssuerOnly(_token, msg.sender)
                       returns (bool) {
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(MarketMaker(marketMakerAddress).openForPublicTrade());
@@ -147,7 +147,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   function supportsToken(address _token) public constant returns (bool) {
   	return (clnAddress == _token || currencyMap[_token].totalSupply > 0);
   }
-  
+
   /// @dev helper function to get the market maker address form token
   /// @param _token address of the token used with transferAndCall.
   function getMarketMakerAddressFromToken(address _token) public constant returns (address _marketMakerAddress) {
@@ -155,4 +155,3 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     require(_marketMakerAddress != address(0));
   }
 }
-
