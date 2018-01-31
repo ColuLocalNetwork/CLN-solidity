@@ -9,19 +9,19 @@ import './Standard223Receiver.sol';
 
 
 /**
- * The IssueanceFactory creates an issuence contract that accpets on one side CLN
+ * The IssuanceFactory creates an issuence contract that accpets on one side CLN
  * locks then up in an elipse market maker up to the supplied softcap
  * and returns a CC token based on price that is derived form the two supplies and reserves of each
  */
 
-/// @title Colu Issueance factoy with CLN for CC tokens.
+/// @title Colu Issuance factoy with CLN for CC tokens.
 /// @author Rotem Lev.
-contract IssueanceFactory is CurrencyFactory{
+contract IssuanceFactory is CurrencyFactory{
 	using SafeMath for uint256;
 
 	uint256 public precision;
 
-  struct IssueanceStruct {
+  struct IssuanceStruct {
   	uint256 hardcap;
   	uint256 reserve;
     uint256 startTime;
@@ -31,7 +31,7 @@ contract IssueanceFactory is CurrencyFactory{
   }
 
   //map of Market Maker owners
-  mapping (address => IssueanceStruct) public issueMap;
+  mapping (address => IssuanceStruct) public issueMap;
   // total supply of CLN
   uint256 public CLNTotalSupply;
 
@@ -70,12 +70,12 @@ contract IssueanceFactory is CurrencyFactory{
   /// @dev constructor
   /// @param _mmLib address for the deployed elipse market maker contract
   /// @param _clnAddress address for the deployed CLN ERC20 token
-  function IssueanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
+  function IssuanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
     CLNTotalSupply = ERC20(_clnAddress).totalSupply();
     precision = IEllipseMarketMaker(_mmLib).PRECISION();
   }
   
-  function createIssueance( uint256 _startTime, 
+  function createIssuance( uint256 _startTime, 
                             uint256 _durationTime, 
                             uint256 _hardcap, 
                             uint256 _reserveAmount,
@@ -88,7 +88,7 @@ contract IssueanceFactory is CurrencyFactory{
     require(_durationTime > 0);
     var R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
     var targetPrice =  IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
-    require(isValidIssueance(_hardcap, targetPrice, _totalSupply, R2));
+    require(isValidIssuance(_hardcap, targetPrice, _totalSupply, R2));
     var tokenAddress = super.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
     addToMap(tokenAddress, _startTime, _startTime + _durationTime, _hardcap, _reserveAmount, targetPrice);
 
@@ -108,7 +108,7 @@ contract IssueanceFactory is CurrencyFactory{
                     uint256 _hardcap, 
                     uint256 _reserveAmount, 
                     uint256 _targetPrice) private {
-  	issueMap[_token] = IssueanceStruct({ hardcap: _hardcap, 
+  	issueMap[_token] = IssuanceStruct({ hardcap: _hardcap, 
     																				 reserve: _reserveAmount,
     																				 startTime: _startTime, 
     																				 endTime: _endTime,
@@ -272,7 +272,7 @@ contract IssueanceFactory is CurrencyFactory{
   /// @param _price uint256 computed through the market maker using the supplies and reserves
   /// @param _S2 uint256 supply of the CC token 
   /// @param _R2 uint256 reserve of the CC token
-  function isValidIssueance(uint256 _hardcap, 
+  function isValidIssuance(uint256 _hardcap, 
                             uint256 _price, 
                             uint256 _S2, 
                             uint256 _R2) private view 
