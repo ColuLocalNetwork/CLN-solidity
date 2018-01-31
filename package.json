@@ -36,6 +36,7 @@
     "zeppelin-solidity": "^1.5.0"
   },
   "devDependencies": {
-    "solidity-coverage": "^0.2.7"
-  }
+    "solidity-coverage": "^0.2.7",
+    "chai": "*"
+    }
 }

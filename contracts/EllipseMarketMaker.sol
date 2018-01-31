@@ -42,6 +42,7 @@ contract EllipseMarketMaker is TokenOwnable {
     // sig + arguments size
     uint256 dataSize = 4 + argsSize;
 
+
     bytes memory m_data = new bytes(dataSize);
 
     assembly {

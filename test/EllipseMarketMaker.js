@@ -78,8 +78,11 @@ contract('EllipseMarketMaker', (accounts) => {
 
     let amount = 1000 * TOKEN_DECIMALS;
 
-    beforeEach(async () => {
+    before(async () => {
         lib = await EllipseMarketMakerLib.new();
+    });
+
+    beforeEach(async () => {
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         cc = await ColuLocalNetwork.new(CC_MAX_TOKENS);
     });

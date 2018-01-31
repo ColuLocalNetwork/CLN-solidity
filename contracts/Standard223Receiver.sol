@@ -10,18 +10,24 @@ contract Standard223Receiver is ERC223Receiver {
   struct Tkn {
     address addr;
     address sender; // the transaction caller
-    address origin; // the tokens origin
     uint256 value;
   }
 
-  function tokenFallback(address _sender, address _origin, uint _value, bytes _data) external returns (bool ok) {
+  bool __isTokenFallback;
+
+  modifier tokenPayable {
+    require(__isTokenFallback);
+    _;
+  }
+
+  function tokenFallback(address _sender, uint _value, bytes _data) external returns (bool ok) {
     if (!supportsToken(msg.sender)) {
-         return false;
+      return false;
     }
 
     // Problem: This will do a sstore which is expensive gas wise. Find a way to keep it in memory.
     // Solution: Remove the the data
-    tkn = Tkn(msg.sender, _sender, _origin, _value);
+    tkn = Tkn(msg.sender, _sender, _value);
     __isTokenFallback = true;
     if (!address(this).delegatecall(_data)) {
       __isTokenFallback = false;
@@ -32,13 +38,6 @@ contract Standard223Receiver is ERC223Receiver {
     __isTokenFallback = false;
 
     return true;
-  }
-
-  bool __isTokenFallback;
-
-  modifier tokenPayable {
-    require(__isTokenFallback);
-    _;
   }
 
   function supportsToken(address token) public constant returns (bool);
