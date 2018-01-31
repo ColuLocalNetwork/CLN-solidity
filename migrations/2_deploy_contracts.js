@@ -8,11 +8,9 @@ var ColuLocalNetwork = artifacts.require('./ColuLocalNetwork.sol');
 module.exports = function(deployer) {
   deployer.deploy(SafeMath);
   deployer.deploy(Ownable);
-  //deployer.deploy(ERC20);
 
   deployer.link(SafeMath, ColuLocalNetwork);
   deployer.link(Ownable, ColuLocalNetwork);
-  //deployer.link(ERC20, BasicToken);
 
   deployer.deploy(ColuLocalNetwork);
   deployer.deploy(BasicToken);
