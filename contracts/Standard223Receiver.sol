@@ -20,6 +20,10 @@ contract Standard223Receiver is ERC223Receiver {
     _;
   }
 
+  /// @dev Called when the receiver of transfer is contract
+  /// @param _sender address the address of tokens sender
+  /// @param _value uint256 the amount of tokens to be transferred.
+  /// @param _data bytes data that can be attached to the token transation
   function tokenFallback(address _sender, uint _value, bytes _data) external returns (bool ok) {
     if (!supportsToken(msg.sender)) {
       return false;
