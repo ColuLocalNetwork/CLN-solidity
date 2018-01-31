@@ -4,7 +4,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*", // Match any network id
-      gas: 8000029
+      gas: 4000029
     }
   },
   mocha: {

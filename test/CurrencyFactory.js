@@ -65,7 +65,7 @@ contract('CurrencyFactory', (accounts) => {
 
     let amount = 50 * TOKEN_DECIMALS;
     let tokenAddress;
-    
+
     before(async () => {
         mmlib = await EllipseMarketMakerLib.new();
     });
@@ -80,6 +80,10 @@ contract('CurrencyFactory', (accounts) => {
         it('should not construct with no address to cln contract', async () => {
             await expectRevert(CurrencyFactory.new(mmlib.address, null,  {from: accounts[0]} ));
         });
+
+        it('should not construct with not transfarable token', async () => {
+          await expectRevert(CurrencyFactory.new(mmlib.address, cln.address,  {from: accounts[0]} ))
+        })
 
         it('should construct with correct pramms', async () => {
             await cln.makeTokensTransferable();
@@ -120,7 +124,7 @@ contract('CurrencyFactory', (accounts) => {
 
     describe('Interact with MarketMaker through factory before opening market', async () => {
 
-        beforeEach(async () => {           
+        beforeEach(async () => {
             Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: accounts[0]} )
             assert.equal((await Factory.clnAddress()) ,cln.address);
             let result = await Factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
