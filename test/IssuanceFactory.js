@@ -80,8 +80,8 @@ contract('IssuanceFactory', (accounts) => {
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         await cln.makeTokensTransferable();
         await cln.transfer(accounts[1], THOUSAND_CLN * 1000);
-       // await cln.transfer(accounts[2], THOUSAND_CLN * 1000); 
-       // await cln.transfer(accounts[3], THOUSAND_CLN * 1000);         
+       // await cln.transfer(accounts[2], THOUSAND_CLN * 1000);
+       // await cln.transfer(accounts[3], THOUSAND_CLN * 1000);
     });
 
 
@@ -129,8 +129,9 @@ contract('IssuanceFactory', (accounts) => {
         let now
         beforeEach(async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            Factory = await IssuanceFactory.new(mmlib.address, cln.address,  {from: accounts[0]} )
-            assert.equal((await Factory.clnAddress()) ,cln.address);
+            Factory = await IssuanceFactory.new(mmlib.address, cln.address, {from: accounts[0]} );
+            let clnAddress = await Factory.clnAddress();
+            assert.equal(clnAddress ,cln.address);
             let result = await Factory.createIssuance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
@@ -149,18 +150,18 @@ contract('IssuanceFactory', (accounts) => {
 
         it('should not be able to participate cln if there is not tokens owner', async () => {
             cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            await expectRevert(Factory.participate(accounts[2], THOUSAND_CLN, {from: accounts[1]}))
+            await expectRevert(Factory.participate['address,uint256'](accounts[2], THOUSAND_CLN, {from: accounts[1]}))
         });
 
         it('should not be able to participate with cln if sale has owner before starttime (approve, transfer)', async () => {
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            await expectRevert(Factory.participate(tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
+            await expectRevert(Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
         });
 
         it('should be able to participate with cln if sale has owner (approve, transfer)', async () => {
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress)
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
         });
@@ -176,7 +177,7 @@ contract('IssuanceFactory', (accounts) => {
         it('should not be able to refund if not ended (approve, transfer)', async () => {
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await cc.approve(Factory.address, await cc.balanceOf(accounts[1]), {from: accounts[1]})
@@ -186,7 +187,7 @@ contract('IssuanceFactory', (accounts) => {
         it('should not be able to refund if not under softcap (approve, transfer)', async () => {
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
              await time.increaseTime(10000000);
@@ -198,7 +199,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[1])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN / 4, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(10000000);
@@ -211,7 +212,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[1])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN / 4, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(10000000);
@@ -224,7 +225,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[1])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN / 4, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 4, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(10000000);
@@ -235,7 +236,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[1])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN / 2, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN / 2, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(100000);
@@ -246,7 +247,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[0])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN / 2, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN / 2, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(10000000);
@@ -260,7 +261,7 @@ contract('IssuanceFactory', (accounts) => {
             clnvalue = await cln.balanceOf(accounts[0])
             await time.increaseTime(10);
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[1]})
-            assert( await Factory.participate(tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
+            assert( await Factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[1]}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(accounts[1])).toNumber(), 0);
             await time.increaseTime(10000000);
@@ -271,7 +272,7 @@ contract('IssuanceFactory', (accounts) => {
         });
 
 
-        
+
     });
 
 });

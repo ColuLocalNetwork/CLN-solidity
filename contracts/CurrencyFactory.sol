@@ -11,20 +11,6 @@ import './Standard223Receiver.sol';
 /// @author Rotem Lev.
 contract CurrencyFactory is Standard223Receiver, TokenHolder {
 
-  event MarketOpen(address indexed marketMaker);
-  event TokenCreated(address indexed token, address indexed owner);
-
-  // modifier to check if called by issuer of the token
-  modifier tokenIssuerOnly(address token, address owner) {
-  	require(currencyMap[token].owner == owner);
-  	_;
-  }
-  // modifier to only accept transferAndCall from CLN token
-  modifier CLNOnly() {
-  	require(msg.sender == clnAddress);
-  	_;
-  }
-
   struct CurrencyStruct {
     string name;
     uint8 decimals;
@@ -40,6 +26,22 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   address public clnAddress;
   // address of the deployed elipse market maker contract
   address public mmLibAddress;
+
+  address[] public tokens;
+
+  event MarketOpen(address indexed marketMaker);
+  event TokenCreated(address indexed token, address indexed owner);
+
+  // modifier to check if called by issuer of the token
+  modifier tokenIssuerOnly(address token, address owner) {
+    require(currencyMap[token].owner == owner);
+    _;
+  }
+  // modifier to only accept transferAndCall from CLN token
+  modifier CLNOnly() {
+    require(msg.sender == clnAddress);
+    _;
+  }
 
   /// @dev constructor only reuires the address of the CLN token which must use the ERC20 interface
   /// @param _mmLib address for the deployed market maker elipse contract
@@ -60,14 +62,15 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
                           string _symbol,
                           uint8 _decimals,
                           uint256 _totalSupply) public
-                          returns(address) {
+                          returns (address) {
 
-  	var subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
-  	var newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
+  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
+  	EllipseMarketMaker newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
   	require(IEllipseMarketMaker(newMarketMaker).initializeAfterTransfer());
   	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply , mmAddress: newMarketMaker, owner: msg.sender});
+    tokens.push(subToken);
   	TokenCreated(subToken, msg.sender);
   	return subToken;
   }

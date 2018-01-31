@@ -131,7 +131,7 @@ contract('CurrencyFactory', (accounts) => {
 
         beforeEach(async () => {
             Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: accounts[0]} )
-            assert.equal((await Factory.clnAddress()) ,cln.address);
+            assert.equal(await Factory.clnAddress() ,cln.address);
             let result = await Factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
@@ -161,7 +161,7 @@ contract('CurrencyFactory', (accounts) => {
             assert.notEqual(BigNumber(await cc.balanceOf(owner)).toNumber(), 0);
         });
 
-        it.only('should not be able to extract cln if not owner', async () => {
+        it('should not be able to extract cln if not owner', async () => {
             // Sending thousand CLN to contract
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))

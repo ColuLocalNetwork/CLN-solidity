@@ -4,7 +4,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*", // Match any network id
-      gas: 4000029
+      gas: 8000029
     }
   },
   mocha: {
@@ -18,7 +18,7 @@ module.exports = {
   solc: {
     optimizer: {
       enabled: true,
-      runs: 200 
+      runs: 200
     }
   }
 };
