@@ -19,7 +19,7 @@ contract BasicToken is ERC20 {
     /// @param _spender address The address which will spend the funds.
     /// @param _value uint256 The amount of tokens to be spent.
     function approve(address _spender, uint256 _value) public returns (bool) {
-        // https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+        // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve (see NOTE)
         if ((_value != 0) && (allowed[msg.sender][_spender] != 0)) {
             revert();
         }
@@ -47,7 +47,7 @@ contract BasicToken is ERC20 {
         return balances[_owner];
     }
 
-    /// @dev transfer token to a specified address.
+    /// @dev Transfer token to a specified address.
     /// @param _to address The address to transfer to.
     /// @param _value uint256 The amount to be transferred.
     function transfer(address _to, uint256 _value) public returns (bool) {
