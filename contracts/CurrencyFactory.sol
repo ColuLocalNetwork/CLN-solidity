@@ -69,7 +69,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
   	require(IEllipseMarketMaker(newMarketMaker).initializeAfterTransfer());
-  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply , mmAddress: newMarketMaker, owner: msg.sender});
+  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply, mmAddress: newMarketMaker, owner: msg.sender});
     tokens.push(subToken);
   	TokenCreated(subToken, msg.sender);
   	return subToken;
@@ -116,7 +116,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(ERC20(_token).transferFrom(msg.sender, this, _ccAmount));
   	require(ERC20(_token).approve(marketMakerAddress, _ccAmount));
-  	_clnTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(_token, _ccAmount, clnAddress );
+  	_clnTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(_token, _ccAmount, clnAddress);
   	require(ERC20(clnAddress).transfer(msg.sender, _clnTokenAmount));
   }
 
@@ -128,7 +128,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
                                     returns (uint256 _clnTokenAmount) {
   	address marketMakerAddress = getMarketMakerAddressFromToken(msg.sender);
   	require(ERC20(msg.sender).approve(marketMakerAddress, tkn.value));
-  	_clnTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(msg.sender, tkn.value, clnAddress );
+  	_clnTokenAmount = IEllipseMarketMaker(marketMakerAddress).change(msg.sender, tkn.value, clnAddress);
   	require(ERC20(clnAddress).transfer(tkn.sender, _clnTokenAmount));
   }
 

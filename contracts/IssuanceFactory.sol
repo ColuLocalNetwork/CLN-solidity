@@ -88,9 +88,9 @@ contract IssuanceFactory is CurrencyFactory{
     require(_startTime > now);
     require(_durationTime > 0);
     uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
-    uint256 targetPrice =  IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
+    uint256 targetPrice = IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
     require(isValidIssuance(_hardcap, targetPrice, _totalSupply, R2));
-    address tokenAddress = super.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
+    address tokenAddress = super.createCurrency(_name,  _symbol,  _decimals,  _totalSupply);
     addToMap(tokenAddress, _startTime, _startTime + _durationTime, _hardcap, _reserveAmount, targetPrice);
 
     return tokenAddress;
@@ -167,7 +167,7 @@ contract IssuanceFactory is CurrencyFactory{
     CLNRaised(_token, tkn.sender, participationAmount);
     require(ERC20(_token).transfer(tkn.sender, releaseAmount));
     // send CLN change to the participent since its transferAndCall
-    if(tkn.value > participationAmount)
+    if (tkn.value > participationAmount)
        require(ERC20(clnAddress).transfer(tkn.sender, tkn.value.sub(participationAmount)));
   }
 
