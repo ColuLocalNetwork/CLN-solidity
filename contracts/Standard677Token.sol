@@ -8,6 +8,10 @@ import './BasicToken.sol';
 
 contract Standard677Token is ERC677, BasicToken {
 
+  /// @dev ERC223 safe token transfer from one address to another
+  /// @param _to address the address which you want to transfer to.
+  /// @param _value uint256 the amount of tokens to be transferred.
+  /// @param _data bytes data that can be attached to the token transation
   function transferAndCall(address _to, uint _value, bytes _data) public returns (bool) {
     require(super.transfer(_to, _value)); // do a normal token transfer
     TransferAndCall(msg.sender, _to, _value, _data);
@@ -16,14 +20,19 @@ contract Standard677Token is ERC677, BasicToken {
     return true;
   }
 
-  //function that is called when transaction target is a contract
+  /// @dev called when transaction target is a contract
+  /// @param _to address the address which you want to transfer to.
+  /// @param _value uint256 the amount of tokens to be transferred.
+  /// @param _data bytes data that can be attached to the token transation
   function contractFallback(address _to, uint _value, bytes _data) private returns (bool) {
     ERC223Receiver receiver = ERC223Receiver(_to);
     require(receiver.tokenFallback(msg.sender, _value, _data));
     return true;
   }
 
-  //assemble the given address bytecode. If bytecode exists then the _addr is a contract.
+  /// @dev check if the address is contract
+  /// assemble the given address bytecode. If bytecode exists then the _addr is a contract.
+  /// @param _addr address the address to check
   function isContract(address _addr) private constant returns (bool is_contract) {
     // retrieve the size of the code on target address, this needs assembly
     uint length;

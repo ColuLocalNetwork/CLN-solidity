@@ -77,7 +77,7 @@ contract('CurrencyFactory', (accounts) => {
     });
 
     describe('construction', async () => {
-        it('should not construct with no address to cln contract', async () => {
+        it('should not construct with no address to CLN contract', async () => {
             await expectRevert(CurrencyFactory.new(mmlib.address, null,  {from: accounts[0]} ));
         });
 
@@ -140,28 +140,28 @@ contract('CurrencyFactory', (accounts) => {
             assert(expect(tokenAddress).to.be.a('String'));
         });
 
-        it('should not be able to insert 0 cln', async () => {
+        it('should not be able to insert 0 CLN', async () => {
             await expectRevert(Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, 0, {from: accounts[0]}))
         });
 
-        it('should not be able to insert cln if no allowance was given', async () => {
+        it('should not be able to insert CLN if no allowance was given', async () => {
             await expectRevert(Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: accounts[0]}))
         });
 
-        it('should not be able to insert cln if not owner', async () => {
+        it('should not be able to insert CLN if not owner', async () => {
             await cln.approve(Factory.address, THOUSAND_CLN, {from: notOwner})
             await expectRevert(Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: notOwner}))
         });
 
 
-        it('should be able to insert cln if owner (approve, transfer)', async () => {
+        it('should be able to insert CLN if owner (approve, transfer)', async () => {
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
             cc = await ColuLocalCurrency.at(tokenAddress);
             assert.notEqual(BigNumber(await cc.balanceOf(owner)).toNumber(), 0);
         });
 
-        it('should not be able to extract cln if not owner', async () => {
+        it('should not be able to extract CLN if not owner', async () => {
             // Sending thousand CLN to contract
             await cln.approve(Factory.address, THOUSAND_CLN, {from: accounts[0]})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
@@ -173,7 +173,7 @@ contract('CurrencyFactory', (accounts) => {
 
         });
 
-        it('should be able to insert cc if owner and get back cln', async () => {
+        it('should be able to insert CC if owner and get back CLN', async () => {
             var clnvalue = BigNumber(await cln.balanceOf(owner));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: owner})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
@@ -194,7 +194,7 @@ contract('CurrencyFactory', (accounts) => {
             assert.equal(newclnValue.toNumber(), clnvalue.toNumber());
         });
 
-        it('should not be able to insert cc if not owner and get back cln', async () => {
+        it('should not be able to insert CC if not owner and get back CLN', async () => {
             var clnvalue = BigNumber(await cln.balanceOf(owner));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: owner})
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
@@ -209,7 +209,7 @@ contract('CurrencyFactory', (accounts) => {
             assert.equal(ccvalue.toNumber(), (await cc.balanceOf(notOwner)).toNumber());
         });
 
-        it('should be able to insert cln if owner (transferAndCall)', async () => {
+        it('should be able to insert CLN if owner (transferAndCall)', async () => {
             let changeData = encodeData(tokenAddress);
             await cln.transferAndCall(Factory.address, THOUSAND_CLN, changeData);
             cc = await ColuLocalCurrency.at(tokenAddress)
