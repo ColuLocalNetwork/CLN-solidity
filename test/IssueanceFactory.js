@@ -1,4 +1,5 @@
 const expectRevert = require('./helpers/expectRevert');
+const eventHelper = require('./helpers/eventHelper');
 const coder = require('web3-eth-abi');
 const expect = require('chai').expect;
 const BigNumber = require('bignumber.js');
@@ -10,6 +11,7 @@ const EllipseMarketMaker = artifacts.require('EllipseMarketMaker');
 const IssueanceFactory = artifacts.require('IssueanceFactory');
 const ColuLocalCurrency = artifacts.require('ColuLocalCurrency');
 const EllipseMarketMakerLib =  artifacts.require('EllipseMarketMakerLib');
+const CurrencyFactory = artifacts.require('CurrencyFactory');
 
 const TOKEN_DECIMALS = 10 ** 18;
 
@@ -71,6 +73,7 @@ contract('IssueanceFactory', (accounts) => {
 
     let amount = 50 * TOKEN_DECIMALS;
     let tokenAddress;
+    let currencyFactory;
 
     before(async () => {
         mmlib = await EllipseMarketMakerLib.new();
@@ -80,6 +83,7 @@ contract('IssueanceFactory', (accounts) => {
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         await cln.makeTokensTransferable();
         await cln.transfer(accounts[1], THOUSAND_CLN * 1000);
+        currencyFactory = await CurrencyFactory.new(mmlib.address, cln.address);
        // await cln.transfer(accounts[2], THOUSAND_CLN * 1000); 
        // await cln.transfer(accounts[3], THOUSAND_CLN * 1000);         
     });
@@ -87,7 +91,7 @@ contract('IssueanceFactory', (accounts) => {
 
     describe ('Issue through CLN', async () => {
         beforeEach(async () => {
-            Factory = await IssueanceFactory.new(mmlib.address,  cln.address,  {from: accounts[0]} )
+            Factory = await IssueanceFactory.new(currencyFactory.address,  {from: accounts[0]} )
         });
 
         it('should not be able to create without name', async () => {
@@ -114,9 +118,10 @@ contract('IssueanceFactory', (accounts) => {
 
         it('should be able to create with correct parameters', async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            let result = await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
-            assert.lengthOf(result.logs, 1);
-            let event = result.logs[0];
+            await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
+            let logs = await eventHelper.assertEvent(currencyFactory, {event: 'TokenCreated'});
+            assert.lengthOf(logs, 1);
+            let event = logs[0];
             assert.equal(event.event, 'TokenCreated');
             tokenAddress = event.args.token
             assert(expect(tokenAddress).to.be.a('String'));
@@ -129,12 +134,13 @@ contract('IssueanceFactory', (accounts) => {
         let now
         beforeEach(async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            Factory = await IssueanceFactory.new(mmlib.address, cln.address, {from: accounts[0]} );
+            Factory = await IssueanceFactory.new(currencyFactory.address, {from: accounts[0]} );
             let clnAddress = await Factory.clnAddress();
             assert.equal(clnAddress ,cln.address);
-            let result = await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
-            assert.lengthOf(result.logs, 1);
-            let event = result.logs[0];
+            await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
+            let logs = await eventHelper.assertEvent(currencyFactory, {event: 'TokenCreated'});
+            assert.lengthOf(logs, 1);
+            let event = logs[0];
             assert.equal(event.event, 'TokenCreated');
             tokenAddress = event.args.token
             assert(expect(tokenAddress).to.be.a('String'));
