@@ -7,7 +7,7 @@ const time = require('./helpers/time');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const EllipseMarketMaker = artifacts.require('EllipseMarketMaker');
-const IssueanceFactory = artifacts.require('IssueanceFactory');
+const IssuanceFactory = artifacts.require('IssuanceFactory');
 const ColuLocalCurrency = artifacts.require('ColuLocalCurrency');
 const EllipseMarketMakerLib =  artifacts.require('EllipseMarketMakerLib');
 
@@ -60,7 +60,7 @@ const encodeData = (refund, token) => {
     return coder.encodeFunctionCall(abi, params);
 };
 
-contract('IssueanceFactory', (accounts) => {
+contract('IssuanceFactory', (accounts) => {
     let cln;
 
     let Factory;
@@ -87,34 +87,34 @@ contract('IssueanceFactory', (accounts) => {
 
     describe ('Issue through CLN', async () => {
         beforeEach(async () => {
-            Factory = await IssueanceFactory.new(mmlib.address,  cln.address,  {from: accounts[0]} )
+            Factory = await IssuanceFactory.new(mmlib.address,  cln.address,  {from: accounts[0]} )
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(Factory.createIssueance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]}));
+            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(Factory.createIssueance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: accounts[0]}));
+            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
 
         it('should not be able to create with zero decimals', async () => {
-            await expectRevert(Factory.createIssueance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 0, CC_MAX_TOKENS, {from: accounts[0]}));
+            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 0, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(Factory.createIssueance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: accounts[0]}));
+            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: accounts[0]}));
         });
 
         it('should not be able to create with too small reserve', async () => {
-            await expectRevert(Factory.createIssueance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]}));
+            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
         it('should be able to create with correct parameters', async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            let result = await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
+            let result = await Factory.createIssuance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -129,10 +129,10 @@ contract('IssueanceFactory', (accounts) => {
         let now
         beforeEach(async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            Factory = await IssueanceFactory.new(mmlib.address, cln.address, {from: accounts[0]} );
+            Factory = await IssuanceFactory.new(mmlib.address, cln.address, {from: accounts[0]} );
             let clnAddress = await Factory.clnAddress();
             assert.equal(clnAddress ,cln.address);
-            let result = await Factory.createIssueance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
+            let result = await Factory.createIssuance(now + 10, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: accounts[0]});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
