@@ -157,9 +157,30 @@ contract('ColuLocalNetworkSale', (accounts) => {
             console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale presale for ${presale[0]}...`);
             await sale.presaleAllocation(...presale);
         };
-        console.log('\tpresaleTokensSold', (await sale.presaleTokensSold()).toString())
-        assert.equal(MAX_PRESALE_TOKENS_SOLD, (await sale.presaleTokensSold()).toNumber())
+        let presaleTokensSold = await sale.presaleTokensSold();
+        console.log('\tpresaleTokensSold', presaleTokensSold.toString());
+        assert.equal(true, MAX_PRESALE_TOKENS_SOLD >= presaleTokensSold.toNumber());
+
+        let presaleTokensWithoutALAP = calcPresalesWithoutALAP();
+        console.log('\tpresaleTokensWithoutALAP', presaleTokensWithoutALAP.toString());
+
+        let calculatedALAP = presaleTokensSold.sub(presaleTokensWithoutALAP);
+        console.log('\tcalculatedALAP', calculatedALAP.toString());
+        assert.equal(ALAP, calculatedALAP.toNumber());
     };
+
+    const calcPresalesWithoutALAP = () => {
+        let presaleTokensWithoutALAP = new BigNumber(0);
+        for (const presale of PRESALES) {
+            // console.log(`\tcalculate presale tokens without alap for ${presale.recipient}...`);
+            let formatedPresale = presaleCalculator.calcPresale([presale])[0];
+            let tokensPerEth = new BigNumber(CLN_PER_ETH);
+            let tokensAmount = tokensPerEth.mul(formatedPresale[1]).toPrecision(10, BigNumber.ROUND_FLOOR);
+
+            presaleTokensWithoutALAP = presaleTokensWithoutALAP.add(tokensAmount);
+        }
+        return presaleTokensWithoutALAP;
+    }
 
     // Checks if token grants exists.
     const ColuLocalNetworkGrantExists = async (sale, tokenGrant) => {
