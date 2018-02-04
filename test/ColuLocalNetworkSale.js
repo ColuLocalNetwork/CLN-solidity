@@ -175,7 +175,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             // console.log(`\tcalculate presale tokens without alap for ${presale.recipient}...`);
             let formatedPresale = presaleCalculator.calcPresale([presale])[0];
             let tokensPerEth = new BigNumber(CLN_PER_ETH);
-            let tokensAmount = tokensPerEth.mul(formatedPresale[1]).toPrecision(10, BigNumber.ROUND_FLOOR);
+            let tokensAmount = tokensPerEth.mul(formatedPresale[1]).toPrecision(16, BigNumber.ROUND_FLOOR);
 
             presaleTokensWithoutALAP = presaleTokensWithoutALAP.add(tokensAmount);
         }
