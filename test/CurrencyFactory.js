@@ -60,6 +60,7 @@ contract('CurrencyFactory', (accounts) => {
     let mmAdress;
     let mmlib;
 
+    let factoryOwner = accounts[2]
     let owner = accounts[0];
     let notOwner = accounts[1];
 
@@ -97,7 +98,7 @@ contract('CurrencyFactory', (accounts) => {
     describe('creating Local Currency and its MarketMaker', async () => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
-            Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: owner} )
+            Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: factoryOwner} )
         });
 
         it('should not be able to create without name', async () => {
@@ -132,12 +133,22 @@ contract('CurrencyFactory', (accounts) => {
             // check the currency owner
             assert.equal(currencyStruct[3], owner);
         });
+
+        it('should not be able to create two tokens with same name', async () => {
+            assert(await Factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(Factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, {from: owner}));
+        });
+
+        it('should not be able to create two tokens with same symbol', async () => {
+            assert(await Factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(Factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+        });
     });
 
     describe('Interact with MarketMaker through factory before opening market', async () => {
 
         beforeEach(async () => {
-            Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: owner} )
+            Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: factoryOwner} )
             assert.equal(await Factory.clnAddress() ,cln.address);
             let result = await Factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
             assert.lengthOf(result.logs, 1);
@@ -160,15 +171,27 @@ contract('CurrencyFactory', (accounts) => {
             await expectRevert(Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: notOwner}));
         });
 
-
         it('should be able to insert CLN if owner (approve, transfer)', async () => {
-            balanceBefore = BigNumber(await cln.balanceOf(owner));
+            let balanceBefore = BigNumber(await cln.balanceOf(owner));
             await cln.approve(Factory.address, THOUSAND_CLN, {from: owner});
             assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
-            balanceNow = BigNumber(await cln.balanceOf(owner));
+            let balanceNow = BigNumber(await cln.balanceOf(owner));
             assert(balanceBefore.minus(balanceNow).eq(THOUSAND_CLN));
-            cc = await ColuLocalCurrency.at(tokenAddress);
-            assert.notEqual(BigNumber(await cc.balanceOf(owner)).toNumber(), 0);
+            const cc = await ColuLocalCurrency.at(tokenAddress);
+            let cc1Balance = BigNumber(await cc.balanceOf(owner));
+
+            assert.notEqual(BigNumber(cc1Balance.toNumber(), 0));
+            // Gives correct number of CC tokens
+            assert.equal(cc1Balance.div(TOKEN_DECIMALS).toFixed(0), 17321);
+
+            // inserting second time
+            balanceBefore = balanceNow
+            await cln.approve(Factory.address, 2 * THOUSAND_CLN, {from: owner});
+            assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, 2 * THOUSAND_CLN, {from: owner}))
+            balanceNow = BigNumber(await cln.balanceOf(owner));
+            assert(balanceBefore.minus(balanceNow).eq(2 * THOUSAND_CLN));
+            cc1Balance = BigNumber(await cc.balanceOf(owner));
+            assert.equal(cc1Balance.div(TOKEN_DECIMALS).toFixed(0), 30000);
         });
 
         it('should not be able to extract CLN if not owner', async () => {
@@ -183,23 +206,28 @@ contract('CurrencyFactory', (accounts) => {
 
         it('should be able to insert CC if owner and get back CLN', async () => {
             var clnvalue = BigNumber(await cln.balanceOf(owner));
-            await cln.approve(Factory.address, THOUSAND_CLN, {from: owner})
-            assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}))
+            await cln.approve(Factory.address, 2 * THOUSAND_CLN, {from: owner})
+            assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, 2 * THOUSAND_CLN, {from: owner}))
 
             // CLN ammount decreased by 1000
-            assert(BigNumber(await cln.balanceOf(owner)).eq(clnvalue - (THOUSAND_CLN)));
+            assert(BigNumber(await cln.balanceOf(owner)).eq(clnvalue - (2 * THOUSAND_CLN)));
 
             var ccadder = await Factory.currencyMap(tokenAddress);
-            cc = await ColuLocalCurrency.at(tokenAddress)
-            mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE - 1])
+            cc = await ColuLocalCurrency.at(tokenAddress);
+            mm = await EllipseMarketMaker.at(ccadder[STRUCT_SIZE - 1]);
             var ccvalue = BigNumber(await cc.balanceOf(owner));
             assert.notEqual(ccvalue, 0);
             await cc.approve(Factory.address, ccvalue, {from: owner});
-            assert(await Factory.extractCLNfromMarketMaker['address,uint256'](tokenAddress, ccvalue, {from: owner}));
-            var newclnValue = BigNumber(await cln.balanceOf(owner));
 
+            // extract all CC tokens in two operations
+            assert(await Factory.extractCLNfromMarketMaker['address,uint256'](tokenAddress, ccvalue / 2, {from: owner}));
+            // ccvalue = BigNumber(await cc.balanceOf(owner));
+            assert(await Factory.extractCLNfromMarketMaker['address,uint256'](tokenAddress, await cc.balanceOf(owner), {from: owner}));
+
+            var newclnValue = BigNumber(await cln.balanceOf(owner));
             // CLN value does not changed
-            assert.equal(newclnValue.toNumber(), clnvalue.toNumber());
+            assert(newclnValue.eq(clnvalue));
+            assert((await cc.balanceOf(owner)).eq(0));
         });
 
         it('should not be able to insert CC if not owner and get back CLN', async () => {
@@ -255,5 +283,57 @@ contract('CurrencyFactory', (accounts) => {
                 assert.isNotOk(await Factory.supportsToken(mmlib.address));
             });
         });
+    });
+
+
+    describe('Create two different currencies one after another', async () => {
+      let tokenAddress1;
+      let tokenAddress2;
+
+      let owner1 = accounts[0];
+      let owner2 = accounts[1];
+
+      beforeEach(async () => {
+          Factory = await CurrencyFactory.new(mmlib.address, cln.address,  {from: factoryOwner} )
+          let result = await Factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner1});
+          let event = result.logs[0];
+          tokenAddress1 = event.args.token;
+
+          result = await Factory.createCurrency('Other Name', 'ON', 18, CC_MAX_TOKENS, {from: owner2});
+          event = result.logs[0];
+          tokenAddress2 = event.args.token;
+      });
+
+      it('should be able to insert CLN into multiple currencies one after another', async () => {
+          // insert to first currency
+          const balanceBefore = BigNumber(await cln.balanceOf(owner1));
+          await cln.approve(Factory.address, THOUSAND_CLN, {from: owner1});
+          assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress1, THOUSAND_CLN, {from: owner1}))
+          const balanceNow = BigNumber(await cln.balanceOf(owner1));
+          assert(balanceBefore.minus(balanceNow).eq(THOUSAND_CLN));
+          const cc1 = await ColuLocalCurrency.at(tokenAddress1);
+          const cc1Balance = BigNumber(await cc1.balanceOf(owner1))
+          assert.notEqual(cc1Balance.toNumber(), 0);
+          assert.equal(cc1Balance.div(TOKEN_DECIMALS).toFixed(0), 17321);
+
+          // insert to second currency
+          const balanceBefore2 = BigNumber(await cln.balanceOf(owner2));
+          await cln.approve(Factory.address, 2 * THOUSAND_CLN, {from: owner2});
+          assert(await Factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress2, 2 * THOUSAND_CLN, {from: owner2}))
+          const balanceNow2 = BigNumber(await cln.balanceOf(owner2));
+          assert(balanceBefore2.minus(balanceNow2).eq(2 * THOUSAND_CLN));
+          const cc2 = await ColuLocalCurrency.at(tokenAddress2);
+          const cc2Balance = BigNumber(await cc2.balanceOf(owner2));
+          assert.notEqual(cc2Balance.toNumber(), 0);
+          assert.equal(cc2Balance.div(TOKEN_DECIMALS).toFixed(0), 24495);
+
+
+          // check CC1 doesn't effect CC2
+          assert(balanceNow.eq(await cln.balanceOf(owner1)));
+          assert(balanceNow2.eq(await cln.balanceOf(owner2)));
+          assert(cc1Balance.eq(await cc1.balanceOf(owner1)));
+          assert(cc2Balance.eq(await cc2.balanceOf(owner2)));
+      });
+
     });
 });
