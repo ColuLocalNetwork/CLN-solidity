@@ -193,10 +193,10 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
 
         // allocate pool tokens:
         // Issue the remaining tokens to designated pools.
-        transferTokens(communityPoolAddress, COMMUNITY_POOL);
+        require(transferTokens(communityPoolAddress, COMMUNITY_POOL));
 
         // stakeholdersPoolAddress will create its own vesting trusts.
-        transferTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL);
+        require(transferTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL));
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
@@ -273,7 +273,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
             tokensToTransfer = tokensLeftInSale;
         }
         tokensSold = tokensSold.add(tokensToTransfer);
-        transferTokens(_recipient, tokensToTransfer);
+        require(transferTokens(_recipient, tokensToTransfer));
 
         // Partial refund if full participation not possible
         // e.g. due to cap being reached.

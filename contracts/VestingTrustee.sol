@@ -248,7 +248,7 @@ contract VestingTrustee is TokenOwnable {
     /// @dev Unlock vested tokens and transfer them to the grantee.
     /// @return a uint The success or error code.
     function unlockVestedTokens() external returns (uint) {
-        unlockVestedTokens(msg.sender);
+        return unlockVestedTokens(msg.sender);
     }
 
     /// @dev Unlock vested tokens and transfer them to the grantee (helper function).
