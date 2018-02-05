@@ -159,7 +159,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         };
         let presaleTokensSold = await sale.presaleTokensSold();
         console.log('\tpresaleTokensSold', presaleTokensSold.toString());
-        assert.isAtLeast(presaleTokensSold.toNumber(), MAX_PRESALE_TOKENS_SOLD.toNumber());
+        assert.isAtMost(presaleTokensSold.toNumber(), MAX_PRESALE_TOKENS_SOLD.toNumber());
 
         let presaleTokensWithoutALAP = calcPresalesWithoutALAP();
         console.log('\tpresaleTokensWithoutALAP', presaleTokensWithoutALAP.toString());
