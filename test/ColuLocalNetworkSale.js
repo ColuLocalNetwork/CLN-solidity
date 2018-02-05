@@ -42,7 +42,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    const ALAP = new BigNumber('47751732000000000000009033')
+    const ALAP = new BigNumber('40199250016079700006445816')
 
     // Maximum number of tokens in circulation.
     const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
@@ -72,7 +72,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const stakeholdersPoolAddress = accounts[4];
 
     // CLN to ETH ratio.
-    const CLN_PER_ETH = 3900;
+    const CLN_PER_ETH = 8200;
     const presaleCalculator = PresaleCalculator(CLN_PER_ETH);
 
     const TIER_1_CAP = 300 * CLN_PER_ETH * TOKEN_DECIMALS;
@@ -91,26 +91,44 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const DEVELOPMENT_TOKEN_GRANT = {grantee: futureDevelopmentPoolAddress, value: FUTURE_DEVELOPMENT_POOL, startOffset: 0, cliffOffset: 3 * YEAR, endOffset: 3 * YEAR, installmentLength: 1 * DAY, revokable: false}
 
     const PRESALES = [
-        {recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 200000,  plan: 'B'},
-        {recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 200000,  plan: 'A'},
-        {recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 1000000, plan: 'C'},
-        {recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 1433400, plan: 'C'},
-        {recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 1147300, plan: 'B'},
-        {recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 1672200, plan: 'E'},
-        {recipient: '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', dolarInvest: 1280000, plan: 'D'},
-        {recipient: '0xc257274276a4e539741ca11b590b9447b26a8051', dolarInvest: 1185100, plan: 'C'},
-        {recipient: '0xf27daff52c38b2c373ad2b9392652ddf433303c4', dolarInvest: 1197000, plan: 'C'},
-        {recipient: '0x3d2e397f94e415d7773e72e44d5b5338a99e77d9', dolarInvest: 1559100, plan: 'D'},
-        {recipient: '0xb8487eed31cf5c559bf3f4edd166b949553d0d11', dolarInvest: 1958100, plan: 'A'},
-        {recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', dolarInvest: 1326400, plan: 'E'},
-        {recipient: '0x1b3cb81e51011b549d78bf720b0d924ac763a7c2', dolarInvest: 1605000, plan: 'C'},
-        {recipient: '0x6f52730dba7b02beefcaf0d6998c9ae901ea04f9', dolarInvest: 1621800, plan: 'B'},
-        {recipient: '0x35da6abcb08f2b6164fe380bb6c47bd8f2304d55', dolarInvest: 1920000, plan: 'D'},
-        {recipient: '0x51f9c432a4e59ac86282d6adab4c2eb8919160eb', dolarInvest: 1209200, plan: 'D'},
-        {recipient: '0x8f7147aaa34d9ae583a7aa803e8df9bd6b4cc185', dolarInvest: 1404600, plan: 'C'},
-        {recipient: '0x8eb3fa7907ad2ef4c7e3ba4b1d2f2aac6f4b5ae6', dolarInvest: 1250400, plan: 'D'},
-        {recipient: '0x3bf86ed8a3153ec933786a02ac090301855e576b', dolarInvest: 1495600, plan: 'E'},
-        {recipient: '0xc4832ffa32bd12a1696e3fe2ff2b44fc89d3e683', dolarInvest: 334800,  plan: 'C'}
+      { recipient: '0x2c8187A6d6bef6B4CFB77D2ED0d06071791b732d', dolarInvest: 25000,   plan: 'B' },
+      { recipient: '0xdD09f9d9C917D0eD79491f2335f2f229CB7F21EC', dolarInvest: 25000,   plan: 'E' },
+      { recipient: '0xcD055B1A2EDA73D6e5d545e49aD1aeC9baFb8064', dolarInvest: 100000,  plan: 'C' },
+      { recipient: '0x2B1699B45cd1BA9Cbe0213012343D51E520Be5ba', dolarInvest: 50000,   plan: 'C' },
+      { recipient: '0x115ebe59da813e1AfFe7dE6D2CAb56fbDA8E6405', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0x3cbCFf411B74fA71309667555BdAF5F4733DC226', dolarInvest: 129333,  plan: 'A' },
+      { recipient: '0xf5Eb080146a0810d09Ccf301E7ca376A1E9B9BE5', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0x204D19C23F7A4aaab98d6426c563e0f34f6A666b', dolarInvest: 130824,  plan: 'A' },
+      { recipient: '0x3B2403CbB09CACDA071D972727fA7a47f72dc14f', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0xd68a3bFDC48F51eC2C56eD1C01E3FEc945B19182', dolarInvest: 75000,   plan: 'A' },
+      { recipient: '0xc6ac4bdc07fe49390e1b1d4a8d2eb8ba58ea3fab', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0x0ad55Adc930d142496f2a46358Fa7306A6295763', dolarInvest: 25000,   plan: 'A' },
+      { recipient: '0x1BC6ee3D40Ce07c29db65C6cF4269e1089D16E07', dolarInvest: 30000,   plan: 'A' },
+      { recipient: '0xD64276Cb86e9C820f8ACB93B3BFA945BC275dA85', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0x61b38AABC307E1ff0A9B68595EAeD70f3e655152', dolarInvest: 75000,   plan: 'E' },
+      { recipient: '0x07c3D63B8A7a2D737fb7B5d84cF711331287421F', dolarInvest: 50000,   plan: 'E' },
+      { recipient: '0x6BA4597C0f48c05B593B77104198c697309C4193', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0x16CfA05F71438C0bf48EF30748Ca8017d2322551', dolarInvest: 100000,  plan: 'C' },
+      { recipient: '0xe697105efccC32552E773A4F9Fc646A6E06B8Fd9', dolarInvest: 50000,   plan: 'A' },
+      { recipient: '0xfe63E0209DAFE7745f84784ec6ccA5235A6DBdDe', dolarInvest: 69300,   plan: 'A' },
+      { recipient: '0x2923A4Db03166D83380D1fA4b268C1195f8934E1', dolarInvest: 2728500, plan: 'E' },
+      { recipient: '0xA91bff307469C33Ded0cEB0Cc42E0828c153035E', dolarInvest: 271500,  plan: 'E' },
+      { recipient: '0x2C82c3915b751f0aE26E4Cb2A4A64C88e75108EB', dolarInvest: 1000000, plan: 'E' },
+      { recipient: '0x382512C377D25adD50679baE421D52488Ef1bcD2', dolarInvest: 24500,   plan: 'D' },
+      { recipient: '0xAcDbA8C99E975030eC8Df5E52EFfFFcA98c6FF18', dolarInvest: 2475500, plan: 'D' },
+      { recipient: '0xB5d8F196a1E0357332c0D86F1d75bba19910386f', dolarInvest: 100000,  plan: 'E' },
+      { recipient: '0xebfbfbdb8cbef890e8ca0143b5d9ab3fe15056c8', dolarInvest: 500000,  plan: 'E' },
+      { recipient: '0x499d16bf3420f5d5d5fbdd9ca82ff863d505dcdd', dolarInvest: 25000,   plan: 'A' },
+      { recipient: '0x06767930c343a330f8f04680cd2e3f5568feaf0a', dolarInvest: 250000,  plan: 'A' },
+      { recipient: '0x6f46cf5569aefa1acc1009290c8e043747172d89', dolarInvest: 30000,   plan: 'A' },
+      { recipient: '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', dolarInvest: 100000,  plan: 'A' },
+      { recipient: '0x3d2e397f94e415d7773e72e44d5b5338a99e77d9', dolarInvest: 567991,  plan: 'A' },
+      { recipient: '0x1ed4304324baf24e826f267861bfbbad50228599', dolarInvest: 500000,  plan: 'B' },
+      { recipient: '0x90e63c3d53e0ea496845b7a03ec7548b70014a91', dolarInvest: 100000,  plan: 'A' },
+      { recipient: '0xc257274276a4e539741ca11b590b9447b26a8051', dolarInvest: 25000,   plan: 'A' },
+      { recipient: '0xf27daff52c38b2c373ad2b9392652ddf433303c4', dolarInvest: 250000,  plan: 'D' },
+      { recipient: '0xb8487eed31cf5c559bf3f4edd166b949553d0d11', dolarInvest: 4000000, plan: 'E' },
+      { recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', dolarInvest: 3000000, plan: 'A' }
     ]
 
     const FORMATED_PRESALE = presaleCalculator.calcPresale(PRESALES);
@@ -204,7 +222,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
         let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
 
-        // console.log('alapPercent: %s, tokensAndALAPPerEth: %s, actualPercent: %s', plan.alapPercent, tokensAndALAPPerEth, tokensAndALAPPerEth.div(CLN_PER_ETH))
+        // console.log('alapPercent: %s, tokensAndALAPPerEth: %s, actualPercent: %s', plan.alapPercent, tokensAndALAPPerEth, tokensAndALAPPerEth.div(CLN_PER_ETH));
+        console.log('tokensAmount: %s', tokensAmount);
 
         return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
     }
@@ -327,7 +346,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     });
 
-    describe('presaleAllocation', async () => {
+    describe.only('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
@@ -359,7 +378,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
-        it('should add pre-sale token grants', async () => {
+        it.only('should add pre-sale token grants', async () => {
             await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
