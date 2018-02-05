@@ -16,5 +16,7 @@ else
   ganache_cli_pid=$!
 fi
 
+# deploy compiled contracts
+truffle deploy
 # Now run truffle test.
 truffle test "$@"
