@@ -96,7 +96,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         { recipient: '0xcD055B1A2EDA73D6e5d545e49aD1aeC9baFb8064', tokenInvest: 1176000,  plan: 'C'},
         { recipient: '0x2B1699B45cd1BA9Cbe0213012343D51E520Be5ba', tokenInvest: 235200,   plan: 'C'},
         { recipient: '0x115ebe59da813e1AfFe7dE6D2CAb56fbDA8E6405', tokenInvest: 525000,   plan: 'A'},
-        { recipient: '0x3cbCFf411B74fA71309667555BdAF5F4733DC226', tokenInvest: 1357996,  plan: 'A'},
+        { recipient: '0x3cbCFf411B74fA71309667555BdAF5F4733DC226', tokenInvest: 1358000,  plan: 'A'},
         { recipient: '0xf5Eb080146a0810d09Ccf301E7ca376A1E9B9BE5', tokenInvest: 525000,   plan: 'A'},
         { recipient: '0x204D19C23F7A4aaab98d6426c563e0f34f6A666b', tokenInvest: 1373652,  plan: 'A'},
         { recipient: '0x3B2403CbB09CACDA071D972727fA7a47f72dc14f', tokenInvest: 525000,   plan: 'A'},
@@ -346,7 +346,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     });
 
-    describe.only('presaleAllocation', async () => {
+    describe('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
@@ -378,7 +378,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
-        it.only('should add pre-sale token grants', async () => {
+        it('should add pre-sale token grants', async () => {
             await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
