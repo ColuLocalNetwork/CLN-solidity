@@ -3,7 +3,7 @@ BigNumber.config({ ERRORS: false });
 const _ = require('lodash');
 const expectRevert = require('./helpers/expectRevert');
 const time = require('./helpers/time');
-const PresaleCalculator = require('./helpers/presaleCalculator');
+const PresaleCalculator = require('../scripts/presaleCalculator');
 
 const ColuLocalNetwork = artifacts.require('ColuLocalNetwork');
 const ColuLocalNetworkSaleMock = artifacts.require('ColuLocalNetworkSaleMock');
@@ -42,7 +42,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    const ALAP = new BigNumber('47751732000000023865524178')
+    const ALAP = new BigNumber('47751732000000000000009033')
 
     // Maximum number of tokens in circulation.
     const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
@@ -157,9 +157,30 @@ contract('ColuLocalNetworkSale', (accounts) => {
             console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale presale for ${presale[0]}...`);
             await sale.presaleAllocation(...presale);
         };
-        console.log('\tpresaleTokensSold', (await sale.presaleTokensSold()).toString())
-        assert.equal(MAX_PRESALE_TOKENS_SOLD, (await sale.presaleTokensSold()).toNumber())
+        let presaleTokensSold = await sale.presaleTokensSold();
+        console.log('\tpresaleTokensSold', presaleTokensSold.toString());
+        assert.isAtMost(presaleTokensSold.toNumber(), MAX_PRESALE_TOKENS_SOLD.toNumber());
+
+        let presaleTokensWithoutALAP = calcPresalesWithoutALAP();
+        console.log('\tpresaleTokensWithoutALAP', presaleTokensWithoutALAP.toString());
+
+        let calculatedALAP = presaleTokensSold.sub(presaleTokensWithoutALAP);
+        console.log('\tcalculatedALAP', calculatedALAP.toString());
+        assert.equal(ALAP.toNumber(), calculatedALAP.toNumber());
     };
+
+    const calcPresalesWithoutALAP = () => {
+        let presaleTokensWithoutALAP = new BigNumber(0);
+        for (const presale of PRESALES) {
+            // console.log(`\tcalculate presale tokens without alap for ${presale.recipient}...`);
+            let formatedPresale = presaleCalculator.calcPresale([presale])[0];
+            let tokensPerEth = new BigNumber(CLN_PER_ETH);
+            let tokensAmount = tokensPerEth.mul(formatedPresale[1]);
+
+            presaleTokensWithoutALAP = presaleTokensWithoutALAP.add(tokensAmount);
+        }
+        return presaleTokensWithoutALAP;
+    }
 
     // Checks if token grants exists.
     const ColuLocalNetworkGrantExists = async (sale, tokenGrant) => {
@@ -182,6 +203,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
         let ALAPPerEth = new BigNumber(CLN_PER_ETH).mul(plan.alapPercent).div(100).floor();
         let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
+
+        // console.log('alapPercent: %s, tokensAndALAPPerEth: %s, actualPercent: %s', plan.alapPercent, tokensAndALAPPerEth, tokensAndALAPPerEth.div(CLN_PER_ETH))
 
         return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
     }

@@ -5,7 +5,7 @@ const async = require('async')
 const BigNumber = require('bignumber.js')
 BigNumber.config({ ERRORS: false })
 
-const PresaleCalculator = require(__dirname + '/../../test/helpers/presaleCalculator')
+const PresaleCalculator = require(__dirname + '/../presaleCalculator')
 
 const inputFile = __dirname + '/config/presales.csv'
 
