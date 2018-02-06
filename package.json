@@ -37,6 +37,6 @@
   },
   "devDependencies": {
     "solidity-coverage": "^0.2.7",
-    "chai": "*"
-    }
+    "chai": "^4.1.2"
+  }
 }

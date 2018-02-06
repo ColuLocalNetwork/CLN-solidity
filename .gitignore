@@ -10,4 +10,4 @@ scripts/deployment/output
 formattedGrants*.csv
 formattedPresales*.csv
 
-.node-xmlhttp*
+.node-xmlhttprequest-*

@@ -8,7 +8,7 @@ import './ERC20.sol';
 /// @title Vesting trustee contract for Colu Local Network.
 /// @dev This Contract can't be TokenHolder, since it will allow its owner to drain its vested tokens.
 /// @dev This means that any token sent to it different than ColuLocalNetwork is basicly stucked here forever.
-/// @dev ColuLocalNetwork that sent here (by mistake) can withdrawn using the grant method. 
+/// @dev ColuLocalNetwork that sent here (by mistake) can withdrawn using the grant method.
 contract VestingTrustee is TokenOwnable {
     using SafeMath for uint256;
 
@@ -52,7 +52,7 @@ contract VestingTrustee is TokenOwnable {
     }
 
     /// @dev Allow only cln token to be tokenPayable
-    /// 
+    /// @param token the token to check
     function supportsToken(address token) public constant returns (bool) {
         return (cln == token);
     }
@@ -191,13 +191,13 @@ contract VestingTrustee is TokenOwnable {
     /// @return a uint256 Representing a holder's total amount of vested tokens.
     function readyTokens(address _holder) public constant returns (uint256) {
         Grant memory grant = grants[_holder];
-        
+
         if (grant.value == 0) {
             return 0;
         }
 
         uint256 vested = calculateVestedTokens(grant, now);
-        
+
         if (vested == 0) {
             return 0;
         }
@@ -283,14 +283,14 @@ contract VestingTrustee is TokenOwnable {
         require(cln.transfer(_grantee, transferable));
 
         TokensUnlocked(_grantee, transferable);
-        return OK; 
+        return OK;
     }
 
     /// @dev batchUnlockVestedTokens vested tokens and transfer them to the grantees.
     /// @param _grantees address[] The addresses of the grantees.
     /// @return a boo if success.
     function batchUnlockVestedTokens(address[] _grantees) external onlyOwner returns (bool success) {
-        for (uint i=0; i<_grantees.length; i++) {
+        for (uint i = 0; i<_grantees.length; i++) {
             unlockVestedTokens(_grantees[i]);
         }
         return true;

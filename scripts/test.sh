@@ -12,9 +12,11 @@ if ganache_cli_running $port; then
   echo "Using existing ganache-cli instance"
 else
   echo "Starting our own ganache-cli instance"
-  eval ganache-cli "$accounts" -u 0 -u 1 > /dev/null &
+  eval ganache-cli "$accounts" -u 0 -u 1 -l 8000029 > /dev/null &
   ganache_cli_pid=$!
 fi
 
+# deploy compiled contracts
+truffle deploy
 # Now run truffle test.
 truffle test "$@"
