@@ -20,7 +20,7 @@ const parser = parse({delimiter: ', '}, (err, data) => {
 		return console.error('err = ', err)
 	}
 	async.eachSeries(data, (line, cb) => {
-		presales.push({recipient: line[0], dolarInvest: new BigNumber(line[1]), plan: line[2]})
+		presales.push({recipient: line[0], tokenInvest: new BigNumber(line[1]), plan: line[2]})
 		cb()
 	}, function() {
 		let formattedPresales = presaleCalculator.calcPresale(presales).map(presale => {
