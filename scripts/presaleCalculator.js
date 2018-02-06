@@ -16,8 +16,6 @@ module.exports = (_tokensPerEth) => {
 
         let etherValue = new BigNumber(presale.tokenInvest).mul(decimals).div(tokensAndALAPPerEth).ceil();
 
-        // console.log('tokenInvest: %s, alapPercent: %s, etherValue: %s', presale.tokenInvest, alapPercent, etherValue.toString());
-
         return [recipient, etherValue, vestingPlanIndex];
       })
     }

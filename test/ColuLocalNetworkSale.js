@@ -42,16 +42,16 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    const ALAP = new BigNumber('40193337091036920106590949')
+    let ALAP;
 
     // Maximum number of tokens in circulation.
-    const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
+    let MAX_TOKENS;
 
     // Maximum tokens offered in the sale (35%).
-    const MAX_TOKENS_SOLD = new BigNumber(525).mul(10 ** 6).mul(TOKEN_DECIMALS).add(ALAP);
+    let MAX_TOKENS_SOLD;
 
     // Maximum tokens offered in the presale (from the initial 35% offered tokens).
-    const MAX_PRESALE_TOKENS_SOLD = new BigNumber(2625).mul(10 ** 5).mul(TOKEN_DECIMALS).add(ALAP);
+    let MAX_PRESALE_TOKENS_SOLD;
 
     // Tokens allocated for Community pool (30%).
     const COMMUNITY_POOL = new BigNumber(45).mul(10 ** 7).mul(TOKEN_DECIMALS);
@@ -72,10 +72,10 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const stakeholdersPoolAddress = accounts[4];
 
     // CLN to ETH ratio.
-    const CLN_PER_ETH = 8187;
-    const presaleCalculator = PresaleCalculator(CLN_PER_ETH);
+    let CLN_PER_ETH;
+    let presaleCalculator;
 
-    const TIER_1_CAP = 300 * CLN_PER_ETH * TOKEN_DECIMALS;
+    let TIER_1_CAP;
     const TIER_2_CAP = new BigNumber(2).pow(256).minus(1);
 
     const HUNDRED_BILLION_TOKENS = Math.pow(10, 11) * TOKEN_DECIMALS;
@@ -132,7 +132,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         { recipient: '0x00a651d43b6e209f5ada45a35f92efc0de3a5184', tokenInvest: 31500000, plan: 'A'}
     ]
 
-    const FORMATED_PRESALE = presaleCalculator.calcPresale(PRESALES);
+    let FORMATED_PRESALE;
 
     let now;
 
@@ -173,7 +173,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const addPresaleAllocation = async (sale) => {
         for (let i = 0; i < FORMATED_PRESALE.length; i++) {
             let presale = FORMATED_PRESALE[i];
-            console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale presale for ${presale[0]}...`);
+            console.log(`\t[${i + 1} / ${FORMATED_PRESALE.length}] adding pre-sale for ${presale[0]}...`);
             await sale.presaleAllocation(...presale);
         };
         let presaleTokensSold = await sale.presaleTokensSold();
@@ -194,8 +194,6 @@ contract('ColuLocalNetworkSale', (accounts) => {
             let formatedPresale = presaleCalculator.calcPresale([presale])[0];
             let tokensPerEth = new BigNumber(CLN_PER_ETH);
             let tokensAmount = tokensPerEth.mul(formatedPresale[1]);
-
-            // console.log('tokensAmount (without ALAP): ', tokensAmount.toString());
 
             presaleTokensWithoutALAP = presaleTokensWithoutALAP.add(tokensAmount);
         }
@@ -224,9 +222,6 @@ contract('ColuLocalNetworkSale', (accounts) => {
         let tokensAndALAPPerEth = new BigNumber(CLN_PER_ETH).add(ALAPPerEth);
         let tokensAmount = tokensAndALAPPerEth.mul(formatedPresale[1]);
 
-        // console.log('alapPercent: %s, tokensAndALAPPerEth: %s, actualPercent: %s', plan.alapPercent, tokensAndALAPPerEth, tokensAndALAPPerEth.div(CLN_PER_ETH));
-        console.log('tokensAmount (with ALAP): ', tokensAmount.toString());
-
         return {grantee: presale.recipient, value: tokensAmount, startOffset: plan.startOffset, cliffOffset: plan.cliffOffset, endOffset: plan.endOffset, installmentLength: plan.installmentLength, revokable: false}
     }
 
@@ -235,6 +230,18 @@ contract('ColuLocalNetworkSale', (accounts) => {
         let tokenGrant = calcGrantFromPresale(presale);
         return await ColuLocalNetworkGrantExists(sale, tokenGrant)
     };
+
+    const getConstantsFromContractAndCalcPresales = async (sale) => {
+        ALAP = await sale.ALAP();
+        MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
+        MAX_TOKENS_SOLD = new BigNumber(525).mul(10 ** 6).mul(TOKEN_DECIMALS).add(ALAP);
+        MAX_PRESALE_TOKENS_SOLD = new BigNumber(2625).mul(10 ** 5).mul(TOKEN_DECIMALS).add(ALAP);
+        CLN_PER_ETH = await sale.CLN_PER_ETH();
+        TIER_1_CAP = 300 * CLN_PER_ETH * TOKEN_DECIMALS;
+
+        presaleCalculator = PresaleCalculator(CLN_PER_ETH);
+        FORMATED_PRESALE = presaleCalculator.calcPresale(PRESALES);
+    }
 
     // Get block timestamp.
     beforeEach(async () => {
@@ -353,6 +360,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
             await sale.initialize();
+            await getConstantsFromContractAndCalcPresales(sale);
         });
 
         it('should not allow to be called by non-owner', async () => {
@@ -398,6 +406,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
             await sale.initialize();
+
+            await getConstantsFromContractAndCalcPresales(sale);
 
             for (let participant of accounts) {
                 assert.equal((await sale.participationCaps(participant)).toNumber(), 0);
@@ -679,6 +689,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
                 await sale.initialize();
                 end = (await sale.endTime()).toNumber();
                 token = ColuLocalNetwork.at(await sale.cln());
+
+                await getConstantsFromContractAndCalcPresales(sale);
 
                 assert.equal(await token.isTransferable(), false);
                 await addPresaleAllocation(sale);
@@ -1170,6 +1182,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
             end = (await sale.endTime()).toNumber();
             await addPresaleAllocation(sale);
             token = ColuLocalNetwork.at(await sale.cln());
+
+            await getConstantsFromContractAndCalcPresales(sale);
 
             // We'll be testing transactions from all these accounts in the following tests.
             // We require at least 50 (ignoring first owner account).
