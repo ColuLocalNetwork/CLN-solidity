@@ -33,7 +33,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     uint256 public constant TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    uint256 public constant ALAP = 47751732000000023865524178;
+    uint256 public constant ALAP = 40193337091036920106590949;
 
     // Maximum number of tokens in circulation: 1.5 trillion.
     uint256 public constant MAX_TOKENS = 15 * 10 ** 8 * TOKEN_DECIMALS + ALAP;
@@ -54,7 +54,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     uint256 public constant STAKEHOLDERS_POOL = 9 * 10 ** 7 * TOKEN_DECIMALS;
 
     // CLN to ETH ratio.
-    uint256 public constant CLN_PER_ETH = 3900;
+    uint256 public constant CLN_PER_ETH = 8187;
 
     // Sale start, end blocks (time ranges)
     uint256 public constant SALE_DURATION = 7 days;
