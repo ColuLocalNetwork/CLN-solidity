@@ -74,7 +74,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev returns true iff the contract is open for public trade.
-  function isOpenForPublic() public onlyOwner returns (bool) {
+  function isOpenForPublic() public constant returns (bool) {
     return (openForPublic && operational);
   }
 

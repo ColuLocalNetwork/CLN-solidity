@@ -15,10 +15,16 @@ import './Standard223Receiver.sol';
 
 /// @title Colu Issueance factoy with CLN for CC tokens.
 /// @author Rotem Lev.
-contract IssueanceFactory is CurrencyFactory{
+contract IssueanceFactory is Standard223Receiver, TokenHolder {
 	using SafeMath for uint256;
 
 	uint256 public precision;
+  CurrencyFactory public currencyFactory;
+
+  // address of the deployed CLN contract (ERC20 Token)
+  address public clnAddress;
+  // address of the deployed elipse market maker contract
+  address public mmLibAddress;
 
   struct IssueanceStruct {
   	uint256 hardcap;
@@ -27,6 +33,7 @@ contract IssueanceFactory is CurrencyFactory{
     uint256 endTime;
     uint256 targetPrice;
     uint256 clnRaised;
+    address owner;
   }
 
   uint256 public totalCLNcustodian;
@@ -36,10 +43,18 @@ contract IssueanceFactory is CurrencyFactory{
   // total supply of CLN
   uint256 public CLNTotalSupply;
 
+  address[] public tokens;
+
   event CLNRaised(address indexed token, address indexed participant, uint256 amount);
   event CLNRefunded(address indexed token, address indexed participant, uint256 amount);
 
   event SaleFinalized(address indexed token, uint256 clnRaised);
+
+  // modifier to check if called by issuer of the token
+  modifier tokenIssuerOnly(address token, address owner) {
+    require(issueMap[token].owner == owner);
+    _; 
+  }
 
   // sale has begun based on time and status 
   modifier saleOpen(address _token) { 
@@ -65,15 +80,17 @@ contract IssueanceFactory is CurrencyFactory{
   }
   // checks if the instance of market maker contract is open for public 
   modifier marketClosed(address _token) { 
-  	require(!MarketMaker(currencyMap[_token].mmAddress).isOpenForPublic()); 
+  	require(!MarketMaker(currencyFactory.getMarketMakerAddressFromToken(_token)).isOpenForPublic()); 
   	_; 
   }
   /// @dev constructor
-  /// @param _mmLib address for the deployed elipse market maker contract
-  /// @param _clnAddress address for the deployed CLN ERC20 token
-  function IssueanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
-    CLNTotalSupply = ERC20(_clnAddress).totalSupply();
-    precision = IEllipseMarketMaker(_mmLib).PRECISION();
+  /// @param _currencyFactory address for the deployed CLN ERC20 token
+  function IssueanceFactory(address _currencyFactory) public {
+    currencyFactory = CurrencyFactory(_currencyFactory);
+    clnAddress = currencyFactory.clnAddress();
+    CLNTotalSupply = ERC20(clnAddress).totalSupply();
+    mmLibAddress = currencyFactory.mmLibAddress();
+    precision = IEllipseMarketMaker(mmLibAddress).PRECISION();
   }
   
   function createIssueance( uint256 _startTime, 
@@ -90,9 +107,9 @@ contract IssueanceFactory is CurrencyFactory{
     uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
     uint256 targetPrice =  IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
     require(isValidIssueance(_hardcap, targetPrice, _totalSupply, R2));
-    address tokenAddress = super.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
+    address tokenAddress = currencyFactory.createCurrency( _name,  _symbol,  _decimals,  _totalSupply);
     addToMap(tokenAddress, _startTime, _startTime + _durationTime, _hardcap, _reserveAmount, targetPrice);
-
+    tokens.push(tokenAddress);
     return tokenAddress;
   }
 
@@ -114,7 +131,8 @@ contract IssueanceFactory is CurrencyFactory{
     																				 startTime: _startTime, 
     																				 endTime: _endTime,
                                              clnRaised: 0,
-    																				 targetPrice: _targetPrice});
+    																				 targetPrice: _targetPrice,
+                                             owner: msg.sender});
   }
 
   /// @dev particiapte in the CLN based issuance
@@ -126,7 +144,6 @@ contract IssueanceFactory is CurrencyFactory{
   											returns (uint256 releaseAmount) {
   	require(_clnAmount > 0);
     
-    address marketMakerAddress = getMarketMakerAddressFromToken(_token);
     // how much do we need to actually send to mm of the incomming amount
     // and how much of the amount can participate
     uint256 transferToReserveAmount;
@@ -134,7 +151,7 @@ contract IssueanceFactory is CurrencyFactory{
     (transferToReserveAmount, participationAmount) = getParticipationAmounts(_clnAmount, _token);
     // send what we need to the market maker for reserve
     require(ERC20(clnAddress).transferFrom(msg.sender, this, participationAmount));
-  	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
+  	require(approveAndChange(clnAddress, _token, transferToReserveAmount) > 0);
     // pay back to participant with the participated amount * price
     releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
@@ -157,9 +174,8 @@ contract IssueanceFactory is CurrencyFactory{
     uint256 transferToReserveAmount;
     uint256 participationAmount;
     (transferToReserveAmount, participationAmount) = getParticipationAmounts(tkn.value, _token);
-    address marketMakerAddress = getMarketMakerAddressFromToken(_token);
 
-  	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
+  	require(approveAndChange(clnAddress, _token, transferToReserveAmount) > 0);
     // transfer only what we need
     releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
@@ -181,12 +197,11 @@ contract IssueanceFactory is CurrencyFactory{
   							marketClosed(_token) 
   							returns (bool) {
     // move all CC and CLN that were raised and not in the reserves to the issuer
-    address marketMakerAddress = getMarketMakerAddressFromToken(_token);
     uint256 clnAmount = issueMap[_token].clnRaised.sub(issueMap[_token].reserve);
     totalCLNcustodian = totalCLNcustodian.sub(clnAmount);
     uint256 ccAmount = ERC20(_token).balanceOf(this);
     // open Market Maker for public trade.
-    require(MarketMaker(marketMakerAddress).openForPublicTrade());
+    require(currencyFactory.openMarket(_token));
 
     require(ERC20(_token).transfer(msg.sender, ccAmount));
     require(ERC20(clnAddress).transfer(msg.sender, clnAmount));
@@ -204,11 +219,9 @@ contract IssueanceFactory is CurrencyFactory{
   							marketClosed(_token) 
   							returns (bool) {
   	//if we have CC time to thorw it to the Market Maker
-  	address marketMakerAddress = getMarketMakerAddressFromToken(_token);											
   	require(ERC20(_token).transferFrom(msg.sender, this, _ccAmount));
   	uint256 factoryCCAmount = ERC20(_token).balanceOf(this);
-  	require(ERC20(_token).approve(marketMakerAddress, factoryCCAmount));
-  	require(MarketMaker(marketMakerAddress).change(_token, factoryCCAmount, clnAddress) > 0);
+    require(approveAndChange(_token, clnAddress, factoryCCAmount) > 0);
     
   	uint256 returnAmount = _ccAmount.mul(precision).div(issueMap[_token].targetPrice);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.sub(returnAmount);
@@ -227,10 +240,8 @@ contract IssueanceFactory is CurrencyFactory{
   							marketClosed(msg.sender) 
   							returns (bool) {
   	//if we have CC time to thorw it to the Market Maker
-  	address marketMakerAddress = getMarketMakerAddressFromToken(msg.sender);								
   	uint256 factoryCCAmount = ERC20(msg.sender).balanceOf(this);
-  	require(ERC20(msg.sender).approve(marketMakerAddress, factoryCCAmount));
-  	require(MarketMaker(marketMakerAddress).change(msg.sender, factoryCCAmount, clnAddress) > 0);
+    require(approveAndChange(msg.sender, clnAddress, factoryCCAmount) > 0);
     
   	uint256 returnAmount = tkn.value.mul(precision).div(issueMap[msg.sender].targetPrice);
     issueMap[msg.sender].clnRaised = issueMap[msg.sender].clnRaised.sub(returnAmount);
@@ -239,41 +250,6 @@ contract IssueanceFactory is CurrencyFactory{
   	require(ERC20(clnAddress).transfer(tkn.sender, returnAmount));
     return true;
 
-  }
-
-  /// @dev normal send cln to the market maker contract, sender must approve() before calling method. can only be called by owner
-  /// @dev sending CLN will return CC from the reserve to the sender.
-  function insertCLNtoMarketMaker(address, uint256) public returns (uint256) {
-    require(false);
-    return 0;
-  }
-
-  /// @dev ERC223 transferAndCall, send cln to the market maker contract can only be called by owner (see MarketMaker)
-  /// @dev sending CLN will return CC from the reserve to the sender.
-  function insertCLNtoMarketMaker(address) public tokenPayable returns (uint256) {
-    require(false);
-    return 0;
-  }
-  
-  /// @dev normal send cc to the market maker contract, sender must approve() before calling method. can only be called by owner
-  /// @dev sending CC will return CLN from the reserve to the sender.         
-  function extractCLNfromMarketMaker(address, uint256) public returns (uint256) {
-    require(false);
-    return 0;
-  }
-
-  /// @dev ERC223 transferAndCall, send cc to the market maker contract can only be called by owner (see MarketMaker)
-  /// @dev sending CC will return CLN from the reserve to the sender.
-  function extractCLNfromMarketMaker() public tokenPayable returns (uint256) {
-    require(false);
-    return 0;
-  }
-  
-  /// @dev opens the Market Maker to recvice transactions from all sources.
-  /// @dev Request to transfer ownership of Market Maker contract to Owner instead of factory.
-  function openMarket(address) public returns (bool) {
-		require(false);
-		return false;
   }
 
   /// @dev checks if the parameters that were sent to the create are valid for a promised price and buyback
@@ -289,26 +265,21 @@ contract IssueanceFactory is CurrencyFactory{
  	  return (_S2 > _R2 && _S2.sub(_R2).mul(precision) >= _hardcap.mul(_price));
   }
 
-
-  /// @dev helper function to fetch market maker contract address deploed with the CC
-  /// @param _token address token address for this issuance (same as CC adress)
-  function getMarketMakerAddressFromToken(address _token) public constant returns (address) {
-  	return currencyMap[_token].mmAddress;
-  }
-
   /// @dev helper function to approve tokens for market maker and then chane tokens
   /// @param _token address deployed ERC20 token address to spend
   /// @param _token2 address deployed ERC20 token address to buy
   /// @param _amount uint256 amount of _token to spend
-  /// @param _marketMakerAddress address for the deploed market maker with this CC
   function approveAndChange(address _token, 
                             address _token2, 
-                            uint256 _amount, 
-                            address _marketMakerAddress) private 
+                            uint256 _amount) private 
                             returns (uint256) {
   	if(_amount > 0) {
-	  	require(ERC20(_token).approve(_marketMakerAddress, _amount));
-	  	return MarketMaker(_marketMakerAddress).change(_token, _amount, _token2);
+	  	require(ERC20(_token).approve(currencyFactory, _amount));
+      if (_token == clnAddress) {
+        return currencyFactory.insertCLNtoMarketMaker(_token2, _amount);
+      } else {
+        return currencyFactory.extractCLNfromMarketMaker(_token, _amount);
+      }
 	  }
 	  return 0;
   }
@@ -394,9 +365,15 @@ contract IssueanceFactory is CurrencyFactory{
     }
     
     if (issueMap[_tokenAddress].hardcap > 0) {
-      require(MarketMaker(currencyMap[_tokenAddress].mmAddress).isOpenForPublic());
+      require(MarketMaker(currencyFactory.getMarketMakerAddressFromToken(_tokenAddress)).isOpenForPublic());
     }
 
     return ERC20(_tokenAddress).transfer(owner, _amount);
+  }
+
+  /// @dev implementation for standard 223 reciver.
+  /// @param _token address of the token used with transferAndCall.
+  function supportsToken(address _token) public constant returns (bool) {
+    return (clnAddress == _token || issueMap[_token].hardcap > 0);
   }
 }
