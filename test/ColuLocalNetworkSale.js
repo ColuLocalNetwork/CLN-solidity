@@ -42,7 +42,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const TOKEN_DECIMALS = 10 ** 18;
 
     // Additional Lockup Allocation Pool
-    const ALAP = new BigNumber('40155552207189170000000000')
+    const ALAP = new BigNumber('40193337091036920000000000')
 
     // Maximum number of tokens in circulation.
     const MAX_TOKENS = new BigNumber(15).mul(10 ** 8).mul(TOKEN_DECIMALS).add(ALAP);
@@ -95,6 +95,8 @@ contract('ColuLocalNetworkSale', (accounts) => {
         { recipient: '0xdD09f9d9C917D0eD79491f2335f2f229CB7F21EC', tokenInvest: 354375,   plan: 'E'},
         { recipient: '0xcD055B1A2EDA73D6e5d545e49aD1aeC9baFb8064', tokenInvest: 1176000,  plan: 'C'},
         { recipient: '0x2B1699B45cd1BA9Cbe0213012343D51E520Be5ba', tokenInvest: 235200,   plan: 'C'},
+        { recipient: '0xF89752Ffee354b49179337e1CF39B2C9a6A3B34c', tokenInvest: 235200,   plan: 'C'},
+        { recipient: '0xcBbc252AE247Fbb4B8d728842c2fA069E91CCE54', tokenInvest: 117600,   plan: 'C'},
         { recipient: '0x115ebe59da813e1AfFe7dE6D2CAb56fbDA8E6405', tokenInvest: 525000,   plan: 'A'},
         { recipient: '0x3cbCFf411B74fA71309667555BdAF5F4733DC226', tokenInvest: 1358000,  plan: 'A'},
         { recipient: '0xf5Eb080146a0810d09Ccf301E7ca376A1E9B9BE5', tokenInvest: 525000,   plan: 'A'},
