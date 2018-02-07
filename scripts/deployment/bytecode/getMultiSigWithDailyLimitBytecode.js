@@ -29,7 +29,8 @@ solc.loadRemoteVersion(compilerVersion, function(err, solcSnapshot) {
 
   var result = '0x' + bytecode + arguments
 
-  var filePath = __dirname + '/../output/MultiSigWalletWithDailyLimitBytecode_' + compilerVersion + '_' + now + '.txt'
+  var prefix = required + '_out_of_' + owners.length + '_'
+  var filePath = __dirname + '/../output/' + prefix + 'MultiSigWalletWithDailyLimitBytecode_' + compilerVersion + '_' + now + '.txt'
   fs.writeFile(filePath, result, {flag: 'w'}, function(err) {
     if(err) return console.error('err =', err)
     console.log('bytecode created at path =', filePath)
