@@ -16,12 +16,12 @@
 		"startTime": ""
 	},
 	"https://ropsten.infura.io": {
-		"owner": "0x8bf20c41ee6a9fd84e81d6f6df872d9628cd08b2",
-		"fundingRecipient": "0x5BFa3c4B982c53E5a7C507Ff83D6D93e0FE83B84",
-		"communityPoolAddress": "0x1Bb8c3606A4528CA7C3dA385A59F16B32E3B8e12",
-		"futureDevelopmentPoolAddress": "0xb498b0981aF40f022E556dCEEc0Bb767e76f9Bc0",
-		"stakeholdersPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
-		"startTime": ""
+		"owner": "0xFe532015b1609A64ABb231AB3Bdfd8dC9afd4320",
+		"fundingRecipient": "0xEb36b81AdC631dcDFace21b1197592c92b80dE8a",
+		"communityPoolAddress": "0x7eB310f65dc1a867E432F6f992c56576E153bAc3",
+		"futureDevelopmentPoolAddress": "0xd58c4820cF6E5aC87a26De7cF2ec8d86Cc21042b",
+		"stakeholdersPoolAddress": "0x5b08447c3cB95CDA6c73C6D601c954500bD6e1A8",
+		"startTime": 1518012000
 	},
 	"https://mainnet.infura.io": {
 		"owner": "",

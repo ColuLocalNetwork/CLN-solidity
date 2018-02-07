@@ -355,7 +355,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         });
     });
 
-    describe('presaleAllocation', async () => {
+    describe.only('presaleAllocation', async () => {
         let sale;
         beforeEach(async () => {
             sale = await ColuLocalNetworkSaleMock.new(owner, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 1000);
@@ -388,7 +388,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
             await expectRevert(sale.presaleAllocation(accounts[0], 1000, 7));
         });
 
-        it('should add pre-sale token grants', async () => {
+        it.only('should add pre-sale token grants', async () => {
             await addPresaleAllocation(sale);
 
             for (const preSale of PRESALES) {
