@@ -1,0 +1,14 @@
+{
+	"http://localhost:8545": {
+		"mmLib": "",
+		"clnAddress": ""
+	},
+	"https://ropsten.infura.io": {
+		"mmLib": "0xA8bae1a26A983ada54777be27c4D4CC6EAEEBe44",
+		"clnAddress": "0x7C1D93f1643e0551b142Ab17Ff9F303a0A02CD6f"
+	},
+	"https://mainnet.infura.io": {
+		"mmLib": "",
+		"clnAddress": ""
+	}
+}
