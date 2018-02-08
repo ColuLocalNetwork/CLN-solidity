@@ -179,7 +179,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
 
         uint256 months = 1 years / 12;
 
-        vestingPlans.push(VestingPlan(0, 0, 1 days, 1 days, 0));
+        vestingPlans.push(VestingPlan(0, 0, 1, 1, 0));
         vestingPlans.push(VestingPlan(0, 0, 6 * months, 1 * months, 4));
         vestingPlans.push(VestingPlan(0, 0, 1 years, 1 * months, 12));
         vestingPlans.push(VestingPlan(0, 0, 2 years, 1 * months, 26));

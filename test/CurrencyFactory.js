@@ -113,10 +113,6 @@ contract('CurrencyFactory', (accounts) => {
             await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
-        it('should not be able to create with zero decimals', async () => {
-            await expectRevert(factory.createCurrency('Some Name', 'SON', 0, CC_MAX_TOKENS, {from: owner}));
-        });
-
         it('should not be able to create with zero supply', async () => {
             await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, {from: owner}));
         });

@@ -22,7 +22,6 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
         require(_totalSupply != 0);     
         require(bytes(_name).length != 0);
         require(bytes(_symbol).length != 0);
-        require(_decimals != 0);
 
         totalSupply = _totalSupply;
         name = _name;
