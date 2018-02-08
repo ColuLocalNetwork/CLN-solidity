@@ -7,7 +7,7 @@ var async = require('async')
 var fs = require('fs')
 var unifyContracts = require(__dirname + '/../unifyContracts')
 
-var args = require(__dirname + '/../config/CurrencyFactory.json')[config.get('web3Provider')]
+var args = require(__dirname + '/../config/IssuanceFactory.json')[config.get('web3Provider')]
 
 var mmLib = args.mmLib
 var clnAddress = args.clnAddress
@@ -27,9 +27,10 @@ var contracts = [
   'MarketMaker.sol',
   'EllipseMarketMaker.sol',
   'IEllipseMarketMaker.sol',
-  'CurrencyFactory.sol'
+  'CurrencyFactory.sol',
+  'IssuanceFactory.sol'
 ]
-unifyContracts.unify('CurrencyFactory', contracts, function(err, filePath) {
+unifyContracts.unify('IssuanceFactory', contracts, function(err, filePath) {
   if(err) return console.error('err =', err)
 
   console.log('unified contract created at path =', filePath)
@@ -40,7 +41,7 @@ unifyContracts.unify('CurrencyFactory', contracts, function(err, filePath) {
     if (err) return console.error('err =', err)
 
     var contractCompiled = solcSnapshot.compile(unifiedContract, 1)
-    var contractObj = contractCompiled.contracts[':CurrencyFactory']
+    var contractObj = contractCompiled.contracts[':IssuanceFactory']
     var bytecode = contractObj.bytecode
 
     // console.log([mmLib, clnAddress])
