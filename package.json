@@ -26,6 +26,7 @@
   "dependencies": {
     "async": "^2.5.0",
     "bignumber.js": "^4.1.0",
+    "chai": "^4.1.2",
     "csv-parse": "^2.0.0",
     "ethereumjs-abi": "^0.6.4",
     "ganache-cli": "^6.0.3",
