@@ -110,7 +110,7 @@ contract IssuanceFactory is CurrencyFactory {
     return tokenAddress;
   }
 
-  /// @dev internal helper to add curr\ data to the issuance map
+  /// @dev internal helper to add currency data to the issuance map
   /// @param _token address token address for this issuance (same as CC adress)
   /// @param _startTime uint256 blocktime for sale start
   /// @param _endTime uint256 blocktime for sale end
