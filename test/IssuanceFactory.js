@@ -542,7 +542,6 @@ contract('IssuanceFactory', (accounts) => {
                 await expectRevert(factory.transferAnyERC20Token(tokenAddress, ccParticipantBalance, {from: notOwner}));
             });
 
-            // TODO: check why not working :(!
             it('should transfer CC back to owner if sale closed', async () => {
                 await time.increaseTime(10);
                 await cln.approve(factory.address, THOUSAND_CLN, {from: notOwner});
