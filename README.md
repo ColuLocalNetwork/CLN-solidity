@@ -36,6 +36,8 @@ $ npm test
 $ LONG_TESTS=1 truffle test
 ```
 
+## License
+Code released under the [MIT License](https://github.com/colucom/CLN-solidity/blob/master/LICENSE).
 
 [Colu Local Network]: https://cln.colu.com
 [ethereum]: https://www.ethereum.org/

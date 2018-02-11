@@ -18,7 +18,7 @@
     "url": "git+https://github.com/colucom/CLN-solidity.git"
   },
   "author": "Tal Beja",
-  "license": "MIT",
+  "license": "https://github.com/colucom/CLN-solidity#license",
   "bugs": {
     "url": "https://github.com/colucom/CLN-solidity/issues"
   },
