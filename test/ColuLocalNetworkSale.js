@@ -81,7 +81,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
     const HUNDRED_BILLION_TOKENS = Math.pow(10, 11) * TOKEN_DECIMALS;
 
     const VESTING_PLANS = {
-        'A': {startOffset: 0, cliffOffset: 0, endOffset: 1 * DAY, installmentLength: 1 * DAY, alapPercent: 0},
+        'A': {startOffset: 0, cliffOffset: 0, endOffset: 1, installmentLength: 1, alapPercent: 0},
         'B': {startOffset: 0, cliffOffset: 0, endOffset: 6 * MONTH, installmentLength: 1 * MONTH, alapPercent: 4},
         'C': {startOffset: 0, cliffOffset: 0, endOffset: 1 * YEAR, installmentLength: 1 * MONTH, alapPercent: 12},
         'D': {startOffset: 0, cliffOffset: 0, endOffset: 2 * YEAR, installmentLength: 1 * MONTH, alapPercent: 26},

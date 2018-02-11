@@ -98,12 +98,6 @@ contract('IssuanceFactory', (accounts) => {
             await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: accounts[0]}));
         });
 
-
-        it('should not be able to create with zero decimals', async () => {
-            await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 0, CC_MAX_TOKENS, {from: accounts[0]}));
-        });
-
-
         it('should not be able to create with zero supply', async () => {
             await expectRevert(Factory.createIssuance(Date.now() + 100, 1000000, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: accounts[0]}));
         });
@@ -121,7 +115,6 @@ contract('IssuanceFactory', (accounts) => {
             tokenAddress = event.args.token
             assert(expect(tokenAddress).to.be.a('String'));
         });
-
     });
 
     describe('Participate in ICO through CLN', async () => {

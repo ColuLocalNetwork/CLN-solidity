@@ -250,7 +250,7 @@ contract IssuanceFactory is CurrencyFactory{
 
   /// @dev ERC223 transferAndCall, send cln to the market maker contract can only be called by owner (see MarketMaker)
   /// @dev sending CLN will return CC from the reserve to the sender.
-  function insertCLNtoMarketMaker(address) public tokenPayable returns (uint256) {
+  function insertCLNtoMarketMaker(address) public returns (uint256) {
     require(false);
     return 0;
   }
@@ -264,7 +264,7 @@ contract IssuanceFactory is CurrencyFactory{
 
   /// @dev ERC223 transferAndCall, send cc to the market maker contract can only be called by owner (see MarketMaker)
   /// @dev sending CC will return CLN from the reserve to the sender.
-  function extractCLNfromMarketMaker() public tokenPayable returns (uint256) {
+  function extractCLNfromMarketMaker() public returns (uint256) {
     require(false);
     return 0;
   }
@@ -330,36 +330,36 @@ contract IssuanceFactory is CurrencyFactory{
   }
 
   /// @dev Returns total number of issuances after filers are applied.
-  /// @param pending Include pending issuances.
-  /// @param started Include started issuances.
-  /// @param succlessful Include succlessful issuances.
-  /// @param failed Include failed issuances.
+  /// @param _pending Include _pending issuances.
+  /// @param _started Include _started issuances.
+  /// @param _succlessful Include _succlessful issuances.
+  /// @param _failed Include _failed issuances.
   /// @return Total number of issuances after filters are applied.
-  function getIssuanceCount(bool pending, bool started, bool succlessful, bool failed)
+  function getIssuanceCount(bool _pending, bool _started, bool _succlessful, bool _failed)
     public
     constant
-    returns (uint count)
+    returns (uint _count)
   {
     for (uint i=0; i<tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-      if (pending && issuance.startTime < now
-        || started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap
-        || succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve
-        || succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap
-        || failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve)
-        count += 1;
+      if ((_pending && issuance.startTime < now)
+        || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
+        || (_succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
+        || (_succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
+        || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
+        _count += 1;
     }
   }
 
   /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filers are applied.
-  /// @param from Index start position of issuance ids array.
-  /// @param to Index end position of issuance ids array.
-  /// @param pending Include pending issuances.
-  /// @param started Include started issuances.
-  /// @param succlessful Include succlessful issuances.
-  /// @param failed Include failed issuances..
+  /// @param _from Index start position of issuance ids array.
+  /// @param _to Index end position of issuance ids array.
+  /// @param _pending Include _pending issuances.
+  /// @param _started Include _started issuances.
+  /// @param _succlessful Include _succlessful issuances.
+  /// @param _failed Include _failed issuances..
   /// @return Returns array of issuance ids.
-  function getIssuanceIds(uint from, uint to, bool pending, bool started, bool succlessful, bool failed)
+  function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _succlessful, bool _failed)
     public
     constant
     returns (address[] _issuanceIds)
@@ -369,19 +369,19 @@ contract IssuanceFactory is CurrencyFactory{
     uint i;
     for (i=0; i<tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-      if (pending && issuance.startTime < now
-        || started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap
-        || succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve
-        || succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap
-        || failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve)
+      if ((_pending && issuance.startTime < now)
+        || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
+        || (_succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
+        || (_succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
+        || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
       {
         issuanceIdsTemp[count] = i;
         count += 1;
       }
     }
-    _issuanceIds = new address[](to - from);
-    for (i=from; i<to; i++)
-      _issuanceIds[i - from] = tokens[issuanceIdsTemp[i]];
+    _issuanceIds = new address[](_to - _from);
+    for (i=_from; i<_to; i++)
+      _issuanceIds[i - _from] = tokens[issuanceIdsTemp[i]];
   }
 
   /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.
