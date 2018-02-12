@@ -1,30 +1,4 @@
 module.exports = {
 	norpc: true,
-	port: 8555,
-	skipFiles: [
-		//"BasicToken.sol",
-		"ColuLocalCurrency.sol",
-		"ColuLocalNetwork.sol",
-		"ColuLocalNetworkSale.sol",
-		"CurrencyFactory.sol",
-		"ERC20.sol",
-		"ERC223Receiver.sol",
-		"ERC677.sol",
-		"EllipseMarketMaker.sol",
-		"EllipseMarketMakerLib.sol",
-		"IEllipseMarketMaker.sol",
-		"IssuanceFactory.sol",
-		"MarketMaker.sol",
-		"Migrations.sol",
-		"MultiSigWallet.sol",
-		"MultiSigWalletWithDailyLimit.sol",
-		"Ownable.sol",
-		"SafeMath.sol",
-		"Standard223Receiver.sol",
-		"Standard677Token.sol",
-		"TokenHolder.sol",
-		"TokenOwnable.sol",
-		"VestingTrustee.sol",
-		"helpers"
-	]
+	port: 8545
 }
