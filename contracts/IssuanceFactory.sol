@@ -18,7 +18,7 @@ import './Standard223Receiver.sol';
 contract IssuanceFactory is CurrencyFactory {
 	using SafeMath for uint256;
 
-	uint256 public precision;
+	uint256 public PRECISION;
 
   struct IssuanceStruct {
   	uint256 hardcap;
@@ -77,7 +77,7 @@ contract IssuanceFactory is CurrencyFactory {
   function IssuanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
     CLNTotalSupply = ERC20(_clnAddress).totalSupply();
 	// TODO: Why cap letters in one place and low in another?
-    precision = IEllipseMarketMaker(_mmLib).PRECISION();
+    PRECISION = IEllipseMarketMaker(_mmLib).PRECISION();
   }
 
 	/// @dev createIssuance create local currency issuance sale
@@ -151,7 +151,7 @@ contract IssuanceFactory is CurrencyFactory {
     require(ERC20(clnAddress).transferFrom(msg.sender, this, participationAmount));
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // pay back to participant with the participated amount * price
-    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(PRECISION);
 
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
     totalCLNcustodian = totalCLNcustodian.add(participationAmount);
@@ -174,7 +174,7 @@ contract IssuanceFactory is CurrencyFactory {
     address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	approveAndChange(clnAddress, _token, transferToReserveAmount, marketMakerAddress);
     // transfer only what we need
-    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(precision);
+    releaseAmount = participationAmount.mul(issueMap[_token].targetPrice).div(PRECISION);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.add(participationAmount);
     totalCLNcustodian = totalCLNcustodian.add(participationAmount);
     CLNRaised(_token, tkn.sender, participationAmount);
@@ -218,14 +218,14 @@ contract IssuanceFactory is CurrencyFactory {
   							marketClosed(_token)
   							returns (bool) {
 	// TODO: rewrite comment
-	//if we have CC time to thorw it to the Market Maker
+	// exchange CC for CLN throuh Market Maker
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(ERC20(_token).transferFrom(msg.sender, this, _ccAmount));
   	uint256 factoryCCAmount = ERC20(_token).balanceOf(this);
   	require(ERC20(_token).approve(marketMakerAddress, factoryCCAmount));
   	require(MarketMaker(marketMakerAddress).change(_token, factoryCCAmount, clnAddress) > 0);
 
-  	uint256 returnAmount = _ccAmount.mul(precision).div(issueMap[_token].targetPrice);
+  	uint256 returnAmount = _ccAmount.mul(PRECISION).div(issueMap[_token].targetPrice);
     issueMap[_token].clnRaised = issueMap[_token].clnRaised.sub(returnAmount);
     totalCLNcustodian = totalCLNcustodian.sub(returnAmount);
     CLNRefunded(_token, msg.sender, returnAmount);
@@ -248,7 +248,7 @@ contract IssuanceFactory is CurrencyFactory {
   	require(ERC20(msg.sender).approve(marketMakerAddress, factoryCCAmount));
   	require(MarketMaker(marketMakerAddress).change(msg.sender, factoryCCAmount, clnAddress) > 0);
 
-  	uint256 returnAmount = tkn.value.mul(precision).div(issueMap[msg.sender].targetPrice);
+  	uint256 returnAmount = tkn.value.mul(PRECISION).div(issueMap[msg.sender].targetPrice);
     issueMap[msg.sender].clnRaised = issueMap[msg.sender].clnRaised.sub(returnAmount);
     totalCLNcustodian = totalCLNcustodian.sub(returnAmount);
     CLNRefunded(msg.sender, tkn.sender, returnAmount);
@@ -303,7 +303,7 @@ contract IssuanceFactory is CurrencyFactory {
                             uint256 _S2,
                             uint256 _R2) private view
                             returns (bool) {
- 	  return (_S2 > _R2 && _S2.sub(_R2).mul(precision) >= _hardcap.mul(_price));
+ 	  return (_S2 > _R2 && _S2.sub(_R2).mul(PRECISION) >= _hardcap.mul(_price));
   }
 
 
