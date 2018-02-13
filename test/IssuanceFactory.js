@@ -161,7 +161,6 @@ contract('IssuanceFactory', (accounts) => {
             // CLN raised
             assert(issuanceStruct[5].eq(0))
         });
-
     });
 
     describe('Local Currency issuance.', async () => {
@@ -601,7 +600,7 @@ contract('IssuanceFactory', (accounts) => {
         });
 
         describe('getIssuance methods.', async () => {
-            it.only('should return zero if no currencies issuenced', async () => {
+            it('should return zero if no currencies have been issuence', async () => {
                 const count = await factory.getIssuanceCount(true, true, true, true);
                 assert(count.eq(1), count.toNumber().toString());
             });

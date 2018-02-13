@@ -10,9 +10,6 @@ contract IEllipseMarketMaker is MarketMaker {
     // precision for price representation (as in ether or tokens).
     uint256 public constant PRECISION = 10 ** 18;
 
-    // to help construct only once
-    bool public constructed = false;
-
     // The tokens pair.
     ERC20 public token1;
     ERC20 public token2;
