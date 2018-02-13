@@ -17,7 +17,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   uint256 private l_R2;
 
   modifier notConstructed() {
-    require(!constructed);
+    require(mmLib == address(0));
     _;
   }
 
@@ -46,7 +46,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev The Market Maker constructor
-  function constructor(address _mmLib, address _token1, address _token2) public notConstructed returns (bool) {
+  function constructor(address _mmLib, address _token1, address _token2) public onlyOwner notConstructed returns (bool) {
     require(_mmLib != address(0));
     require(_token1 != address(0));
     require(_token2 != address(0));
@@ -62,7 +62,6 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
 
     operational = false;
     openForPublic = false;
-    constructed = true;
 
     return true;
   }

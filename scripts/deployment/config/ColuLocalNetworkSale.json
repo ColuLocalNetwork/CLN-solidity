@@ -16,11 +16,11 @@
 		"startTime": ""
 	},
 	"https://mainnet.infura.io": {
-		"owner": "",
-		"fundingRecipient": "",
-		"communityPoolAddress": "",
-		"futureDevelopmentPoolAddress": "",
-		"stakeholdersPoolAddress": "",
-		"startTime": ""
+		"owner": "0xA76e676C9CdC7AA2ab12B3eC4Dd4c2BE9a6774AA",
+		"fundingRecipient": "0x34Df02E145F0A6B5dF675e9dFaB54aE745E6c4FF",
+		"communityPoolAddress": "0x254158138007803EEbc95d082c02D0dB4381EBac",
+		"futureDevelopmentPoolAddress": "0x6b83C6a03d99FfAdf2416767D64CC959F1B2E2F5",
+		"stakeholdersPoolAddress": "0xB0f37b1878FD6A3006467D9cACC8CdEF082e11F8",
+		"startTime": 1518627600
 	}
 }
