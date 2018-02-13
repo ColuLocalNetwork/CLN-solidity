@@ -92,7 +92,7 @@ contract('IssuanceFactory', (accounts) => {
 
         it('should construct with correct pramms', async () => {
             await cln.makeTokensTransferable();
-            factory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} )
+            factory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
             assert.equal((await factory.clnAddress()) ,cln.address);
             assert.equal((await factory.mmLibAddress()) ,mmLib.address);
             assert.equal((await factory.CLNTotalSupply()), CLN_MAX_TOKENS);
@@ -584,7 +584,7 @@ contract('IssuanceFactory', (accounts) => {
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
 
 
-                await time.increaseTime(1000000);
+                await time.increaseTime(SALE_DURATION_TIME);
                 await factory.finalize(tokenAddress, {from: owner});
 
                 const ownerBalance = await cc.balanceOf(owner);
@@ -600,9 +600,27 @@ contract('IssuanceFactory', (accounts) => {
         });
 
         describe('getIssuance methods.', async () => {
-            it('should return zero if no currencies have been issuence', async () => {
-                const count = await factory.getIssuanceCount(true, true, true, true);
+            it('should return zero if no currencies have been issuenced', async () => {
+                const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
+                const count = await emptyFactory.getIssuanceCount(true, true, true, true);
+                assert(count.eq(0), count.toNumber().toString());
+            });
+
+            it('should return zero if all parameters false', async () => {
+                const count = await factory.getIssuanceCount(false, false, false, false);
+                assert(count.eq(0), count.toNumber().toString());
+            });
+
+            it.only('should return correct number of issuences', async () => {
+                let count = await factory.getIssuanceCount(true, false, false, false);
+                console.log(count)
+                // assert(count.eq(1), count.toNumber().toString());
+
+                await time.increaseTime(1000);
+                count = await factory.getIssuanceCount(false, true, false, false);
+                console.log(count)
                 assert(count.eq(1), count.toNumber().toString());
+
             });
 
         });

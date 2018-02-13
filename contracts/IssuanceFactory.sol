@@ -54,7 +54,7 @@ contract IssuanceFactory is CurrencyFactory {
   	_;
   }
 
-  // sale consided succlessful when it raised equal to or more than the softcap
+  // sale considered successful when it raised equal to or more than the softcap
   modifier saleWasSuccessfull(address _token) {
   	require(issueMap[_token].clnRaised >= issueMap[_token].reserve);
   	_;
@@ -352,20 +352,21 @@ contract IssuanceFactory is CurrencyFactory {
   /// @dev Returns total number of issuances after filers are applied.
   /// @param _pending Include _pending issuances.
   /// @param _started Include _started issuances.
-  /// @param _succlessful Include _succlessful issuances.
+  /// @param _successful Include _successful issuances.
   /// @param _failed Include _failed issuances.
   /// @return Total number of issuances after filters are applied.
-  function getIssuanceCount(bool _pending, bool _started, bool _succlessful, bool _failed)
+  function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
     constant
     returns (uint _count)
   {
-    for (uint i = 0; i<tokens.length; i++) {
+    for (uint i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-      if ((_pending && issuance.startTime < now)
-        || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
-        || (_succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
-        || (_succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
+	  return now >= issuance.startTime
+      if ((_pending && issuance.startTime > now)
+        || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
+        || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
+        || (_successful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
         || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
         _count += 1;
     }
@@ -376,10 +377,10 @@ contract IssuanceFactory is CurrencyFactory {
   /// @param _to Index end position of issuance ids array.
   /// @param _pending Include _pending issuances.
   /// @param _started Include _started issuances.
-  /// @param _succlessful Include _succlessful issuances.
+  /// @param _successful Include _successful issuances.
   /// @param _failed Include _failed issuances..
   /// @return Returns array of issuance ids.
-  function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _succlessful, bool _failed)
+  function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _successful, bool _failed)
     public
     constant
     returns (address[] _issuanceIds)
@@ -387,12 +388,12 @@ contract IssuanceFactory is CurrencyFactory {
     uint[] memory issuanceIdsTemp = new uint[](tokens.length);
     uint count = 0;
     uint i;
-    for (i = 0; i<tokens.length; i++) {
+    for (i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
       if ((_pending && issuance.startTime < now)
         || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
-        || (_succlessful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
-        || (_succlessful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
+        || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
+        || (_successful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
         || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
       {
         issuanceIdsTemp[count] = i;
@@ -400,8 +401,9 @@ contract IssuanceFactory is CurrencyFactory {
       }
     }
     _issuanceIds = new address[](_to - _from);
-    for (i=_from; i<_to; i++)
+    for (i=_from; i<_to; i++) {
       _issuanceIds[i - _from] = tokens[issuanceIdsTemp[i]];
+	}
   }
 
   /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.
