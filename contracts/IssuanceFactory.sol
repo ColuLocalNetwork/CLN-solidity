@@ -292,7 +292,6 @@ contract IssuanceFactory is CurrencyFactory {
 		return false;
   }
 
-	//TODO: why private? may be useful
   /// @dev checks if the parameters that were sent to the create are valid for a promised price and buyback
   /// @param _hardcap uint256 CLN hardcap for issuance
   /// @param _price uint256 computed through the market maker using the supplies and reserves
@@ -301,7 +300,7 @@ contract IssuanceFactory is CurrencyFactory {
   function isValidIssuance(uint256 _hardcap,
                             uint256 _price,
                             uint256 _S2,
-                            uint256 _R2) private view
+                            uint256 _R2) public view
                             returns (bool) {
  	  return (_S2 > _R2 && _S2.sub(_R2).mul(PRECISION) >= _hardcap.mul(_price));
   }

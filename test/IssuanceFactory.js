@@ -64,6 +64,7 @@ contract('IssuanceFactory', (accounts) => {
 
     const owner = accounts[0];
     const participant = accounts[1];
+    const participant2 = accounts[2];
 
     let tokenAddress;
     let cc;
@@ -76,6 +77,7 @@ contract('IssuanceFactory', (accounts) => {
         cln = await ColuLocalNetwork.new(CLN_MAX_TOKENS);
         await cln.makeTokensTransferable();
         await cln.transfer(participant, THOUSAND_CLN * 1000);
+        await cln.transfer(participant2, THOUSAND_CLN * 1000);
     });
 
     describe('Constructor.', async () => {
@@ -284,8 +286,6 @@ contract('IssuanceFactory', (accounts) => {
                 await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}));
             });
 
-
-
             describe('transferAndCall: ', async () => {
                 it('should be able to participate as owner', async () => {
                     await time.increaseTime(10);
@@ -358,7 +358,6 @@ contract('IssuanceFactory', (accounts) => {
                 const result = await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN_3_4, {from: participant});
                 assert((await factory.totalCLNcustodian()).eq(THOUSAND_CLN_3_4));
                 assert.equal((await cc.balanceOf(participant)).div(10 ** 8).toNumber(), 91855842390401.25);
-                // assert.equal((await cc.balanceOf(factory.address)).div(10 ** 8).toNumber(), 30618614130133.75);
 
 
                 // reaching end of sale
@@ -406,7 +405,6 @@ contract('IssuanceFactory', (accounts) => {
                 await factory.finalize(tokenAddress, {from: owner});
                 assert.isAbove((await cc.balanceOf(owner)).toNumber(), ccvalue.toNumber());
             });
-
 
             it('should be able to finalize if endtime reached and over softcap (raise CC and CLN)', async () => {
                 const clnBalance = await cln.balanceOf(owner);
@@ -513,6 +511,40 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(clnBalance.plus(THOUSAND_CLN / 4).toNumber(),
                     (await cln.balanceOf(thirdParty)).toNumber());
             });
+
+            it('should be able to refund multiple users', async () => {
+                const clnBalanceParticipant = await cln.balanceOf(participant)
+                const clnBalanceParticipant2 = await cln.balanceOf(participant2)
+                await time.increaseTime(10);
+
+                await cln.approve(factory.address, THOUSAND_CLN / 10, {from: participant});
+                assert(await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 10, {from: participant}));
+
+                await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant2});
+                assert(await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant2}));
+
+                const ccBalanceParticipant = await cc.balanceOf(participant);
+                const ccBalanceParticipant2 = await cc.balanceOf(participant2);
+                assert(!ccBalanceParticipant.isZero());
+                assert(!ccBalanceParticipant2.isZero());
+
+
+                await time.increaseTime(SALE_ENDED_TIME);
+
+                // First participant CLN refunded
+                await cc.approve(factory.address, ccBalanceParticipant, {from: participant});
+                await factory.refund(tokenAddress, ccBalanceParticipant, {from: participant});
+                const clnAfterRefund = await cln.balanceOf(participant);
+                assert(clnBalanceParticipant.eq(clnAfterRefund),
+                    `${clnBalanceParticipant} not equal to ${clnAfterRefund}`);
+
+                // Second participant CLN refunded
+                await cc.approve(factory.address, ccBalanceParticipant2, {from: participant2});
+                await factory.refund(tokenAddress, ccBalanceParticipant2, {from: participant2});
+                const clnAfterRefund2 = await cln.balanceOf(participant2);
+                assert(clnBalanceParticipant.eq(clnAfterRefund2),
+                    `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
+            });
         });
 
         describe('transferAnyERC20Token.', async () => {
@@ -566,6 +598,14 @@ contract('IssuanceFactory', (accounts) => {
                 await factory.transferAnyERC20Token(tokenAddress, ccParticipantBalance, {from: owner});
                 assert(ccParticipantBalance.plus(ownerBalance).eq(await cc.balanceOf(owner)));
             });
+        });
+
+        describe('getIssuance methods.', async () => {
+            it.only('should return zero if no currencies issuenced', async () => {
+                const count = await factory.getIssuanceCount(true, true, true, true);
+                assert(count.eq(1), count.toNumber().toString());
+            });
+
         });
 
         describe('CurrencyFactory disabled methods.', async () => {
