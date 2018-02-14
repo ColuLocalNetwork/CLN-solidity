@@ -613,12 +613,11 @@ contract('IssuanceFactory', (accounts) => {
 
             it.only('should return correct number of issuences', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
-                console.log(count)
+                console.log(count.toNumer());
                 // assert(count.eq(1), count.toNumber().toString());
-
                 await time.increaseTime(1000);
                 count = await factory.getIssuanceCount(false, true, false, false);
-                console.log(count)
+                console.log(count.toNumber());
                 assert(count.eq(1), count.toNumber().toString());
 
             });

@@ -362,7 +362,6 @@ contract IssuanceFactory is CurrencyFactory {
   {
     for (uint i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-	  return now >= issuance.startTime
       if ((_pending && issuance.startTime > now)
         || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
         || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
