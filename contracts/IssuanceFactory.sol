@@ -358,7 +358,7 @@ contract IssuanceFactory is CurrencyFactory {
   /// @return Total number of currency issuances after filters are applied.
   function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
-    constant
+    view
     returns (uint _count)
   {
     for (uint i = 0; i < tokens.length; i++) {
@@ -373,6 +373,7 @@ contract IssuanceFactory is CurrencyFactory {
   }
 
   /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied.
+  /// @dev _from and _to parameters are intended from pagination
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
   /// @param _from Index start position of issuance ids array.
   /// @param _to Index end position of issuance ids array.
@@ -383,26 +384,28 @@ contract IssuanceFactory is CurrencyFactory {
   /// @return Returns array of issuance ids.
   function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _successful, bool _failed)
     public
-    constant
-    returns (address[] _issuanceIds)
+    view
+    returns (uint[] _issuanceIds)
   {
     uint[] memory issuanceIdsTemp = new uint[](tokens.length);
     uint count = 0;
     uint i;
     for (i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-      if ((_pending && issuance.startTime < now)
-        || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
-        || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
-        || (_successful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
-        || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
+      if ((_pending && issuance.startTime > now)
+        || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
+        || (_successful && issuance.endTime < now && issuance.clnRaised >= issuance.reserve)
+        || (_successful && issuance.endTime >= now && issuance.clnRaised == issuance.hardcap)
+        || (_failed && issuance.endTime < now && issuance.clnRaised < issuance.reserve))
       {
         issuanceIdsTemp[count] = i;
         count += 1;
       }
     }
+	return issuanceIdsTemp;
+	uint from = SafeMath.min256(issuanceIdsTemp.length, _to - _from);
     _issuanceIds = new address[](_to - _from);
-    for (i=_from; i<_to; i++) {
+    for (i = _from; i < _to; i++) {
       _issuanceIds[i - _from] = tokens[issuanceIdsTemp[i]];
 	}
   }
