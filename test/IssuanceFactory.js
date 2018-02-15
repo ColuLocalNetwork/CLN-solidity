@@ -717,7 +717,7 @@ contract('IssuanceFactory', (accounts) => {
             });
         })
 
-        describe('getIssuance methods.', async () => {
+        describe('getIssuance.', async () => {
             it('should return zero if no currencies have been issuenced', async () => {
                 const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
                 const count = await emptyFactory.getIssuanceCount(true, true, true, true);
