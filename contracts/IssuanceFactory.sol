@@ -358,7 +358,7 @@ contract IssuanceFactory is CurrencyFactory {
   /// @return Total number of currency issuances after filters are applied.
   function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
-    constant
+    view
     returns (uint _count)
   {
     for (uint i = 0; i < tokens.length; i++) {
