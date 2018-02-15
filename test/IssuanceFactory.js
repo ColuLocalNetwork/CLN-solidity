@@ -599,6 +599,48 @@ contract('IssuanceFactory', (accounts) => {
             });
         });
 
+        describe('Complex scenarios.', async () => {
+            it('perform 2 issuances in parallel', async () => {
+                const owner2 = accounts[3]
+                tokenAddress2 = (await factory.createIssuance(
+                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner2})).logs[0].args.token;
+                const cc2 = await ColuLocalCurrency.at(tokenAddress2);
+
+                const clnBalanceParticipant = await cln.balanceOf(participant)
+                const clnBalanceParticipant2 = await cln.balanceOf(participant2)
+                await time.increaseTime(10);
+
+                await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
+                assert(await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant}));
+
+                await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant2});
+                assert(await factory.participate['address,uint256'](tokenAddress2, THOUSAND_CLN / 5, {from: participant2}));
+
+                const ccBalanceParticipant = await cc.balanceOf(participant);
+                const cc2BalanceParticipant2 = await cc2.balanceOf(participant2);
+                assert(!ccBalanceParticipant.isZero());
+                assert(!cc2BalanceParticipant2.isZero());
+
+
+                await time.increaseTime(SALE_ENDED_TIME);
+
+                // First participant CLN refunded
+                // await cc.approve(factory.address, ccBalanceParticipant, {from: participant});
+                // await factory.refund(tokenAddress, ccBalanceParticipant, {from: participant});
+                // const clnAfterRefund = await cln.balanceOf(participant);
+                // assert(clnBalanceParticipant.eq(clnAfterRefund),
+                //     `${clnBalanceParticipant} not equal to ${clnAfterRefund}`);
+
+                // Second participant CLN refunded
+                // await cc2.approve(factory.address, cc2BalanceParticipant2, {from: participant2});
+                // await factory.refund(tokenAddress, cc2BalanceParticipant2, {from: participant2});
+                // const clnAfterRefund2 = await cln.balanceOf(participant2);
+                // assert(clnBalanceParticipant.eq(clnAfterRefund2),
+                //     `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
+            });
+        })
+
         describe('getIssuance methods.', async () => {
             it('should return zero if no currencies have been issuenced', async () => {
                 const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
@@ -611,17 +653,158 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it.only('should return correct number of issuences', async () => {
+            it('should return correct number of issuences if sale was successful', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
-                console.log(count.toNumer());
-                // assert(count.eq(1), count.toNumber().toString());
-                await time.increaseTime(1000);
-                count = await factory.getIssuanceCount(false, true, false, false);
-                console.log(count.toNumber());
                 assert(count.eq(1), count.toNumber().toString());
 
+                await time.increaseTime(10);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                await cln.approve(factory.address, THOUSAND_CLN / 2, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: participant});
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, false, true);
+                assert(count.eq(0), count.toNumber().toString());
             });
 
+            it('should return correct number of issuences if sale was successful (reached hardcap before end)', async () => {
+                let count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                await time.increaseTime(10);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, false, true);
+                assert(count.eq(0), count.toNumber().toString());
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, false, true);
+                assert(count.eq(0), count.toNumber().toString());
+            });
+
+            it('should return correct number of issuences if sale failed', async () => {
+                let count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                await time.increaseTime(10);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(0), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, false, true);
+                assert(count.eq(1), count.toNumber().toString());
+            });
+
+            it.only('should return correct number of issuences when running two issuances simultaneously', async () => {
+                await factory.createIssuance(
+                    now + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner});
+
+                let count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(2), count.toNumber().toString());
+
+                await time.increaseTime(10);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(true, true, false, false);
+                assert(count.eq(2), count.toNumber().toString());
+
+                await time.increaseTime(100);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(0), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(2), count.toNumber().toString());
+
+                await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, true, true, false);
+                assert(count.eq(2), count.toNumber().toString());
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                count = await factory.getIssuanceCount(false, false, true, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, false, true);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, false, true, true);
+                assert(count.eq(2), count.toNumber().toString());
+
+                now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
+
+                await factory.createIssuance(
+                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, {from: owner});
+
+                count = await factory.getIssuanceCount(true, false, true, true);
+                assert(count.eq(3), count.toNumber().toString());
+
+                await time.increaseTime(100);
+                await time.mine();
+
+                now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
+
+                await factory.createIssuance(
+                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, {from: owner});
+
+                count = await factory.getIssuanceCount(true, false, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(false, true, false, false);
+                assert(count.eq(1), count.toNumber().toString());
+
+                count = await factory.getIssuanceCount(true, true, true, true);
+                assert(count.eq(4), count.toNumber().toString());
+            });
         });
 
         describe('CurrencyFactory disabled methods.', async () => {

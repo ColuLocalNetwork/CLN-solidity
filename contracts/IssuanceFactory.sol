@@ -349,12 +349,13 @@ contract IssuanceFactory is CurrencyFactory {
     }
   }
 
-  /// @dev Returns total number of issuances after filers are applied.
-  /// @param _pending Include _pending issuances.
-  /// @param _started Include _started issuances.
-  /// @param _successful Include _successful issuances.
-  /// @param _failed Include _failed issuances.
-  /// @return Total number of issuances after filters are applied.
+  /// @dev Returns total number of issuances after filters are applied.
+  /// @dev this function is gas wasteful so do not call this from a state changing transaction
+  /// @param _pending Include pending currency issuances.
+  /// @param _started Include started currency issuances.
+  /// @param _successful Include successful and ended currency issuances.
+  /// @param _failed Include failed and ended currency issuances.
+  /// @return Total number of currency issuances after filters are applied.
   function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
     constant
@@ -364,14 +365,15 @@ contract IssuanceFactory is CurrencyFactory {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
       if ((_pending && issuance.startTime > now)
         || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
-        || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
-        || (_successful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
-        || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
+        || (_successful && issuance.endTime < now && issuance.clnRaised >= issuance.reserve)
+        || (_successful && issuance.endTime >= now && issuance.clnRaised == issuance.hardcap)
+        || (_failed && issuance.endTime < now && issuance.clnRaised < issuance.reserve))
         _count += 1;
     }
   }
 
-  /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filers are applied.
+  /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied.
+  /// @dev this function is gas wasteful so do not call this from a state changing transaction
   /// @param _from Index start position of issuance ids array.
   /// @param _to Index end position of issuance ids array.
   /// @param _pending Include _pending issuances.
