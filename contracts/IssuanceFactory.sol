@@ -351,10 +351,10 @@ contract IssuanceFactory is CurrencyFactory {
 
   /// @dev Returns total number of issuances after filters are applied.
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
-  /// @param _pending Include pending currency issuances.
-  /// @param _started Include started currency issuances.
-  /// @param _successful Include successful and ended currency issuances.
-  /// @param _failed Include failed and ended currency issuances.
+  /// @param _pending include pending currency issuances.
+  /// @param _started include started currency issuances.
+  /// @param _successful include successful and ended currency issuances.
+  /// @param _failed include failed and ended currency issuances.
   /// @return Total number of currency issuances after filters are applied.
   function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
@@ -375,18 +375,19 @@ contract IssuanceFactory is CurrencyFactory {
   /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied.
   /// @dev _from and _to parameters are intended from pagination
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
-  /// @param _from Index start position of issuance ids array.
-  /// @param _to Index end position of issuance ids array.
-  /// @param _pending Include _pending issuances.
-  /// @param _started Include _started issuances.
-  /// @param _successful Include _successful issuances.
-  /// @param _failed Include _failed issuances..
+  /// @param _pending include pending currency issuances.
+  /// @param _started include started currency issuances.
+  /// @param _successful include successful and ended currency issuances.
+  /// @param _failed include failed and ended currency issuances.
+  /// @param _offset index start position of issuance ids array.
+  /// @param _limit maximum number of issuance ids to return.
   /// @return Returns array of issuance ids.
-  function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _successful, bool _failed)
+  function getIssuanceIds(bool _pending, bool _started, bool _successful, bool _failed, uint _offset, uint _limit)
     public
     view
-    returns (uint[] _issuanceIds)
+    returns (address[] _issuanceIds)
   {
+	require(_limit >= 1);
     uint[] memory issuanceIdsTemp = new uint[](tokens.length);
     uint count = 0;
     uint i;
@@ -402,11 +403,15 @@ contract IssuanceFactory is CurrencyFactory {
         count += 1;
       }
     }
-	return issuanceIdsTemp;
-	uint from = SafeMath.min256(issuanceIdsTemp.length, _to - _from);
-    _issuanceIds = new address[](_to - _from);
-    for (i = _from; i < _to; i++) {
-      _issuanceIds[i - _from] = tokens[issuanceIdsTemp[i]];
+
+	if (_offset > count) {
+		return new address[](0);
+	}
+
+	uint _end = SafeMath.min256(count, _offset + _limit);
+    _issuanceIds = new address[](_end - _offset);
+    for (i = _offset; i < _end; i++) {
+      _issuanceIds[i - _offset] = tokens[issuanceIdsTemp[i]];
 	}
   }
 
