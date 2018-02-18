@@ -76,7 +76,6 @@ contract IssuanceFactory is CurrencyFactory {
   /// @param _clnAddress address for the deployed CLN ERC20 token
   function IssuanceFactory(address _mmLib, address _clnAddress) public CurrencyFactory(_mmLib, _clnAddress) {
     CLNTotalSupply = ERC20(_clnAddress).totalSupply();
-	// TODO: Why cap letters in one place and low in another?
     PRECISION = IEllipseMarketMaker(_mmLib).PRECISION();
   }
 
