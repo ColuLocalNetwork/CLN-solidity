@@ -388,10 +388,10 @@ contract IssuanceFactory is CurrencyFactory {
     returns (address[] _issuanceIds)
   {
 	require(_limit >= 1);
-    uint[] memory issuanceIdsTemp = new uint[](tokens.length);
-    uint count = 0;
-    uint i;
-    for (i = 0; i < tokens.length; i++) {
+    _issuanceIds = new address[](_limit);
+    uint filteredIssuancesCount = 0;
+	uint retrieveIssuancesCount = 0;
+    for (uint i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
       if ((_pending && issuance.startTime > now)
         || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
@@ -399,12 +399,25 @@ contract IssuanceFactory is CurrencyFactory {
         || (_successful && issuance.endTime >= now && issuance.clnRaised == issuance.hardcap)
         || (_failed && issuance.endTime < now && issuance.clnRaised < issuance.reserve))
       {
-        issuanceIdsTemp[count] = i;
-        count += 1;
+		if (filteredIssuancesCount >= _offset) {
+			_issuanceIds[retrieveIssuancesCount] = tokens[i];
+			retrieveIssuancesCount += 1;
+		}
+		if (retrieveIssuancesCount == _limit) {
+			return _issuanceIds;
+		}
+        filteredIssuancesCount += 1;
       }
     }
 
-	if (_offset > count) {
+	if (retrieveIssuancesCount < _limit) {
+		address[] memory _issuanceIdsTemp = new address[](retrieveIssuancesCount);
+		for (i = 0; i < retrieveIssuancesCount; i++) {
+			_issuanceIdsTemp[i] = _issuanceIds[i];
+		}
+		return _issuanceIdsTemp;
+	}
+	/* if (_offset > count) {
 		return new address[](0);
 	}
 
@@ -412,7 +425,7 @@ contract IssuanceFactory is CurrencyFactory {
     _issuanceIds = new address[](_end - _offset);
     for (i = _offset; i < _end; i++) {
       _issuanceIds[i - _offset] = tokens[issuanceIdsTemp[i]];
-	}
+	} */
   }
 
   /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.

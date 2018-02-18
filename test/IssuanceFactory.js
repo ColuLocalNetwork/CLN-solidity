@@ -729,7 +729,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale was successful', async () => {
+            it('should return correct number of issuances if sale was successful', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
@@ -752,7 +752,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale was successful (reached hardcap before end)', async () => {
+            it('should return correct number of issuances if sale was successful (reached hardcap before end)', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
@@ -781,7 +781,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale failed', async () => {
+            it('should return correct number of issuances if sale failed', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
@@ -801,7 +801,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(1), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences when running two issuances simultaneously', async () => {
+            it('should return correct number of issuances when running two issuances simultaneously', async () => {
                 await factory.createIssuance(
                     now + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner});
@@ -883,7 +883,7 @@ contract('IssuanceFactory', (accounts) => {
             });
         });
 
-        describe('getIssuanceIds.', () => {
+        describe.only('getIssuanceIds.', () => {
 
             it('should revert if limit is zero', async () => {
                 await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
@@ -901,17 +901,17 @@ contract('IssuanceFactory', (accounts) => {
             });
 
 
-            it('should return correct issuences if limit is greater than number of results', async () => {
+            it('should return correct issuances if limit is greater than number of results', async () => {
                 const issuanceIds = await factory.getIssuanceIds(true, true, true, true, 0, 10);
                 assert.equal(issuanceIds.length, 1);
             });
 
-            it('should return zero issuences if offset is greater than number of issuances', async () => {
+            it('should return zero issuances if offset is greater than number of issuances', async () => {
                 const issuanceIds = await factory.getIssuanceIds(true, true, true, true, 10, 10);
                 assert.equal(issuanceIds.length, 0);
             });
 
-            it('should return correct issuences if sale was successful', async () => {
+            it('should return correct issuances if sale was successful', async () => {
                 let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                 assert.equal(issuanceIds.length, 1);
 
@@ -934,7 +934,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(issuanceIds.length, 0);
             });
 
-            it('should return correct number of issuences if sale was successful (reached hardcap before end)', async () => {
+            it('should return correct number of issuances if sale was successful (reached hardcap before end)', async () => {
                 let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                 assert.equal(issuanceIds.length, 1);
 
@@ -963,7 +963,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(issuanceIds.length, 0);
             });
 
-            it('should return correct number of issuences if sale failed', async () => {
+            it('should return correct number of issuances if sale failed', async () => {
                 let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                 assert.equal(issuanceIds.length, 1);
 
@@ -983,7 +983,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(issuanceIds.length, 1);
             });
 
-            it('should return correct number of issuences when running two issuances simultaneously', async () => {
+            it('should return correct number of issuances when running two issuances simultaneously', async () => {
                 await factory.createIssuance(
                     now + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner});
@@ -1064,7 +1064,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(issuanceIds.length, 4);
             });
 
-            context('Pagination.', () => {
+            context.only('Pagination.', () => {
                 let tokenAddressArray
 
                 beforeEach(async () => {
@@ -1078,7 +1078,7 @@ contract('IssuanceFactory', (accounts) => {
                     assert.equal(tokenAddressArray.length, 20);
                 });
 
-                it('should return correct issuences when number of issuences greater than limit', async () => {
+                it('should return correct issuances when number of issuances greater than limit', async () => {
                     let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                     assert.equal(issuanceIds.length, 10);
 
@@ -1087,7 +1087,7 @@ contract('IssuanceFactory', (accounts) => {
                     }
                 });
 
-                it('should return correct issuences when number of issuences greater than limit', async () => {
+                it('should return correct issuances when number of issuances greater than limit', async () => {
                     const issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                     assert.equal(issuanceIds.length, 10);
 
@@ -1096,7 +1096,7 @@ contract('IssuanceFactory', (accounts) => {
                     }
                 });
 
-                it('should return all issuences when number offset is zero and limit is max', async () => {
+                it('should return all issuances when number offset is zero and limit is max', async () => {
                     const issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 2 ** 255);
                     assert.equal(issuanceIds.length, 20);
 
@@ -1105,7 +1105,7 @@ contract('IssuanceFactory', (accounts) => {
                     }
                 });
 
-                it('should return correct issuences when offset is greater than zero', async () => {
+                it('should return correct issuances when offset is greater than zero', async () => {
                     let offset = 2
                     let limit = 5
                     let issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
@@ -1134,7 +1134,7 @@ contract('IssuanceFactory', (accounts) => {
                     }
                 });
 
-                it('should paginate through all issuences', async () => {
+                it('should paginate through all issuances', async () => {
 
                     // checking 3 full pages
                     for (let j = 0; j < 3; j++) {
