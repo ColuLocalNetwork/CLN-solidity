@@ -889,7 +889,7 @@ contract('IssuanceFactory', (accounts) => {
                 await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
             });
 
-            it.only('should revert is limit is greater than max page size', async () => {
+            it('should revert is limit is greater than max page size', async () => {
                 await expectRevert(factory.getIssuanceIds(true, false, false, false, 0, 1001));
             });
 
@@ -1144,6 +1144,13 @@ contract('IssuanceFactory', (accounts) => {
                         assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
                     }
                 });
+
+
+                it.only('estimating gas', async () => {
+                    const data = factory.getIssuanceIds.getData(true, false, false, false, 0, 10);
+                    console.log(data)
+                    assert(false)
+                })
             })
         });
 
