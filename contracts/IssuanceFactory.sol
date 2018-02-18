@@ -388,7 +388,7 @@ contract IssuanceFactory is CurrencyFactory {
     returns (address[] _issuanceIds)
   {
 	require(_limit >= 1);
-	require(limit <= 100);
+	require(_limit <= 100);
     _issuanceIds = new address[](_limit);
     uint filteredIssuancesCount = 0;
 	uint retrieveIssuancesCount = 0;

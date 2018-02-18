@@ -889,6 +889,10 @@ contract('IssuanceFactory', (accounts) => {
                 await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
             });
 
+            it.only('should revert is limit is greater than max page size', async () => {
+                await expectRevert(factory.getIssuanceIds(true, false, false, false, 0, 1001));
+            });
+
             it('should return empty array if no currencies have been issuenced', async () => {
                 const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
                 const issuanceIds = await emptyFactory.getIssuanceIds(true, true, true, true, 0, 10);
@@ -1084,15 +1088,6 @@ contract('IssuanceFactory', (accounts) => {
 
                     for (let i = 0; i < 10; i++) {
                         assert.equal(tokenAddressArray[i], issuanceIds[i])
-                    }
-                });
-
-                it('should return all issuances when number offset is zero and limit is max', async () => {
-                    const issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 2 ** 255);
-                    assert.equal(issuanceIds.length, 20);
-
-                    for (let i = 0; i < 20; i++) {
-                        assert.equal(tokenAddressArray[i], issuanceIds[i]);
                     }
                 });
 
