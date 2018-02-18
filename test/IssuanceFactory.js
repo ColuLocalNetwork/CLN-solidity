@@ -323,26 +323,27 @@ contract('IssuanceFactory', (accounts) => {
 
 
             context('When sale is closed', async () => {
+
+                beforeEach(async () => {
+                    await time.increaseTime(SALE_ENDED_TIME);
+                })
+
                 it('should not be able to participate as owner', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     await cln.approve(factory.address, THOUSAND_CLN, {from: owner});
                     await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}));
                 });
 
                 it('should not be able to participate as not owner', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
                     await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant}));
                 });
 
                 it('should not be able to participate as owner through contract', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     const participateMessage = encodeParticipateMessage(tokenAddress);
                     await expectRevert(cln.transferAndCall(factory.address, THOUSAND_CLN, participateMessage, {from: owner}));
                 });
 
                 it('should not be able to participate as not owner through contract', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     const participateMessage = encodeParticipateMessage(tokenAddress);
                     await expectRevert(cln.transferAndCall(factory.address, THOUSAND_CLN, participateMessage, {from: participant}));
                 });
@@ -671,7 +672,7 @@ contract('IssuanceFactory', (accounts) => {
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
 
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await factory.finalize(tokenAddress, {from: owner});
 
                 const ownerBalance = await cc.balanceOf(owner);
@@ -751,7 +752,7 @@ contract('IssuanceFactory', (accounts) => {
                 await cln.approve(factory.address, THOUSAND_CLN / 2, {from: participant});
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: participant});
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -780,7 +781,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, false, false, true);
                 assert(count.eq(0), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -800,7 +801,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, true, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME + 10);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -851,7 +852,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, true, true, false);
                 assert(count.eq(2), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
