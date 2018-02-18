@@ -113,10 +113,6 @@ contract('IssuanceFactory', (accounts) => {
             await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
-        it('should not be able to create with zero decimals', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 0, CC_MAX_TOKENS, {from: owner}));
-        });
-
         it('should not be able to create with zero supply', async () => {
             await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: owner}));
         });
@@ -490,6 +486,29 @@ contract('IssuanceFactory', (accounts) => {
                     await expectRevert(factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant}))
                 });
 
+                it('should not be able to refund if refund ammount is zero', async () => {
+                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
+                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
+                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
+
+                    await time.increaseTime(SALE_ENDED_TIME);
+
+                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+                });
+
+                it('should not be able to refund if refund ammount is zero (transferAndCall)', async () => {
+                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
+                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
+                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
+
+                    await time.increaseTime(SALE_ENDED_TIME);
+
+                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+
+                    changeData = encodeRefundMessage();
+                    await expectRevert(cc.transferAndCall(factory.address, 0, changeData, {from: participant}));
+                });
+
                 it('should be able to refund without approve', async () => {
                     const clnBalance = await cln.balanceOf(participant)
                     await cln.approve(factory.address, THOUSAND_CLN / 4, {from: participant})
@@ -598,16 +617,6 @@ contract('IssuanceFactory', (accounts) => {
                     const clnAfterRefund2 = await cln.balanceOf(participant2);
                     assert(clnBalanceParticipant.eq(clnAfterRefund2),
                         `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
-                });
-
-                it('should not be able to refund if refund ammount is zero', async () => {
-                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
-                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
-                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
-
-                    await time.increaseTime(SALE_ENDED_TIME);
-
-                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
                 });
 
                 it('should not be able to refund if refund more than entered', async () => {

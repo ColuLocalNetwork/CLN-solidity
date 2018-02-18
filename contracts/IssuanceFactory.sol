@@ -100,6 +100,7 @@ contract IssuanceFactory is CurrencyFactory {
                             returns (address) {
     require(_startTime > now);
     require(_durationTime > 0);
+	require(_hardcap > 0);
 
     uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
     uint256 targetPrice = IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
@@ -217,7 +218,7 @@ contract IssuanceFactory is CurrencyFactory {
   							saleHasFailed(_token)
   							marketClosed(_token)
   							returns (bool) {
-	// TODO: rewrite comment
+	require(_ccAmount > 0);
 	// exchange CC for CLN throuh Market Maker
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(ERC20(_token).transferFrom(msg.sender, this, _ccAmount));
@@ -242,6 +243,7 @@ contract IssuanceFactory is CurrencyFactory {
 					saleHasFailed(msg.sender)
 					marketClosed(msg.sender)
 					returns (bool) {
+	require(tkn.value > 0);
   	// if we have CC time to thorw it to the Market Maker
   	address marketMakerAddress = getMarketMakerAddressFromToken(msg.sender);
   	uint256 factoryCCAmount = ERC20(msg.sender).balanceOf(this);
