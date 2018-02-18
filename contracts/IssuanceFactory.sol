@@ -388,6 +388,7 @@ contract IssuanceFactory is CurrencyFactory {
     returns (address[] _issuanceIds)
   {
 	require(_limit >= 1);
+	require(limit <= 100);
     _issuanceIds = new address[](_limit);
     uint filteredIssuancesCount = 0;
 	uint retrieveIssuancesCount = 0;
@@ -417,15 +418,6 @@ contract IssuanceFactory is CurrencyFactory {
 		}
 		return _issuanceIdsTemp;
 	}
-	/* if (_offset > count) {
-		return new address[](0);
-	}
-
-	uint _end = SafeMath.min256(count, _offset + _limit);
-    _issuanceIds = new address[](_end - _offset);
-    for (i = _offset; i < _end; i++) {
-      _issuanceIds[i - _offset] = tokens[issuanceIdsTemp[i]];
-	} */
   }
 
   /// @dev Allow the owner to transfer out any accidentally sent ERC20 tokens.

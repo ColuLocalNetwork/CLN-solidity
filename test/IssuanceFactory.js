@@ -883,7 +883,7 @@ contract('IssuanceFactory', (accounts) => {
             });
         });
 
-        describe.only('getIssuanceIds.', () => {
+        describe('getIssuanceIds.', () => {
 
             it('should revert if limit is zero', async () => {
                 await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
@@ -1064,7 +1064,7 @@ contract('IssuanceFactory', (accounts) => {
                 assert.equal(issuanceIds.length, 4);
             });
 
-            context.only('Pagination.', () => {
+            context('Pagination.', () => {
                 let tokenAddressArray
 
                 beforeEach(async () => {
@@ -1080,15 +1080,6 @@ contract('IssuanceFactory', (accounts) => {
 
                 it('should return correct issuances when number of issuances greater than limit', async () => {
                     let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
-                    assert.equal(issuanceIds.length, 10);
-
-                    for (let i = 0; i < 10; i++) {
-                        assert.equal(tokenAddressArray[i], issuanceIds[i])
-                    }
-                });
-
-                it('should return correct issuances when number of issuances greater than limit', async () => {
-                    const issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                     assert.equal(issuanceIds.length, 10);
 
                     for (let i = 0; i < 10; i++) {
@@ -1157,12 +1148,6 @@ contract('IssuanceFactory', (accounts) => {
                     for (let i = 0; i < 2; i++) {
                         assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
                     }
-
-                    // let issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
-                    // assert.equal(issuanceIds, limit)
-                    // for (let i = 0; i < limit; i++) {
-                    //     assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
-                    // }
                 });
             })
         });
