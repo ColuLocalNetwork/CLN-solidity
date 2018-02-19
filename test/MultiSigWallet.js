@@ -415,7 +415,7 @@ contract('MultiSigWallet', (accounts) => {
                 });
 
                 describe('addOwner', async () => {
-                    let addOwner = async (owner, from) => {
+                    const addOwner = async (owner, from) => {
                         let params = [owner];
                         let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.addOwner, params);
 
@@ -439,6 +439,8 @@ contract('MultiSigWallet', (accounts) => {
                                 throw new Error('invalid opcode');
                             }
                         }
+
+                        return transaction;
                     };
 
                     it('should throw an error, if called directly', async () => {
@@ -467,7 +469,7 @@ contract('MultiSigWallet', (accounts) => {
                 });
 
                 describe('removeOwner', async () => {
-                    let removeOwner = async (owner, from) => {
+                    const removeOwner = async (owner, from) => {
                         let params = [owner];
                         let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.removeOwner, params);
 
@@ -491,6 +493,8 @@ contract('MultiSigWallet', (accounts) => {
                                 throw new Error('invalid opcode');
                             }
                         }
+
+                        return transaction
                     };
 
                     it('should throw an error, if called directly', async () => {
@@ -525,7 +529,7 @@ contract('MultiSigWallet', (accounts) => {
                 });
 
                 describe('replaceOwner', async () => {
-                    let replaceOwner = async (owner, newOwner, from) => {
+                    const replaceOwner = async (owner, newOwner, from) => {
                         let params = [owner, newOwner];
                         let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.replaceOwner, params);
 
@@ -549,6 +553,8 @@ contract('MultiSigWallet', (accounts) => {
                                 throw new Error('invalid opcode');
                             }
                         }
+
+                        return transaction;
                     };
 
                     it('should throw an error, if called directly', async () => {
@@ -578,7 +584,7 @@ contract('MultiSigWallet', (accounts) => {
                 });
 
                 describe('changeRequirement', async () => {
-                    let changeRequirement = async (requirement, from) => {
+                    const changeRequirement = async (requirement, from) => {
                         let params = [requirement];
                         let encoded = coder.encodeFunctionCall(MULTISIGWALLET_ABI.changeRequirement, params);
 
@@ -602,6 +608,8 @@ contract('MultiSigWallet', (accounts) => {
                                 throw new Error('invalid opcode');
                             }
                         }
+
+                        return transaction;
                     };
 
                     it('should throw an error, if called directly', async () => {
