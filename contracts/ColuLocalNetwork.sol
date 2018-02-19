@@ -18,7 +18,7 @@ contract ColuLocalNetwork is Ownable, Standard677Token, TokenHolder {
 
     // States whether token transfers is allowed or not.
     // Used during token sale.
-    bool public isTransferable = false;
+    bool public isTransferable = true;
 
     event TokensTransferable();
 

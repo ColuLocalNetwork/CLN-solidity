@@ -57,7 +57,7 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
     uint256 public constant CLN_PER_ETH = 8600;
 
     // Sale start, end blocks (time ranges)
-    uint256 public constant SALE_DURATION = 4 days;
+    uint256 public constant SALE_DURATION = 10 years;
     uint256 public startTime;
     uint256 public endTime;
 
@@ -193,10 +193,10 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
 
         // allocate pool tokens:
         // Issue the remaining tokens to designated pools.
-        require(transferTokens(communityPoolAddress, COMMUNITY_POOL));
+        // require(transferTokens(communityPoolAddress, COMMUNITY_POOL));
 
         // stakeholdersPoolAddress will create its own vesting trusts.
-        require(transferTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL));
+        // require(transferTokens(stakeholdersPoolAddress, STAKEHOLDERS_POOL));
     }
 
     /// @dev Allocate tokens to presale participant according to its vesting plan and invesment value.
@@ -254,14 +254,14 @@ contract ColuLocalNetworkSale is Ownable, TokenHolder {
 
         // Enforce participation cap (in WEI received).
         uint256 weiAlreadyParticipated = participationHistory[_recipient];
-        uint256 participationCap = SafeMath.min256(participationCaps[_recipient], hardParticipationCap);
-        uint256 cappedWeiReceived = SafeMath.min256(msg.value, participationCap.sub(weiAlreadyParticipated));
-        require(cappedWeiReceived > 0);
+        // uint256 participationCap = SafeMath.min256(participationCaps[_recipient], hardParticipationCap);
+        // uint256 cappedWeiReceived = SafeMath.min256(msg.value, participationCap.sub(weiAlreadyParticipated));
+        // require(cappedWeiReceived > 0);
 
         // Accept funds and transfer to funding recipient.
         uint256 tokensLeftInSale = MAX_TOKENS_SOLD.sub(tokensSold);
         uint256 weiLeftInSale = tokensLeftInSale.div(CLN_PER_ETH);
-        uint256 weiToParticipate = SafeMath.min256(cappedWeiReceived, weiLeftInSale);
+        uint256 weiToParticipate = SafeMath.min256(msg.value, weiLeftInSale);
         participationHistory[_recipient] = weiAlreadyParticipated.add(weiToParticipate);
         fundingRecipient.transfer(weiToParticipate);
 
