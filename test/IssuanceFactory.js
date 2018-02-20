@@ -1144,13 +1144,6 @@ contract('IssuanceFactory', (accounts) => {
                         assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
                     }
                 });
-
-
-                it.only('estimating gas', async () => {
-                    const data = factory.getIssuanceIds.getData(true, false, false, false, 0, 10);
-                    console.log(data)
-                    assert(false)
-                })
             })
         });
 

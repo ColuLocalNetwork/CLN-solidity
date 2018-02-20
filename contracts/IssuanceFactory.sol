@@ -373,7 +373,7 @@ contract IssuanceFactory is CurrencyFactory {
   }
 
   /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied.
-  /// @dev _from and _to parameters are intended from pagination
+  /// @dev _offset and _limit parameters are intended for pagination
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
   /// @param _pending include pending currency issuances.
   /// @param _started include started currency issuances.
@@ -381,7 +381,7 @@ contract IssuanceFactory is CurrencyFactory {
   /// @param _failed include failed and ended currency issuances.
   /// @param _offset index start position of issuance ids array.
   /// @param _limit maximum number of issuance ids to return.
-  /// @return Returns array of issuance ids.
+  /// @return Returns array of token adresses for issuance.
   function getIssuanceIds(bool _pending, bool _started, bool _successful, bool _failed, uint _offset, uint _limit)
     public
     view
