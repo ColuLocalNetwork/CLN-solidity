@@ -87,7 +87,12 @@ contract('CurrencyFactory', (accounts) => {
     });
 
     describe('Construction.', async () => {
-        it('should not construct with no address to CLN contract', async () => {
+
+        it('should not construct without market making lib address', async () => {
+            await expectRevert(CurrencyFactory.new(null, cln.address,  {from: owner} ));
+        });
+
+        it('should not construct without address to CLN contract', async () => {
             await expectRevert(CurrencyFactory.new(mmLib.address, null,  {from: owner} ));
         });
 

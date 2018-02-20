@@ -4,10 +4,11 @@
   "description": "",
   "main": "truffle.js",
   "scripts": {
-    "ganache_cli": "scripts/ganache_cli.sh",
+    "start": "scripts/ganache_cli.sh",
     "test": "scripts/test.sh",
     "coverage": "scripts/coverage.sh",
-    "console": "scripts/console.sh"
+    "console": "scripts/console.sh",
+    "clean": "rm -rf build"
   },
   "directories": {
     "test": "test"

@@ -33,7 +33,7 @@ contract IEllipseMarketMaker is MarketMaker {
 
     function calcReserve(uint256 _R1, uint256 _S1, uint256 _S2) public pure returns (uint256);
 
-    function validateReserves() public constant returns (bool);
+    function validateReserves() public view returns (bool);
 
     function withdrawExcessReserves() public returns (uint256);
 

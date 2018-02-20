@@ -46,6 +46,9 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev The Market Maker constructor
+  /// @param _mmLib address address of the market making lib contract
+  /// @param _token1 address contract of the first token for marker making (CLN)
+  /// @param _token2 address contract of the second token for marker making (CC)
   function constructor(address _mmLib, address _token1, address _token2) public onlyOwner notConstructed returns (bool) {
     require(_mmLib != address(0));
     require(_token1 != address(0));
@@ -78,7 +81,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev returns true iff token is supperted by this contract (for erc223/677 tokens calls)
-  /// @param _token can be token1 or token2
+  /// @param _token address adress of the contract to check
   function supportsToken(address _token) public constant returns (bool) {
       return (token1 == _token || token2 == _token);
   }
@@ -112,6 +115,11 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev the price of token1 in terms of token2, represented in 18 decimals.
+  /// price = (S1 - R1) / (S2 - R2) * (S2 / S1)^2
+  /// @param _R1 uint256 reserve of the first token
+  /// @param _R2 uint256 reserve of the second token
+  /// @param _S1 uint256 total supply of the first token
+  /// @param _S2 uint256 total supply of the second token
   function getPrice(uint256 _R1, uint256 _R2, uint256 _S1, uint256 _S2) public constant returns (uint256 price) {
     price = PRECISION;
     price = price.mul(_S1.sub(_R1));
@@ -126,7 +134,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   /// @param _fromToken the token to sell from
   /// @param _inAmount the amount to sell
   /// @param _toToken the token to buy
-  /// @return the return amount of the buying token 
+  /// @return the return amount of the buying token
   function quoteAndReserves(address _fromToken, uint256 _inAmount, address _toToken) private isOperational returns (uint256 returnAmount) {
     // if buying token2 from token1
     if (token1 == _fromToken && token2 == _toToken) {
@@ -139,7 +147,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
       }
       // the returnAmount is the other reserve difference
       returnAmount = R2.sub(l_R2);
-    } 
+    }
     // if buying token1 from token2
     else if (token2 == _fromToken && token1 == _toToken) {
       // add buying amount to the temp reserve
@@ -193,6 +201,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
   }
 
   /// @dev calculate second reserve from the first reserve and the supllies.
+  /// @dev formula: R2 = S2 * (S1 - sqrt(R1 * S1 * 2  - R1 ^ 2)) / S1
   /// @dev the equation is simetric, so by replacing _S1 and _S2 and _R1 with _R2 we can calculate the first reserve from the second reserve
   /// @param _R1 the first reserve
   /// @param _S1 the first total supply
@@ -208,7 +217,7 @@ contract EllipseMarketMakerLib is TokenOwnable, IEllipseMarketMaker {
           .mul(2)
           .sub(
             _R1
-            .toPower2()  
+            .toPower2()
           )
           .sqrt()
         )
