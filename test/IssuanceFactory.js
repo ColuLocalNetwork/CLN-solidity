@@ -113,10 +113,6 @@ contract('IssuanceFactory', (accounts) => {
             await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
-        it('should not be able to create with zero decimals', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 0, CC_MAX_TOKENS, {from: owner}));
-        });
-
         it('should not be able to create with zero supply', async () => {
             await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: owner}));
         });
@@ -327,26 +323,27 @@ contract('IssuanceFactory', (accounts) => {
 
 
             context('When sale is closed', async () => {
+
+                beforeEach(async () => {
+                    await time.increaseTime(SALE_ENDED_TIME);
+                })
+
                 it('should not be able to participate as owner', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     await cln.approve(factory.address, THOUSAND_CLN, {from: owner});
                     await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}));
                 });
 
                 it('should not be able to participate as not owner', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
                     await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant}));
                 });
 
                 it('should not be able to participate as owner through contract', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     const participateMessage = encodeParticipateMessage(tokenAddress);
                     await expectRevert(cln.transferAndCall(factory.address, THOUSAND_CLN, participateMessage, {from: owner}));
                 });
 
                 it('should not be able to participate as not owner through contract', async () => {
-                    await time.increaseTime(SALE_DURATION_TIME + 100);
                     const participateMessage = encodeParticipateMessage(tokenAddress);
                     await expectRevert(cln.transferAndCall(factory.address, THOUSAND_CLN, participateMessage, {from: participant}));
                 });
@@ -490,6 +487,29 @@ contract('IssuanceFactory', (accounts) => {
                     await expectRevert(factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant}))
                 });
 
+                it('should not be able to refund if refund ammount is zero', async () => {
+                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
+                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
+                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
+
+                    await time.increaseTime(SALE_ENDED_TIME);
+
+                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+                });
+
+                it('should not be able to refund if refund ammount is zero (transferAndCall)', async () => {
+                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
+                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
+                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
+
+                    await time.increaseTime(SALE_ENDED_TIME);
+
+                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+
+                    changeData = encodeRefundMessage();
+                    await expectRevert(cc.transferAndCall(factory.address, 0, changeData, {from: participant}));
+                });
+
                 it('should be able to refund without approve', async () => {
                     const clnBalance = await cln.balanceOf(participant)
                     await cln.approve(factory.address, THOUSAND_CLN / 4, {from: participant})
@@ -600,16 +620,6 @@ contract('IssuanceFactory', (accounts) => {
                         `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
                 });
 
-                it('should not be able to refund if refund ammount is zero', async () => {
-                    await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
-                    assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
-                    assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
-
-                    await time.increaseTime(SALE_ENDED_TIME);
-
-                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
-                });
-
                 it('should not be able to refund if refund more than entered', async () => {
                     await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
                     assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
@@ -662,7 +672,7 @@ contract('IssuanceFactory', (accounts) => {
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
 
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await factory.finalize(tokenAddress, {from: owner});
 
                 const ownerBalance = await cc.balanceOf(owner);
@@ -742,7 +752,7 @@ contract('IssuanceFactory', (accounts) => {
                 await cln.approve(factory.address, THOUSAND_CLN / 2, {from: participant});
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: participant});
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -771,7 +781,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, false, false, true);
                 assert(count.eq(0), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -791,7 +801,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, true, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME + 10);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
@@ -842,7 +852,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(false, true, true, false);
                 assert(count.eq(2), count.toNumber().toString());
 
-                await time.increaseTime(SALE_DURATION_TIME);
+                await time.increaseTime(SALE_ENDED_TIME);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, false, true, false);
