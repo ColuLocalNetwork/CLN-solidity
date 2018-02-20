@@ -247,7 +247,7 @@ contract('ColuLocalNetworkSale', (accounts) => {
         now = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
     });
 
-    describe('construction', async () => {
+    describe('construction', () => {
         it('should not allow to initialize with null owner address', async () => {
             await expectRevert(ColuLocalNetworkSaleMock.new(null, fundingRecipient, communityPoolAddress, futureDevelopmentPoolAddress, stakeholdersPoolAddress, now + 100));
         });
