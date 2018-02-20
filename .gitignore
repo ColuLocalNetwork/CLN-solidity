@@ -11,3 +11,5 @@ formattedGrants*.csv
 formattedPresales*.csv
 
 .node-xmlhttprequest-*
+
+.DS_Store
