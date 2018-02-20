@@ -352,10 +352,10 @@ contract IssuanceFactory is CurrencyFactory {
 
   /// @dev Returns total number of issuances after filters are applied.
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
-  /// @param _pending Include pending currency issuances.
-  /// @param _started Include started currency issuances.
-  /// @param _successful Include successful and ended currency issuances.
-  /// @param _failed Include failed and ended currency issuances.
+  /// @param _pending include pending currency issuances.
+  /// @param _started include started currency issuances.
+  /// @param _successful include successful and ended currency issuances.
+  /// @param _failed include failed and ended currency issuances.
   /// @return Total number of currency issuances after filters are applied.
   function getIssuanceCount(bool _pending, bool _started, bool _successful, bool _failed)
     public
@@ -374,37 +374,50 @@ contract IssuanceFactory is CurrencyFactory {
   }
 
   /// @dev Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied.
+  /// @dev _offset and _limit parameters are intended for pagination
   /// @dev this function is gas wasteful so do not call this from a state changing transaction
-  /// @param _from Index start position of issuance ids array.
-  /// @param _to Index end position of issuance ids array.
-  /// @param _pending Include _pending issuances.
-  /// @param _started Include _started issuances.
-  /// @param _successful Include _successful issuances.
-  /// @param _failed Include _failed issuances..
-  /// @return Returns array of issuance ids.
-  function getIssuanceIds(uint _from, uint _to, bool _pending, bool _started, bool _successful, bool _failed)
+  /// @param _pending include pending currency issuances.
+  /// @param _started include started currency issuances.
+  /// @param _successful include successful and ended currency issuances.
+  /// @param _failed include failed and ended currency issuances.
+  /// @param _offset index start position of issuance ids array.
+  /// @param _limit maximum number of issuance ids to return.
+  /// @return Returns array of token adresses for issuance.
+  function getIssuanceIds(bool _pending, bool _started, bool _successful, bool _failed, uint _offset, uint _limit)
     public
-    constant
+    view
     returns (address[] _issuanceIds)
   {
-    uint[] memory issuanceIdsTemp = new uint[](tokens.length);
-    uint count = 0;
-    uint i;
-    for (i = 0; i < tokens.length; i++) {
+	require(_limit >= 1);
+	require(_limit <= 100);
+    _issuanceIds = new address[](_limit);
+    uint filteredIssuancesCount = 0;
+	uint retrieveIssuancesCount = 0;
+    for (uint i = 0; i < tokens.length; i++) {
       IssuanceStruct memory issuance = issueMap[tokens[i]];
-      if ((_pending && issuance.startTime < now)
-        || (_started && issuance.startTime >= now && issuance.endTime <= now && issuance.clnRaised < issuance.hardcap)
-        || (_successful && issuance.endTime > now && issuance.clnRaised >= issuance.reserve)
-        || (_successful && issuance.endTime <= now && issuance.clnRaised == issuance.hardcap)
-        || (_failed && issuance.endTime > now && issuance.clnRaised < issuance.reserve))
+      if ((_pending && issuance.startTime > now)
+        || (_started && now >= issuance.startTime && issuance.endTime >= now && issuance.clnRaised < issuance.hardcap)
+        || (_successful && issuance.endTime < now && issuance.clnRaised >= issuance.reserve)
+        || (_successful && issuance.endTime >= now && issuance.clnRaised == issuance.hardcap)
+        || (_failed && issuance.endTime < now && issuance.clnRaised < issuance.reserve))
       {
-        issuanceIdsTemp[count] = i;
-        count += 1;
+		if (filteredIssuancesCount >= _offset) {
+			_issuanceIds[retrieveIssuancesCount] = tokens[i];
+			retrieveIssuancesCount += 1;
+		}
+		if (retrieveIssuancesCount == _limit) {
+			return _issuanceIds;
+		}
+        filteredIssuancesCount += 1;
       }
     }
-    _issuanceIds = new address[](_to - _from);
-    for (i=_from; i<_to; i++) {
-      _issuanceIds[i - _from] = tokens[issuanceIdsTemp[i]];
+
+	if (retrieveIssuancesCount < _limit) {
+		address[] memory _issuanceIdsTemp = new address[](retrieveIssuancesCount);
+		for (i = 0; i < retrieveIssuancesCount; i++) {
+			_issuanceIdsTemp[i] = _issuanceIds[i];
+		}
+		return _issuanceIdsTemp;
 	}
   }
 

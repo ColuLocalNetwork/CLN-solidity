@@ -21,6 +21,7 @@ const CC_MAX_TOKENS = 15 * 10 ** 6 * TOKEN_DECIMALS;
 
 const SALE_DURATION_TIME = 1000000;
 const SALE_ENDED_TIME = SALE_DURATION_TIME * 2;
+const SALE_TIME_TILL_START = 100;
 
 const PARTICIPATE_ABI = {
     name: 'participate',
@@ -106,36 +107,36 @@ contract('IssuanceFactory', (accounts) => {
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, {from: owner}));
         });
 
         it('should not be able to create with too small reserve', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should not be able to create with start time in past', async () => {
-            await expectRevert(factory.createIssuance(Date.now() - 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should not be able to create with hardcap zero', async () => {
-            await expectRevert(factory.createIssuance(Date.now() - 100, SALE_DURATION_TIME, 0, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, 0, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should not be able to create with duration zero', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + 100, 0, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, 0, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
         });
 
         it('should be able to create with correct parameters', async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            let result = await factory.createIssuance(now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
+            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -149,9 +150,9 @@ contract('IssuanceFactory', (accounts) => {
             // reserve
             assert(issuanceStruct[1].eq(THOUSAND_CLN / 2))
             // start time
-            assert(issuanceStruct[2].eq(now + 10))
+            assert(issuanceStruct[2].eq(now + SALE_TIME_TILL_START))
             // end time
-            assert(issuanceStruct[3].eq(now + 10 + SALE_DURATION_TIME))
+            assert(issuanceStruct[3].eq(now + SALE_TIME_TILL_START + SALE_DURATION_TIME))
             // target price (real target price is price / precision)
             assert.equal(issuanceStruct[4].toNumber(), 12247445652053500000)
             // CLN raised
@@ -168,14 +169,14 @@ contract('IssuanceFactory', (accounts) => {
             let clnAddress = await factory.clnAddress();
 
             tokenAddress = (await factory.createIssuance(
-                now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner})).logs[0].args.token;
 
             cc = await ColuLocalCurrency.at(tokenAddress);
         });
 
         it('should create currency in a correct way', async () => {
-            let result = await factory.createIssuance(now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
+            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -185,12 +186,12 @@ contract('IssuanceFactory', (accounts) => {
 
         describe('Participate in the CC issuance.', async () => {
             it('should not be able to participate with 0 CLN', async () => {
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await expectRevert(factory.participate(tokenAddress, 0, {from: participant}));
             });
 
             it('should not be able to participate with bad contract address (transferAndCall)', async () => {
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 const participateMessage = encodeParticipateMessage(mmLib.address);
                 await expectRevert(cln.transferAndCall(factory.address, THOUSAND_CLN, participateMessage, {from: participant}));
                 assert.equal((await cc.balanceOf(participant)).toNumber(), 0);
@@ -223,7 +224,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 beforeEach(async () => {
                     // open the sale
-                    await time.increaseTime(10);
+                    await time.increaseTime(SALE_TIME_TILL_START);
                 });
 
                 it('should not be able to participate with bad token address', async () => {
@@ -358,7 +359,7 @@ contract('IssuanceFactory', (accounts) => {
                 });
 
                 it('should not be able to finalize if sale not ended (approve, transfer)', async () => {
-                    await time.increaseTime(10);
+                    await time.increaseTime(SALE_TIME_TILL_START);
 
                     // reaching the hardcap
                     await cln.approve(factory.address, THOUSAND_CLN, {from: owner});
@@ -372,7 +373,7 @@ contract('IssuanceFactory', (accounts) => {
             context('When sale ended.', () => {
                 beforeEach(async () => {
                     // open the sale
-                    await time.increaseTime(10);
+                    await time.increaseTime(SALE_TIME_TILL_START);
                 });
 
                 it('should not be able to finalize if softcap not reached (approve, transfer)', async () => {
@@ -460,7 +461,7 @@ contract('IssuanceFactory', (accounts) => {
                 });
 
                 it('should not be able to refund (approve, transfer)', async () => {
-                    await time.increaseTime(10);
+                    await time.increaseTime(SALE_TIME_TILL_START);
                     await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
 
                     // softcap not reached
@@ -475,7 +476,7 @@ contract('IssuanceFactory', (accounts) => {
             context('When sale ended.', () => {
                 beforeEach(async () => {
                     // open the sale
-                    await time.increaseTime(10);
+                    await time.increaseTime(SALE_TIME_TILL_START);
                 });
 
                 it('should not be able to refund if not under softcap (approve, transfer)', async () => {
@@ -654,7 +655,7 @@ contract('IssuanceFactory', (accounts) => {
             });
 
             it('should revert if sale is open', async () => {
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
                 const ccFactoryBalance = await cc.balanceOf(factory.address);
@@ -667,7 +668,7 @@ contract('IssuanceFactory', (accounts) => {
             });
 
             it('should transfer CC back to owner if sale closed', async () => {
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
                 await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
 
@@ -692,13 +693,13 @@ contract('IssuanceFactory', (accounts) => {
                 const ownerInnitialClnBalance = await cln.balanceOf(owner);
                 const owner2 = accounts[3]
                 tokenAddress2 = (await factory.createIssuance(
-                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner2})).logs[0].args.token;
                 const cc2 = await ColuLocalCurrency.at(tokenAddress2);
 
                 const clnBalanceParticipant = await cln.balanceOf(participant)
                 const clnBalanceParticipant2 = await cln.balanceOf(participant2)
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
 
                 await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
                 assert(await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant}));
@@ -727,7 +728,7 @@ contract('IssuanceFactory', (accounts) => {
             });
         })
 
-        describe('getIssuance.', async () => {
+        describe('getIssuanceCount.', () => {
             it('should return zero if no currencies have been issuenced', async () => {
                 const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
                 const count = await emptyFactory.getIssuanceCount(true, true, true, true);
@@ -739,11 +740,11 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale was successful', async () => {
+            it('should return correct number of issuances if sale was successful', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, true, false, false);
@@ -762,11 +763,11 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale was successful (reached hardcap before end)', async () => {
+            it('should return correct number of issuances if sale was successful (reached hardcap before end)', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, true, false, false);
@@ -791,11 +792,11 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(0), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences if sale failed', async () => {
+            it('should return correct number of issuances if sale failed', async () => {
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
 
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, true, false, false);
@@ -811,15 +812,15 @@ contract('IssuanceFactory', (accounts) => {
                 assert(count.eq(1), count.toNumber().toString());
             });
 
-            it('should return correct number of issuences when running two issuances simultaneously', async () => {
+            it('should return correct number of issuances when running two issuances simultaneously', async () => {
                 await factory.createIssuance(
-                    now + 100, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    now + 2 * SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner});
 
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(2), count.toNumber().toString());
 
-                await time.increaseTime(10);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(false, true, false, false);
@@ -831,7 +832,7 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(true, true, false, false);
                 assert(count.eq(2), count.toNumber().toString());
 
-                await time.increaseTime(100);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 count = await factory.getIssuanceCount(true, false, false, false);
@@ -867,19 +868,19 @@ contract('IssuanceFactory', (accounts) => {
                 now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
 
                 await factory.createIssuance(
-                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name3', 'SON3', 18, CC_MAX_TOKENS, {from: owner});
 
                 count = await factory.getIssuanceCount(true, false, true, true);
                 assert(count.eq(3), count.toNumber().toString());
 
-                await time.increaseTime(100);
+                await time.increaseTime(SALE_TIME_TILL_START);
                 await time.mine();
 
                 now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
 
                 await factory.createIssuance(
-                    now + 10, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
                     'Some Name4', 'SON4', 18, CC_MAX_TOKENS, {from: owner});
 
                 count = await factory.getIssuanceCount(true, false, false, false);
@@ -891,6 +892,270 @@ contract('IssuanceFactory', (accounts) => {
                 count = await factory.getIssuanceCount(true, true, true, true);
                 assert(count.eq(4), count.toNumber().toString());
             });
+        });
+
+        describe('getIssuanceIds.', () => {
+
+            it('should revert if limit is zero', async () => {
+                await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
+            });
+
+            it('should revert is limit is greater than max page size', async () => {
+                await expectRevert(factory.getIssuanceIds(true, false, false, false, 0, 1001));
+            });
+
+            it('should return empty array if no currencies have been issuenced', async () => {
+                const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address,  {from: owner} );
+                const issuanceIds = await emptyFactory.getIssuanceIds(true, true, true, true, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+            });
+
+            it('should return empty array if all parameters false', async () => {
+                const issuanceIds = await factory.getIssuanceIds(false, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+            });
+
+
+            it('should return correct issuances if limit is greater than number of results', async () => {
+                const issuanceIds = await factory.getIssuanceIds(true, true, true, true, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+            });
+
+            it('should return zero issuances if offset is greater than number of issuances', async () => {
+                const issuanceIds = await factory.getIssuanceIds(true, true, true, true, 10, 10);
+                assert.equal(issuanceIds.length, 0);
+            });
+
+            it('should return correct issuances if sale was successful', async () => {
+                let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await cln.approve(factory.address, THOUSAND_CLN / 2, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 2, {from: participant});
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, false, true, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+            });
+
+            it('should return correct number of issuances if sale was successful (reached hardcap before end)', async () => {
+                let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, false, true, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, false, true, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+            });
+
+            it('should return correct number of issuances if sale failed', async () => {
+                let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                await time.increaseTime(SALE_DURATION_TIME + 10);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, false, true, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+            });
+
+            it('should return correct number of issuances when running two issuances simultaneously', async () => {
+                await factory.createIssuance(
+                    now + 2 * SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, {from: owner});
+
+                let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 2);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(true, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 2);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 0);
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 2);
+
+                await cln.approve(factory.address, THOUSAND_CLN, {from: participant});
+                await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: participant});
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, true, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 2);
+
+                await time.increaseTime(SALE_DURATION_TIME);
+                await time.mine();
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, false, true, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, false, true, true, 0, 10);
+                assert.equal(issuanceIds.length, 2);
+
+                now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
+
+                await factory.createIssuance(
+                    now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, {from: owner});
+
+                issuanceIds = await factory.getIssuanceIds(true, false, true, true, 0, 10);
+                assert.equal(issuanceIds.length, 3);
+
+                await time.increaseTime(SALE_TIME_TILL_START);
+                await time.mine();
+
+                now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
+
+                await factory.createIssuance(
+                    now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, {from: owner});
+
+                issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(false, true, false, false, 0, 10);
+                assert.equal(issuanceIds.length, 1);
+
+                issuanceIds = await factory.getIssuanceIds(true, true, true, true, 0, 10);
+                assert.equal(issuanceIds.length, 4);
+            });
+
+            context('Pagination.', () => {
+                let tokenAddressArray
+
+                beforeEach(async () => {
+                    tokenAddressArray = [tokenAddress];
+                    for (let i = 0; i < 19; i++) {
+                        const tokenAddressTmp = (await factory.createIssuance(
+                            now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
+                            `Some Name ${i}`, `SON${i}`, 18, CC_MAX_TOKENS, {from: owner})).logs[0].args.token;
+                        tokenAddressArray.push(tokenAddressTmp)
+                    }
+                    assert.equal(tokenAddressArray.length, 20);
+                });
+
+                it('should return correct issuances when number of issuances greater than limit', async () => {
+                    let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
+                    assert.equal(issuanceIds.length, 10);
+
+                    for (let i = 0; i < 10; i++) {
+                        assert.equal(tokenAddressArray[i], issuanceIds[i])
+                    }
+                });
+
+                it('should return correct issuances when offset is greater than zero', async () => {
+                    let offset = 2
+                    let limit = 5
+                    let issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
+                    assert.equal(issuanceIds.length, 5);
+
+                    for (let i = 0; i < limit; i++) {
+                        assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
+                    }
+
+                    offset = 10
+                    limit = 10
+                    issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
+                    assert.equal(issuanceIds.length, 10);
+
+                    for (let i = 0; i < limit; i++) {
+                        assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
+                    }
+
+                    offset = 0
+                    limit = 1
+                    issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
+                    assert.equal(issuanceIds.length, 1);
+
+                    for (let i = 0; i < limit; i++) {
+                        assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
+                    }
+                });
+
+                it('should paginate through all issuances', async () => {
+
+                    // checking 3 full pages
+                    for (let j = 0; j < 3; j++) {
+                        let limit = 6
+                        let offset = j * limit
+
+                        let issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
+                        assert.equal(issuanceIds.length, limit)
+                        for (let i = 0; i < limit; i++) {
+                            assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
+                        }
+                    }
+
+                    // checking the last page
+                    let limit = 6
+                    let offset = 3 * limit
+
+                    let issuanceIds = await factory.getIssuanceIds(true, false, false, false, offset, limit);
+                    assert.equal(issuanceIds.length, 2)
+                    for (let i = 0; i < 2; i++) {
+                        assert.equal(tokenAddressArray[offset + i], issuanceIds[i])
+                    }
+                });
+            })
         });
 
         describe('CurrencyFactory disabled methods.', async () => {
