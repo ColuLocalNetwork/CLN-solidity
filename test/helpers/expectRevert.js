@@ -26,10 +26,10 @@ module.exports = async (promise) => {
        if ((err.message.indexOf("VM Exception while processing transaction: revert") === -1) &&
             err.message.indexOf("The contract code couldn't be stored, please check your gas amount")) {
 
-        if (err.message.indexOf("invalid opcode") !== -1) {
-            return assert(true);
-        }
-         throw err;
+            if (err.message.indexOf("invalid opcode") !== -1 || err.message.indexOf("Invalid JSON RPC response") !== -1) {
+                return assert(true);
+            }
+            throw err;
        }
 
 
