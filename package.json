@@ -32,6 +32,7 @@
     "ethereumjs-abi": "^0.6.4",
     "ganache-cli": "^7.0.0-beta.0",
     "solc": "0.4.18",
+    "solmd": "git+https://github.com/cag/solmd.git",
     "truffle": "git+https://github.com/colucom/truffle.git",
     "web3": "^1.0.0-beta.22",
     "yargs": "^9.0.1",
