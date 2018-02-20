@@ -1,35 +1,16 @@
 var config = require(__dirname + '/config')
 var fs = require('fs')
 var async = require('async')
+var argv = require('yargs').argv
 
-// order matters
-var contracts = [
-	'Ownable.sol',
-	'SafeMath.sol',
-	'ERC20.sol',
-	'ERC677.sol',
-	'ERC223Receiver.sol',
-	'BasicToken.sol',
-	'Standard677Token.sol',
-	'TokenHolder.sol',
-	'ColuLocalNetwork.sol',
-	'Standard223Receiver.sol',
-	'TokenOwnable.sol',
-	'VestingTrustee.sol',
-	'ColuLocalNetworkSale.sol'
-]
+var _contracts = argv.contracts && argv.contracts.split(',') || []
 
 var now = +new Date()
 var solidityVersion = config.get('solidity').replace('pragma solidity ', '').replace(';', '')
 var compilerVersion = config.get('compilerVersion')
-var filePath = __dirname + '/output/Unified_' + solidityVersion + '_' + compilerVersion + '_' + now + '.sol'
 
-unifyContracts(err => {
-	if(err) return console.error('err =', err)
-	console.log('unifyContracts done')
-})
-
-function unifyContracts(cb) {
+function unifyContracts(name, contracts, cb) {
+	var filePath = __dirname + '/output/Unified_' + name + '_' + solidityVersion + '_' + compilerVersion + '_' + now + '.sol'
 	async.waterfall([
 		function writeFileWithHeader (callback) {
 			// open file for writing, file is created (if it does not exist) or truncated (if it exists)

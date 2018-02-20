@@ -23,7 +23,22 @@ web3.eth.getBlockNumber(function(err, lastBlock) {
 
     startTime = args.startTime || (now + config.get('startTimeOffsetSeconds'))
 
-    unifyContracts.unify(function(err, filePath) {
+    var contracts = [
+      'Ownable.sol',
+      'SafeMath.sol',
+      'ERC20.sol',
+      'ERC677.sol',
+      'ERC223Receiver.sol',
+      'BasicToken.sol',
+      'Standard677Token.sol',
+      'TokenHolder.sol',
+      'ColuLocalNetwork.sol',
+      'Standard223Receiver.sol',
+      'TokenOwnable.sol',
+      'VestingTrustee.sol',
+      'ColuLocalNetworkSale.sol'
+    ]
+    unifyContracts.unify('ColuLocalNetworkSale', contracts, function(err, filePath) {
       if(err) return console.error('err =', err)
 
       console.log('unified contract created at path =', filePath)
