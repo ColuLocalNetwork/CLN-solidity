@@ -25,3 +25,16 @@ We encourage you first to use testnet untill a sufficient understanding of the C
 - CurrencyFactory: [0x21851f9970e333cbc253ba2c7ef953219c479ab7](https://etherscan.io/address/0x21851f9970e333cbc253ba2c7ef953219c479ab7)
 - IssuanceFactory: [0xe3444f1aac1a37b8cce47db260d1c6e25a2f627b](https://etherscan.io/address/0xe3444f1aac1a37b8cce47db260d1c6e25a2f627b)
 - EllipseMarketMakerLib: [0xc70636e0886eC4a4F2B7e42aC57ccD1B976352d0](https://etherscan.io/address/0xc70636e0886ec4a4f2b7e42ac57ccd1b976352d0)
+
+
+## Acquiring CLN
+
+For Mainnet, if you didn't get some tokens during the sale, you need to find someone to sell you some CLN. You can try [etherdelta](https://etherdelta.com/) or [forkdelta](https://forkdelta.github.io/), they are decentralize exchanges so we advice you to have a solid understanding of what thay are before usage. Also, I suppose you already done this tutorial at least once if you intent to use it on Mainnet :smile:. So for Mainnet you can skip to the next section.
+
+On Testnet ColuLocalNetworkSale contract implemented differently. The sale is open for 10 years, everyone can paricipate (no whitelisisting), and the tokens are immediately transfable. So let's get us some tCLN (test CLN)!
+
+We need do send some tETH to the ColuLocalNetworkSale contract address, we're basically repeating the crowdsale process. If you don't have tETH you can obtain it through this [faucet](http://faucet.ropsten.be:3001/).
+
+ So I open MyEtherWallet and send 1 tETH to `0x12321Fb3e2548b03eaD42F09cAb239cff377b4e2`, setting the gas limit to 120000 (the account balance should be more than 1 tETH cause the sender also pays for gas). Follow the transaction until it confirmed by the network.
+
+ Opening the the transaction in etherscan, I see that I actually got 8600 CLN for 1 Ether (This is the price defined by the sale contract). For example you can see my transaction is [here](https://ropsten.etherscan.io/tx/0x249aaa9bccd902cc329a6c220e562578d235f054803e61dc4622fe19acf6a564). If you don't remember your TxHash (transaction id), you can view the [sale contract](https://ropsten.etherscan.io/address/0xa973fa1cf412ac6a76c749aa6e1fca7251814a48#tokentxns). For convenience, I am also adding the tCLN token as custom token in MyEtherWallet so I'll see it in my Token Balances, read about it  [here](https://myetherwallet.github.io/knowledge-base/send/adding-new-token-and-sending-custom-tokens.html) (the Decimals field should be 18 if you wonder).
