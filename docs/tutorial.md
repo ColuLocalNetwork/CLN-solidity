@@ -74,10 +74,10 @@ This is my [transaction](https://ropsten.etherscan.io/tx/0x83e96a696110172da2cf7
 So what happened here?
 
 - `CurrencyFactory` created the CC. As the token creator the `CurrencyFactory` contract was made the owner of all the suply.
-- `CurrencyFactory` created the Market Maker, that's the unkown contract we saw! Market Maker is used to exchange CLN/CC. More about it latter.
-- `CurrencyFactory` moved all CC suply to the Market Maker. As an exchange provider it's reasonable that the MM will hold all the CC.
+- `CurrencyFactory` created the `MarketMaker`, that's the unkown contract we saw! `MarketMaker` is used to exchange CLN/CC. More about it latter.
+- `CurrencyFactory` moved all CC suply to the `MarketMaker`. As an exchange provider it's reasonable that the MM will hold all the CC.
 
-Nice, we created a currency but all of it is locked in some Market Maker. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the Market Maker he will not have a slicest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there is two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
+Nice, we created a currency but all of it is locked in some `MarketMaker`. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the `MarketMaker` he will not have a slicest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there is two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
 
 Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". This is a ERC20 mechanism.
 
@@ -88,16 +88,16 @@ Before calling this function I need to approve `CurrencyFactory` to use my CLN t
 Viewing the [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6) you may think some complex stuff happened there. Well, I'll try to sum it up.
 
 - `CurencyFactory` transfers the CLN to itself. He can do it cause I gave him an allowance for this before.
-- Then he transfers the tokens to Market Maker letting him do his mathematical magic. More techically speaking he approves `MM` to use `CLN`, and calls `MM`'s  `change` function.
+- Then he transfers the tokens to `MarketMaker` letting him do his mathematical magic. More techically speaking he approves `MM` to use `CLN`, and calls `MM`'s  `change` function.
 - In return the `CurencyFactory` receives `CC` tokens.
 - He sends the tokens back to the sender.
 
 As you see, `CurrencyFactory` It's really just an intermediary that calls `MarketMaker` and holds some data about issuances. The bottom line is I've got around 1,139 `CC` for 1000 `CLN`. Now I'll add my `CC` token to MyEtherWallet, so I can easily see my tokens. I encourage you to do this with your Community Currency also, just for fun as I say.
 
-You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for your home-baked Community Currency. By the way did you noticed that the CLN/CC exchange rate changes? This is because as you exchange more CLN for CC, your CC becomes more valuable and so It's price grows. That's how Market Maker works, we'll get into it in the second part of the tutorial.
+You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for your home-baked Community Currency. By the way did you noticed that the CLN/CC exchange rate changes? This is because as you exchange more CLN for CC, your CC becomes more valuable and so It's price grows. That's how `MarketMaker` works, we'll get into it in the second part of the tutorial.
 
 You call `extractCLNfromMarketMaker` to get your CLN back. If you exchange all you CC to CLN you'll get the innitial CLN ammount, no CLN lost.
 
-Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's Market Maker for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for a cheapest price. Other preparations might not be related to crypto at all.
+Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's `MarketMaker` for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for a cheapest price. Other preparations might not be related to crypto at all.
 
-When issuer is ready he releases the Community Currency to the world. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the [transaction](https://ropsten.etherscan.io/tx/0x5e86f8ab823098065f7e6c172e3b3f9baaea280c9125d56b6639b7b666d8fe18) is confirmed anyone can use the Market Maker contract, and the issuer has no advantage to other participants. We will learn more about Market Maker functions and internal mechanins in the second part of this tutorial.
+When issuer is ready he releases the Community Currency to the world. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the [transaction](https://ropsten.etherscan.io/tx/0x5e86f8ab823098065f7e6c172e3b3f9baaea280c9125d56b6639b7b666d8fe18) is confirmed anyone can use the `MarketMaker` contract, and the issuer has no advantage to other participants. We will learn more about `MarketMaker` functions and internal mechanins in the second part of this tutorial.
