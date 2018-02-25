@@ -20,4 +20,4 @@ IssuanceFactory provides a crowdfunding mechanism for creation of community curr
 
  ## [EllipseMarketMaker](reference/EllipseMarketMaker.md)
 
-EllipseMarketMaker is the core logic of CLN's market making. This is an autonomous market marker, providing instance liquidity for CC/CLN exchange.
+EllipseMarketMaker is the core logic of CLN's market making. This is an autonomous market marker, providing instance liquidity for CLN/CC exchange. For more information and mathematical formulas see the appendix of the [white papper](https://cln.network/pdf/cln_whitepaper.pdf).
