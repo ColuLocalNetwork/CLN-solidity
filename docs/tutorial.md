@@ -1,7 +1,7 @@
 
 # CLN Tutorial
 
-This tutorial will guide you through the issuance, interaction, and exchange of community coins (CC). To follow this tutorial you should have a basic understanding of Ethereum and blockhain technologies. You can start from the [Ethereum wiki](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) or this [awesome list](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) of links currated by the community. This [overview](overview.md) gives a high level explanation of the CLN conracts, and a [contract reference](reference) provides a self generated documentation similar to REST API docs.
+This tutorial will guide you through the issuance, interaction, and exchange of Community Currenies (CC). To follow this tutorial you should have a basic understanding of Ethereum and blockhain technologies. You can start from the [Ethereum wiki](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) or this [awesome list](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) of links currated by the community. This [overview](overview.md) gives a high level explanation of the CLN conracts, and a [contract reference](reference) provides a self generated documentation similar to REST API docs.
 
 From a practical side you will need an ERC20 compatible wallet to send and sign transactions. I will use [MyEtherWallet](https://www.myetherwallet.com/) because of his abillity to generate transactions from ABI. Also of course you will need ETH to pay for gas, and CLN to interact with contracts of Colu Local Network. You can learn more about the relation of CLN and Community Currenies (CC) from the [whitepapper](https://cln.network/pdf/cln_whitepaper.pdf).
 
@@ -45,21 +45,31 @@ We are basically repeating the crowdsale process, so we need do send some tETH t
 
  In MyEtherWallet I go to the "Contracts" tab, and fill the contracts address. Then I need to get contract's ABI ([WTF is ABI?](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)). All of Colu's contracts are verified on Etherscan, so they contain their ABI's in the "Contract Source" tab. I search `CurrencyFactory` address in Etherscan, and copy the ABI from there to paste it in MyEtherWallet "ABI / JSON Interface" field. Pressing "Access" I can select any of the contract's function and the fields to fill are generated accordingly. MyEtherWallet knows how to do this thanks to the provided ABI.
 
+ This is how it looks at Etherscan:
+
+ ![abi](assets/abi.png)
+
 You can go over contract's functionality in MyEtherWallet, or read the [reference](reference/CurrencyFactory.md) in our docs. The reference also also contains developers comments, and we will improve it as time goes by. But we're here to issuance out Community Currency, so let's proceed.
 
 The function to issue a currency is called, not surprisingly, `createCurrency`. You need to specify four parameters to call it: `name`, `symbol`, `decimals` and `totalSuply`. They all are part of the [ERC20](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) token standard. Yes, all community currencies issued by CLN contracts are ERC20-compliant (and [ERC667](https://github.com/ethereum/EIPs/issues/677) also). Generally, this means that they can be easily added and used by any ERC20 wallet.
 
-- I call my currency `LeonCoin`
-- Set the symbol accordingly to `LC`
-- Define decimals to 18 (this is the standard). This means that `LC` token will be devisible to 18 places after the dot.
-- Total suply defines how much `LC` tokens will be issued. Let's define it to 100 * 10 ^ 18 = 100000000000000000000. This means that 100 "full" `LC` coins will be created, every token devisible up to 18 places.
+- I call my currency `CommunityCurrency`
+- Set the symbol accordingly to `CC`
+- Define decimals to 18 (this is the standard). This means that `CC` token will be devisible to 18 places after the dot.
+- Total suply defines how much `CC` tokens will be issued. Let's define a total supply of one million tokens, 1e6 * 1e18 = 1000000000000000000000000. This means that one million "full" `CC` coins will be created, every token devisible up to 18 places.
+
+
+This is how it looks at MyEtherWallet:
+
+![mew](assets/mew.png)
 
 I click on "WRITE". You don't send ETH to any of CLN contracts, so I set the ammount to send to 0, and the Gas Limit to 200000. Checking again that I'm on the right network I click Yes.
 
-This is my [transaction](https://ropsten.etherscan.io/tx/0x5da028b5036da68bad1debe7db94c2c492c87a0f6da1422d58450c578ca692f1). Looking closely into it you can see that:
+This is my [transaction](https://ropsten.etherscan.io/tx/0x83e96a696110172da2cf7d0afa11bd7415f6737dbbd51d3055ac609cfe12b206). Looking closely into it you can see that:
 
 - The transaction sent from my account ([0x0d4df041db](https://ropsten.etherscan.io/address/0x0d4df041dbef6ffc0e444a4a213774adb0c118c2)) to the `CurrencyFactory`.
-- The internal invoked contract is the new community currency. It says that 100 `LC` (the total suply) got transfered from `CurrencyFactory` to some [unknown contract](https://ropsten.etherscan.io/token/0x65d7070db3ffe6dbd7e53d5469b1b48fa33c6af7?a=0xf78703215ed962647478339fd54f785e1c95259a).
+- The internal invoked contract is the new Community Currency. It says that 1000000 `CC` (the total suply) got transfered from `CurrencyFactory` to some [unknown contract](https://ropsten.etherscan.io/address/0xb3f9a85d00fcb75be507da5efc0b91ed221e9bb9).
+- My Community Currency contract address is [0x8611c307F3b88040Aa4E73E8e2c5DB303ca81701](https://ropsten.etherscan.io/address/0x8611c307f3b88040aa4e73e8e2c5db303ca81701), save address of your Community Currency cause we're going to use it soon.
 
 So what happened here?
 
@@ -71,23 +81,23 @@ Nice, we created a currency but all of it is locked in some Market Maker. We sho
 
 Before calling this function I need to approve Currency Factory to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". This is a ERC20 mechanism.
 
- Remeber how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. After uploading the ABI I'll call approve function with 1000 * 10 ^ 18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. I checked everything is correct and click send.
+ Remeber how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. After uploading the ABI I'll call approve function with 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. I check everything is correct and click send. Easy, the only thing to know about approve, that if you already approved some amount and you want to change it, you need first to set allowance  to zero and then send approve again with the new value ([more info](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve )).
 
- After the approve transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we talk latter about the second one. In the token field I paste the `LeonCoin`'s address, and put the same 1000 * 10 ^ 18 for the ammount field.
+ After the approve transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the ammount field.
 
-Viewing the [transaction](https://ropsten.etherscan.io/tx/0xaadef80fdbb2dc223a0c780e2d4444b0a8ec9642a1496970653f681bfa73c966) you may think some complex stuff happened there. Well, I'll try to sum it up.
+Viewing the [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6) you may think some complex stuff happened there. Well, I'll try to sum it up.
 
 - `CurencyFactory` transfers the CLN to itself. He can do it cause I gave him an allowance for this before.
 - Then he transfers the tokens to Marker Maker letting him do his mathematical magic. More techically speaking he approves `MM` to use `CLN`, and calls `MM`'s  `change` function.
-- In return the `CurencyFactory` receives `LC` tokens.
+- In return the `CurencyFactory` receives `CC` tokens.
 - He sends the tokens back to the sender.
 
-As you see, `Currency Factory` It's really just an intermediary that calls `Marker Maker` and holds some data about issuances. Now I'll add my `LC` token to MyEtherWallet, so I can easily see my tokens. I encourage you to do this with your Community Currency also, just for fun as I say.
+As you see, `Currency Factory` It's really just an intermediary that calls `Marker Maker` and holds some data about issuances. The bottom line is I've got around 1,139 `CC` for 1000 `CLN`. Now I'll add my `CC` token to MyEtherWallet, so I can easily see my tokens. I encourage you to do this with your Community Currency also, just for fun as I say.
 
-You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for your home-baked Community Currency. By the way did you noticed that the CLN/CC exchange rate changes? This is because as you change more CLN to CC, your CC becomes more valuable and so It's price grows. That's how Market Maker works, we'll get into it in the second part of the tutorial.
+You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for your home-baked Community Currency. By the way did you noticed that the CLN/CC exchange rate changes? This is because as you exchange more CLN for CC, your CC becomes more valuable and so It's price grows. That's how Market Maker works, we'll get into it in the second part of the tutorial.
 
-You call `extractCLNfromMarketMaker` to get your CLN back. If you exhcange all you CC to CLN you'll get the innitial CLN ammount, no CLN lost.
+You call `extractCLNfromMarketMaker` to get your CLN back. If you exchange all you CC to CLN you'll get the innitial CLN ammount, no CLN lost.
 
-Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's Market Maker for public usage. Why this is done? So the issuer will have sufficient time for various prepations to make the new currency usable, like inserting enough CLN or even do something not related to crypto.. Then when he's ready he releases the new currency to the world.
+Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's Market Maker for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for a cheapest price. Other preparations might not be related to crypto at all.
 
-That's what we are doing last. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the transaction is confirmed anyone can use the Marker Maker contract.
+When issuer is ready he releases the Community Currency to the world. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the [transaction](https://ropsten.etherscan.io/tx/0x5e86f8ab823098065f7e6c172e3b3f9baaea280c9125d56b6639b7b666d8fe18) is confirmed anyone can use the Market Maker contract, and the issuer has no advantage to other participants. We will learn more about Marker Maker functions and internal mechanins in the second part of this tutorial.
