@@ -12,7 +12,7 @@ if ganache_cli_running $port; then
   echo "Using existing ganache-cli instance"
 else
   echo "Starting our own ganache-cli instance"
-  eval ganache-cli --accounts 50 --defaultBalanceEther 10000000000 --unlock 0 --unlock 1 > /dev/null &
+  eval ganache-cli --accounts 51 --defaultBalanceEther 10000000000 --unlock 0 --unlock 1 > /dev/null &
   ganache_cli_pid=$!
 fi
 
