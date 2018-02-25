@@ -12,7 +12,7 @@ if ganache_cli_running $port; then
   echo "Using existing ganache-cli instance"
 else
   echo "Starting our own ganache-cli instance"
-  eval ./node_modules/.bin/ganache-cli "$accounts" -u 0 -u 1 -l 8000029 > /dev/null &
+  eval ./node_modules/.bin/ganache-cli --accounts 51 --defaultBalanceEther 10000000000 --unlock 0 --unlock 1 --gasLimit 8000029 > /dev/null &
   ganache_cli_pid=$!
 fi
 
