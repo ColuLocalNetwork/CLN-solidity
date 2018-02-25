@@ -73,9 +73,9 @@ returns true iff token is supperted by this contract (for erc223/677 tokens call
 
 #### Inputs
 
-| type      | name     | description             |
-| --------- | -------- | ----------------------- |
-| *address* | `_token` | can be token1 or token2 |
+| type      | name     | description                             |
+| --------- | -------- | --------------------------------------- |
+| *address* | `_token` | address adress of the contract to check |
 
 #### Outputs
 
@@ -133,7 +133,7 @@ initialize the contract during erc223/erc677 transfer of all of the tokens form 
 - **State mutability**: `pure`
 - **Signature hash**: `6bfae928`
 
-calculate second reserve from the first reserve and the supllies.the equation is simetric, so by replacing _S1 and _S2 and _R1 with _R2 we can calculate the first reserve from the second reserve
+calculate second reserve from the first reserve and the supllies.formula: R2 = S2 * (S1 - sqrt(R1 * S1 * 2  - R1 ^ 2)) / S1the equation is simetric, so by replacing _S1 and _S2 and _R1 with _R2 we can calculate the first reserve from the second reserve
 
 #### Inputs
 
@@ -158,11 +158,11 @@ The Market Maker constructor
 
 #### Inputs
 
-| type      | name      |
-| --------- | --------- |
-| *address* | `_mmLib`  |
-| *address* | `_token1` |
-| *address* | `_token2` |
+| type      | name      | description                                                 |
+| --------- | --------- | ----------------------------------------------------------- |
+| *address* | `_mmLib`  | address address of the market making lib contract           |
+| *address* | `_token1` | address contract of the first token for marker making (CLN) |
+| *address* | `_token2` | address contract of the second token for marker making (CC) |
 
 #### Outputs
 
@@ -285,16 +285,16 @@ Called when the receiver of transfer is contract
 - **State mutability**: `view`
 - **Signature hash**: `c4725577`
 
-the price of token1 in terms of token2, represented in 18 decimals.
+the price of token1 in terms of token2, represented in 18 decimals. price = (S1 - R1) / (S2 - R2) * (S2 / S1)^2
 
 #### Inputs
 
-| type      | name  |
-| --------- | ----- |
-| *uint256* | `_R1` |
-| *uint256* | `_R2` |
-| *uint256* | `_S1` |
-| *uint256* | `_S2` |
+| type      | name  | description                              |
+| --------- | ----- | ---------------------------------------- |
+| *uint256* | `_R1` | uint256 reserve of the first token       |
+| *uint256* | `_R2` | uint256 reserve of the second token      |
+| *uint256* | `_S1` | uint256 total supply of the first token  |
+| *uint256* | `_S2` | uint256 total supply of the second token |
 
 #### Outputs
 

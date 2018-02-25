@@ -11,9 +11,10 @@
   * [Functions](#issuancefactory-functions)
     * [supportsToken(*address* `_token`)](#supportstokenaddress-_token)
     * [requestOwnershipTransfer(*address* `_newOwnerCandidate`)](#requestownershiptransferaddress-_newownercandidate)
-    * [getIssuanceCount(*bool* `_pending`, *bool* `_started`, *bool* `_succlessful`, *bool* `_failed`)](#getissuancecountbool-_pending-bool-_started-bool-_succlessful-bool-_failed)
+    * [getIssuanceCount(*bool* `_pending`, *bool* `_started`, *bool* `_successful`, *bool* `_failed`)](#getissuancecountbool-_pending-bool-_started-bool-_successful-bool-_failed)
     * [currencyMap(*address*)](#currencymapaddress)
     * [openMarket(*address*)](#openmarketaddress)
+    * [isValidIssuance(*uint256* `_hardcap`, *uint256* `_price`, *uint256* `_S2`, *uint256* `_R2`)](#isvalidissuanceuint256-_hardcap-uint256-_price-uint256-_s2-uint256-_r2)
     * [refund(*address* `_token`, *uint256* `_ccAmount`)](#refundaddress-_token-uint256-_ccamount)
     * [createIssuance(*uint256* `_startTime`, *uint256* `_durationTime`, *uint256* `_hardcap`, *uint256* `_reserveAmount`, *string* `_name`, *string* `_symbol`, *uint8* `_decimals`, *uint256* `_totalSupply`)](#createissuanceuint256-_starttime-uint256-_durationtime-uint256-_hardcap-uint256-_reserveamount-string-_name-string-_symbol-uint8-_decimals-uint256-_totalsupply)
     * [extractCLNfromMarketMaker()](#extractclnfrommarketmaker)
@@ -22,11 +23,11 @@
     * [acceptOwnership()](#acceptownership)
     * [getMarketMakerAddressFromToken(*address* `_token`)](#getmarketmakeraddressfromtokenaddress-_token)
     * [issueMap(*address*)](#issuemapaddress)
-    * [getIssuanceIds(*uint256* `_from`, *uint256* `_to`, *bool* `_pending`, *bool* `_started`, *bool* `_succlessful`, *bool* `_failed`)](#getissuanceidsuint256-_from-uint256-_to-bool-_pending-bool-_started-bool-_succlessful-bool-_failed)
     * [participate(*address* `_token`, *uint256* `_clnAmount`)](#participateaddress-_token-uint256-_clnamount)
     * [insertCLNtoMarketMaker(*address*)](#insertclntomarketmakeraddress)
     * [participate(*address* `_token`)](#participateaddress-_token)
     * [tokenFallback(*address* `_sender`, *uint256* `_value`, *bytes* `_data`)](#tokenfallbackaddress-_sender-uint256-_value-bytes-_data)
+    * [getIssuanceIds(*bool* `_pending`, *bool* `_started`, *bool* `_successful`, *bool* `_failed`, *uint256* `_offset`, *uint256* `_limit`)](#getissuanceidsbool-_pending-bool-_started-bool-_successful-bool-_failed-uint256-_offset-uint256-_limit)
     * [createCurrency(*string* `_name`, *string* `_symbol`, *uint8* `_decimals`, *uint256* `_totalSupply`)](#createcurrencystring-_name-string-_symbol-uint8-_decimals-uint256-_totalsupply)
     * [extractCLNfromMarketMaker(*address*, *uint256*)](#extractclnfrommarketmakeraddress-uint256)
     * [transferAnyERC20Token(*address* `_tokenAddress`, *uint256* `_amount`)](#transferanyerc20tokenaddress-_tokenaddress-uint256-_amount)
@@ -47,9 +48,9 @@
 * *address* mmLibAddress() `4d689543`
 * *address* tokens(*uint256*) `4f64b2be`
 * *address* owner() `8da5cb5b`
+* *uint256* PRECISION() `aaf5eb68`
 * *uint256* CLNTotalSupply() `c73fcee2`
 * *address* newOwnerCandidate() `d091b550`
-* *uint256* precision() `d3b5dc3b`
 
 ## IssuanceFactory Events
 
@@ -115,27 +116,27 @@ Proposes to transfer control of the contract to a newOwnerCandidate.
 | --------- | -------------------- | --------------------------------------------- |
 | *address* | `_newOwnerCandidate` | address The address to transfer ownership to. |
 
-### getIssuanceCount(*bool* `_pending`, *bool* `_started`, *bool* `_succlessful`, *bool* `_failed`)
+### getIssuanceCount(*bool* `_pending`, *bool* `_started`, *bool* `_successful`, *bool* `_failed`)
 
 - **State mutability**: `view`
 - **Signature hash**: `0fab7539`
 
-Returns total number of issuances after filers are applied.
+Returns total number of issuances after filters are applied.this function is gas wasteful so do not call this from a state changing transaction
 
 #### Inputs
 
-| type   | name           | description                     |
-| ------ | -------------- | ------------------------------- |
-| *bool* | `_pending`     | Include _pending issuances.     |
-| *bool* | `_started`     | Include _started issuances.     |
-| *bool* | `_succlessful` | Include _succlessful issuances. |
-| *bool* | `_failed`      | Include _failed issuances.      |
+| type   | name          | description                                      |
+| ------ | ------------- | ------------------------------------------------ |
+| *bool* | `_pending`    | include pending currency issuances.              |
+| *bool* | `_started`    | include started currency issuances.              |
+| *bool* | `_successful` | include successful and ended currency issuances. |
+| *bool* | `_failed`     | include failed and ended currency issuances.     |
 
 #### Outputs
 
-| type      | name     | description                                          |
-| --------- | -------- | ---------------------------------------------------- |
-| *uint256* | `_count` | Total number of issuances after filters are applied. |
+| type      | name     | description                                                   |
+| --------- | -------- | ------------------------------------------------------------- |
+| *uint256* | `_count` | Total number of currency issuances after filters are applied. |
 
 ### currencyMap(*address*)
 
@@ -177,12 +178,34 @@ opens the Market Maker to recvice transactions from all sources.Request to trans
 | ------ |
 | *bool* |
 
+### isValidIssuance(*uint256* `_hardcap`, *uint256* `_price`, *uint256* `_S2`, *uint256* `_R2`)
+
+- **State mutability**: `view`
+- **Signature hash**: `236a160e`
+
+checks if the parameters that were sent to the create are valid for a promised price and buyback
+
+#### Inputs
+
+| type      | name       | description                                                               |
+| --------- | ---------- | ------------------------------------------------------------------------- |
+| *uint256* | `_hardcap` | uint256 CLN hardcap for issuance                                          |
+| *uint256* | `_price`   | uint256 computed through the market maker using the supplies and reserves |
+| *uint256* | `_S2`      | uint256 supply of the CC token                                            |
+| *uint256* | `_R2`      | uint256 reserve of the CC token                                           |
+
+#### Outputs
+
+| type   |
+| ------ |
+| *bool* |
+
 ### refund(*address* `_token`, *uint256* `_ccAmount`)
 
 - **State mutability**: `nonpayable`
 - **Signature hash**: `410085df`
 
-give back cc and get a rfund back in CLN, can only be called after sale ended and if softcap not reached
+Give back CC and get a refund back in CLN, dev can only be called after sale ended and the softcap not reached
 
 #### Inputs
 
@@ -202,18 +225,20 @@ give back cc and get a rfund back in CLN, can only be called after sale ended an
 - **State mutability**: `nonpayable`
 - **Signature hash**: `436577ae`
 
+createIssuance create local currency issuance sale
+
 #### Inputs
 
-| type      | name             |
-| --------- | ---------------- |
-| *uint256* | `_startTime`     |
-| *uint256* | `_durationTime`  |
-| *uint256* | `_hardcap`       |
-| *uint256* | `_reserveAmount` |
-| *string*  | `_name`          |
-| *string*  | `_symbol`        |
-| *uint8*   | `_decimals`      |
-| *uint256* | `_totalSupply`   |
+| type      | name             | description                             |
+| --------- | ---------------- | --------------------------------------- |
+| *uint256* | `_startTime`     | uint256 blocktime for sale start        |
+| *uint256* | `_durationTime`  | uint 256 duration of the sale           |
+| *uint256* | `_hardcap`       | uint CLN hardcap for issuance           |
+| *uint256* | `_reserveAmount` | uint CLN reserve ammount                |
+| *string*  | `_name`          | string name of the token                |
+| *string*  | `_symbol`        | string symbol of the token              |
+| *uint8*   | `_decimals`      | uint8 ERC20 decimals of local currency  |
+| *uint256* | `_totalSupply`   | uint total supply of the local currency |
 
 #### Outputs
 
@@ -226,7 +251,7 @@ give back cc and get a rfund back in CLN, can only be called after sale ended an
 - **State mutability**: `nonpayable`
 - **Signature hash**: `4daadff9`
 
-ERC223 transferAndCall, send cc to the market maker contract can only be called by owner (see MarketMaker)sending CC will return CLN from the reserve to the sender.
+ERC223 transferAndCall, send CC to the market maker contract can only be called by owner (see MarketMaker)sending CC will return CLN from the reserve to the sender.
 
 #### Outputs
 
@@ -258,7 +283,7 @@ called by the creator to finish the sale, open the market maker and get his toke
 - **State mutability**: `nonpayable`
 - **Signature hash**: `590e1ae3`
 
-give back cc and get a rfund back in CLN, can only be called after sale ended and if softcap not reached
+Give back CC and get a refund back in CLN, dev can only be called after sale ended and the softcap not
 
 #### Outputs
 
@@ -314,36 +339,12 @@ helper function to fetch market maker contract address deploed with the CC
 | *uint256* | `targetPrice` |
 | *uint256* | `clnRaised`   |
 
-### getIssuanceIds(*uint256* `_from`, *uint256* `_to`, *bool* `_pending`, *bool* `_started`, *bool* `_succlessful`, *bool* `_failed`)
-
-- **State mutability**: `view`
-- **Signature hash**: `b2751a4d`
-
-Returns list of issuance ids (allso the token address of the issuance) in defined range after filers are applied.
-
-#### Inputs
-
-| type      | name           | description                                 |
-| --------- | -------------- | ------------------------------------------- |
-| *uint256* | `_from`        | Index start position of issuance ids array. |
-| *uint256* | `_to`          | Index end position of issuance ids array.   |
-| *bool*    | `_pending`     | Include _pending issuances.                 |
-| *bool*    | `_started`     | Include _started issuances.                 |
-| *bool*    | `_succlessful` | Include _succlessful issuances.             |
-| *bool*    | `_failed`      | Include _failed issuances..                 |
-
-#### Outputs
-
-| type        | name           | description                    |
-| ----------- | -------------- | ------------------------------ |
-| *address[]* | `_issuanceIds` | Returns array of issuance ids. |
-
 ### participate(*address* `_token`, *uint256* `_clnAmount`)
 
 - **State mutability**: `nonpayable`
 - **Signature hash**: `b64afbe5`
 
-particiapte in the CLN based issuance
+participate in the issuance of the local currency
 
 #### Inputs
 
@@ -354,9 +355,9 @@ particiapte in the CLN based issuance
 
 #### Outputs
 
-| type      | name            |
-| --------- | --------------- |
-| *uint256* | `releaseAmount` |
+| type      | name            | description                                                               |
+| --------- | --------------- | ------------------------------------------------------------------------- |
+| *uint256* | `releaseAmount` | releaseAmount uint ammount of CC tokens released and transfered to sender |
 
 ### insertCLNtoMarketMaker(*address*)
 
@@ -382,7 +383,7 @@ ERC223 transferAndCall, send cln to the market maker contract can only be called
 - **State mutability**: `nonpayable`
 - **Signature hash**: `b91038c7`
 
-particiapte in the CLN based issuance
+Participate in the CLN based issuance (for contract)
 
 #### Inputs
 
@@ -417,6 +418,30 @@ Called when the receiver of transfer is contract
 | ------ | ---- |
 | *bool* | `ok` |
 
+### getIssuanceIds(*bool* `_pending`, *bool* `_started`, *bool* `_successful`, *bool* `_failed`, *uint256* `_offset`, *uint256* `_limit`)
+
+- **State mutability**: `view`
+- **Signature hash**: `cfa059ee`
+
+Returns list of issuance ids (allso the token address of the issuance) in defined range after filters are applied._offset and _limit parameters are intended for paginationthis function is gas wasteful so do not call this from a state changing transaction
+
+#### Inputs
+
+| type      | name          | description                                      |
+| --------- | ------------- | ------------------------------------------------ |
+| *bool*    | `_pending`    | include pending currency issuances.              |
+| *bool*    | `_started`    | include started currency issuances.              |
+| *bool*    | `_successful` | include successful and ended currency issuances. |
+| *bool*    | `_failed`     | include failed and ended currency issuances.     |
+| *uint256* | `_offset`     | index start position of issuance ids array.      |
+| *uint256* | `_limit`      | maximum number of issuance ids to return.        |
+
+#### Outputs
+
+| type        | name           | description                                   |
+| ----------- | -------------- | --------------------------------------------- |
+| *address[]* | `_issuanceIds` | Returns array of token adresses for issuance. |
+
 ### createCurrency(*string* `_name`, *string* `_symbol`, *uint8* `_decimals`, *uint256* `_totalSupply`)
 
 - **State mutability**: `nonpayable`
@@ -444,7 +469,7 @@ create the MarketMaker and the CC token put all the CC token in the Market Maker
 - **State mutability**: `nonpayable`
 - **Signature hash**: `d9eb547b`
 
-normal send cc to the market maker contract, sender must approve() before calling method. can only be called by ownersending CC will return CLN from the reserve to the sender.
+normal send CC to the market maker contract, sender must approve() before calling method. can only be called by ownersending CC will return CLN from the reserve to the sender.
 
 #### Inputs
 
