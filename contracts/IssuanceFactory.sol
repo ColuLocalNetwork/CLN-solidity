@@ -83,7 +83,7 @@ contract IssuanceFactory is CurrencyFactory {
 	/// @param _startTime uint256 blocktime for sale start
 	/// @param _durationTime uint 256 duration of the sale
 	/// @param _hardcap uint CLN hardcap for issuance
-	/// @param _reserveAmount uint CLN reserve ammount
+	/// @param _reserveAmount uint CLN reserve amount
 	/// @param _name string name of the token
 	/// @param _symbol string symbol of the token
 	/// @param _decimals uint8 ERC20 decimals of local currency
@@ -134,7 +134,7 @@ contract IssuanceFactory is CurrencyFactory {
   /// @dev participate in the issuance of the local currency
   /// @param _token address token address for this issuance (same as CC adress)
   /// @param _clnAmount uint256 amount of CLN to try and participate
-  /// @return releaseAmount uint ammount of CC tokens released and transfered to sender
+  /// @return releaseAmount uint amount of CC tokens released and transfered to sender
   function participate(address _token,
 						uint256 _clnAmount) public
 						saleOpen(_token)
@@ -335,8 +335,8 @@ contract IssuanceFactory is CurrencyFactory {
   /// @param _clnAmount amount of cln the user wants to participate with
   /// @param _token address token address for this issuance (same as CC adress)
   /// @return {
-  ///	"transferToReserveAmount": ammount of CLN to transfer to reserves
-  ///	"participationAmount": ammount of CLN that the sender will participate with in the sale
+  ///	"transferToReserveAmount": amount of CLN to transfer to reserves
+  ///	"participationAmount": amount of CLN that the sender will participate with in the sale
   ///}
   function getParticipationAmounts(uint256 _clnAmount,
                                    address _token) private view
