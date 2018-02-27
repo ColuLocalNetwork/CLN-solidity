@@ -32,14 +32,14 @@
     "ethereumjs-abi": "^0.6.4",
     "ganache-cli": "^7.0.0-beta.0",
     "solc": "0.4.18",
-    "solmd": "git+https://github.com/cag/solmd.git",
-    "truffle": "git+https://github.com/colucom/truffle.git",
+    "truffle": "git+https://github.com/colucom/truffle.git#42072804ab4e535196489b8047a3fce1b6eeebe8",
     "web3": "^1.0.0-beta.22",
     "yargs": "^9.0.1",
     "zeppelin-solidity": "^1.5.0"
   },
   "devDependencies": {
     "solidity-coverage": "^0.2.7",
+    "solmd": "git+https://github.com/cag/solmd.git",
     "chai": "^4.1.2"
   }
 }
