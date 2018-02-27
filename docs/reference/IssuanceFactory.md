@@ -234,7 +234,7 @@ createIssuance create local currency issuance sale
 | *uint256* | `_startTime`     | uint256 blocktime for sale start        |
 | *uint256* | `_durationTime`  | uint 256 duration of the sale           |
 | *uint256* | `_hardcap`       | uint CLN hardcap for issuance           |
-| *uint256* | `_reserveAmount` | uint CLN reserve amount                |
+| *uint256* | `_reserveAmount` | uint CLN reserve amount                 |
 | *string*  | `_name`          | string name of the token                |
 | *string*  | `_symbol`        | string symbol of the token              |
 | *uint8*   | `_decimals`      | uint8 ERC20 decimals of local currency  |
@@ -355,8 +355,8 @@ participate in the issuance of the local currency
 
 #### Outputs
 
-| type      | name            | description                                                               |
-| --------- | --------------- | ------------------------------------------------------------------------- |
+| type      | name            | description                                                              |
+| --------- | --------------- | ------------------------------------------------------------------------ |
 | *uint256* | `releaseAmount` | releaseAmount uint amount of CC tokens released and transfered to sender |
 
 ### insertCLNtoMarketMaker(*address*)
