@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity ^0.4.18;
 
 import './SafeMath.sol';
 import './ERC20.sol';
@@ -66,7 +66,7 @@ contract BasicToken is ERC20 {
     /// @param _value uint256 the amount of tokens to be transferred.
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
         require(_to != address(0));
-        var _allowance = allowed[_from][msg.sender];
+        uint256 _allowance = allowed[_from][msg.sender];
 
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);

@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity ^0.4.18;
 
 /// @title ERC223Receiver Interface
 /// @dev Based on the specs form: https://github.com/ethereum/EIPs/issues/223
