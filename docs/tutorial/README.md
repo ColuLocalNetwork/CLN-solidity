@@ -4,7 +4,9 @@
 This tutorial will guide you through the issuance, interaction, and exchange of Community Currencies (CC). To follow this tutorial you should have a basic understanding of Ethereum and blockchain technologies. You can start from the [Ethereum wiki](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) or this [awesome list](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) of links curated by the community. This [overview](../overview.md) gives a high level explanation of the CLN contracts, and a [contract reference](../reference) provides a self generated documentation similar to REST API docs.
 
 
-From a practical side you will need an ERC20 compatible wallet to send and sign transactions. I will use [MyEtherWallet](https://www.myetherwallet.com/) because of his ability to generate transactions from ABI. Also of course you will need ETH to pay for gas, and CLN to interact with contracts of Colu Local Network. You can learn more about the relation of CLN and Community Currencies (CC) from the [whitepaper](https://cln.network/pdf/cln_whitepaper.pdf).
+From a practical side you will need an ERC20 compatible wallet to send and sign transactions. I will use [MyEtherWallet](https://www.myetherwallet.com/) because of his ability to generate transactions from ABI. If you don't familiar with MyEtherWallet, there's a [tutorial](https://myetherwallet.github.io/knowledge-base/getting-started/accessing-your-new-eth-wallet.html) how to open a wallet and send ETH.
+
+ Also of course you will need ETH to pay for gas, and CLN to interact with contracts of Colu Local Network. You can learn more about the relation of CLN and Community Currencies (CC) from the [whitepaper](https://cln.network/pdf/cln_whitepaper.pdf).
 
 To proceed with this guide I've created a new Ethereum account - [0x0d4DF041Dbef6fFC0E444a4a213774AdB0c118C2](https://ropsten.etherscan.io/address/0x0d4DF041Dbef6fFC0E444a4a213774AdB0c118C2). I'm going to perform all actions on Ropsten Test Network, so you can follow. We encourage you first to use testnet until a sufficient understanding of the CLN contracts is achieved.
 
