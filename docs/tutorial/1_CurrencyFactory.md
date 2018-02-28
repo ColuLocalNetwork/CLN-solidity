@@ -61,9 +61,8 @@ You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for yo
 
 You call `extractCLNfromMarketMaker` to get your CLN back. If you exchange all your CC to CLN you'll get the initial CLN amount, no CLN lost.
 
-Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's `MarketMaker` for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token is just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for the cheapest price. Other preparations might not be related to crypto at all.
-
-
 ### Finish and open the market
+
+Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's `MarketMaker` for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token is just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for the cheapest price. Other preparations might not be related to crypto at all.
 
 When issuer is ready he releases the Community Currency to the world. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the [transaction](https://ropsten.etherscan.io/tx/0x5e86f8ab823098065f7e6c172e3b3f9baaea280c9125d56b6639b7b666d8fe18) is confirmed anyone can use the `MarketMaker` contract, and the issuer has no advantage on other participants. We will learn more about `MarketMaker` functions and internal mechanism in the second part of this tutorial.

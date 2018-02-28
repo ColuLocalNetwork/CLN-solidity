@@ -1,6 +1,6 @@
 ## Acquiring CLN
 
-For Mainnet, if you didn't get some tokens during the sale, you need to find someone to sell you some CLN. You can try [etherdelta](https://etherdelta.com/) or [forkdelta](https://forkdelta.github.io/), they are decentralized exchanges so we advice you to have a solid understanding of them before usage. Also, I suppose you already done this tutorial at least once if you intend to use it on Mainnet :smile:. So for Mainnet you can skip to the next section.
+For Mainnet, if you didn't get some tokens during the sale, you need to find someone to sell you some CLN. You can try [etherdelta](https://etherdelta.com/), [forkdelta](https://forkdelta.github.io/) or [ddex.io](https://ddex.io/), they are decentralized exchanges so we advice you to have a solid understanding of them before usage. Also, I suppose you already done this tutorial at least once if you intend to use it on Mainnet :smile:. So for Mainnet you can skip to the next section.
 
 On Testnet `ColuLocalNetworkSale` contract is implemented differently. The crowdsale is open for 10 years, everyone can participate (no whitelisting), and the tokens are immediately transferable. So let's get us some tCLN (test CLN)!
 
