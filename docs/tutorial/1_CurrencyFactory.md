@@ -6,9 +6,9 @@
 
  This is how it looks at Etherscan:
 
- ![ABI](assets/abi.png)
+ ![ABI](../assets/abi.png)
 
-You can go over contract's functionality in MyEtherWallet, or read the [reference](reference/CurrencyFactory.md) in our docs. The reference also contains developers comments, and we will improve it as time goes by. But we're here to issuance our Community Currency, so let's proceed.
+You can go over contract's functionality in MyEtherWallet, or read the [reference](../reference/CurrencyFactory.md) in our docs. The reference also contains developers comments, and we will improve it as time goes by. But we're here to issuance our Community Currency, so let's proceed.
 
 The function to issue a currency is called, not surprisingly, `createCurrency`. You need to specify four parameters to call it: `name`, `symbol`, `decimals` and `totalSupply`. They all are part of the [ERC20](https://theethereum.wiki/w/index.php/ERC20_Token_Standard) token standard. Yes, all community currencies issued by CLN contracts are ERC20-compliant (and [ERC667](https://github.com/ethereum/EIPs/issues/677) also). Generally, this means that they can be easily added and used by any ERC20 wallet.
 
@@ -20,7 +20,7 @@ The function to issue a currency is called, not surprisingly, `createCurrency`. 
 
 This is how it looks at MyEtherWallet:
 
-![MEW](assets/mew.png)
+![MEW](../assets/mew.png)
 
 I click on "WRITE". You don't send ETH to any of CLN contracts, so I set the amount to send to 0, and the Gas Limit to 200000. Checking again that I'm on the right network I click Yes.
 
