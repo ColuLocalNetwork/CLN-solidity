@@ -21,7 +21,7 @@ The function to issue a currency is called, not surprisingly, `createCurrency`. 
 
 This is how it looks at MyEtherWallet:
 
-![MEW](../assets/mew.png)
+![mew_createCurrency](../assets/mew_createCurrency.png)
 
 I click on "WRITE". You don't send ETH to any of CLN contracts, so I set the amount to send to 0, and the Gas Limit to 200000. Checking again that I'm on the right network I click Yes.
 
@@ -42,11 +42,15 @@ So what happened here?
 
 Nice, we created a currency but all of it is locked in some `MarketMaker`. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the `MarketMaker` it will have no slightest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there are two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
 
-Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". This is an ERC20 mechanism.
+Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". You set an allowance for other accounts to use your tokens, this is an ERC20 mechanism.
 
- Remember how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. After uploading the ABI I'll call approve function with 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. I check everything is correct and click send. Easy, the only thing to know about approve, that if you already approved some amount and you want to change it, you need first to set allowance  to zero and then send approve again with the new value ([more info](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve )).
+ Remember how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. I open again the "Contracts" tab of MyEtherWallet, fill in `ColuLocalNetwork` address and uploads it's ABI. After gaining access to contract's functions, I select `approve` with 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. Here's another screenshot, just for you:
 
- After the approve transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
+ ![mew_approve](../assets/mew_approve.png)
+
+  I check everything is correct and click send. Easy, but there's one thing you need to know about `approve`. If you you want to change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value ([more info](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve )).
+
+ After the `approve` transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
 
 Viewing the [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6) you may think some complex stuff happened there. Well, I'll try to sum it up.
 
