@@ -11,11 +11,11 @@ To proceed with this guide I've created a new Ethereum account - [0x0d4DF041Dbef
 
 ## Table of Contents
 
-For convenience I divided this tutorial for several parts.  
-- CurrencyFactory
-- MarketMaker
-- IssuanceFactory
-
+I divided this tutorial to several parts.
+- Acquiring CLN - Prerequisite for contracts usage.
+- Currency Factory - Community Currency issuance by solo issuer.
+- Market Maker - the internal mechanism CLN/Community Currency exchange.
+- Issuance Factory - Community Currency issuance in a crowdfunding model.
 
 ## Contract Addresses
 
