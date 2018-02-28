@@ -1,7 +1,8 @@
-## CC issuance with CurrencyFactory
+## Community Currency issuance with CurrencyFactory
 
  Now let's proceed to really interesting stuff of creating new Community Currency. We are going to do this by interacting with the `CurrencyFactory`, one of the contracts created by Colu for currency issuance.
 
+### Community Currency issuance
  In MyEtherWallet I go to the "Contracts" tab, and fill the contracts address. Then I need to get the contract's ABI ([WTF is ABI?](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI)). All of Colu's contracts are verified on Etherscan, so they contain their ABI's in the "Contract Source" tab. I search `CurrencyFactory` address in Etherscan, and copy the ABI from there to paste it in MyEtherWallet "ABI / JSON Interface" field. Pressing "Access" I can select any of the contract's function and the fields to fill in are generated accordingly. MyEtherWallet knows how to do this thanks to the provided ABI.
 
  This is how it looks at Etherscan:
@@ -36,6 +37,9 @@ So what happened here?
 - `CurrencyFactory` created the `MarketMaker`, that's the unknown contract we saw! `MarketMaker` is used to exchange CLN/CC. More about it later.
 - `CurrencyFactory` moved all CC supply to the `MarketMaker`. As an exchange provider it's reasonable that the MM will hold all the CC.
 
+
+### Insert CLN into the Community Currency
+
 Nice, we created a currency but all of it is locked in some `MarketMaker`. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the `MarketMaker` it will have no slightest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there are two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
 
 Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". This is an ERC20 mechanism.
@@ -58,5 +62,8 @@ You can call `insertCLNtoMarketMaker` multiple times, exchanging more CLN for yo
 You call `extractCLNfromMarketMaker` to get your CLN back. If you exchange all your CC to CLN you'll get the initial CLN amount, no CLN lost.
 
 Only token issuer can call `insertCLNtoMarketMaker` and `extractCLNtoMarketMaker`. For everyone else to be able to exchange CLN/CC we need to open the CC's `MarketMaker` for public usage. This is done to give sufficient time for the currency issuer. As I explained before CLN/CC rate depends on the CC demand. When the token is just created the demand for CC is low, so the currency issuer has an advantage to buy CLN for the cheapest price. Other preparations might not be related to crypto at all.
+
+
+### Finish and open the market
 
 When issuer is ready he releases the Community Currency to the world. Let's call the function `openMarket` of the `CurrencyFactory`, giving it `CC`'s address as the argument. After the [transaction](https://ropsten.etherscan.io/tx/0x5e86f8ab823098065f7e6c172e3b3f9baaea280c9125d56b6639b7b666d8fe18) is confirmed anyone can use the `MarketMaker` contract, and the issuer has no advantage on other participants. We will learn more about `MarketMaker` functions and internal mechanism in the second part of this tutorial.
