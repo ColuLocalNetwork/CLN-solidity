@@ -50,7 +50,7 @@ Before calling this function I need to approve `CurrencyFactory` to use my CLN t
 
   I check everything is correct and click send. Easy, but there's one thing you need to know about `approve`. If you you want to change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value ([more info](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve )).
 
- After the `approve` transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
+ After the `approve` transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk later about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
 
 Viewing the [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6) you may think some complex stuff happened there. Well, I'll try to sum it up.
 
