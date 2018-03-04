@@ -62,4 +62,14 @@ The most observant of you might noticed that in the last transaction I exchanged
 
 > getCurrentPrice_before > actualRate > getCurrentPrice_after
 
-This means.
+This means that the exchange rate of CLN/CC defined continuously for every wei, and it changes with every wei that got inserted (or extracted) into Market Maker.
+
+To know exactly how much CLN for CC (and vice versa) you get, there's a `quote` function. This is also a read-only function, and it's like `getCurrentPrice` but for an amount of CLN. Let's say I want to buy 1000 CLN (1e21), I'll do.
+
+![mew_quote](../assets/mew_quote.png)
+
+471765614363247798186 / 1e18 = ~471.76. It means that now for 1000 CLN I'm getting ~476 CC. Do you remember that in the first part I got 1139 CC for 1000 CLN? Well, that's a pretty rough rate change.
+
+Now after I know for sure how much CC I'll get for 1000 CLN, let's do the trade. But what if between that time when I checked quote and called `change` function, someone other called changed before me? I'll get different CC amount! Sometime It can be more (which is good), but sometimes less. Do I'm ok with less? If yes how much less I'm ok with? Of course this difference is significant only on some edge cases, but we got that too covered.
+
+First, let's approve that 1000 CLN for the `MarkerMaker`. After this is done we are going to call different implementation of `change`. One that receives 4 arguments, 3 of them are the same and `minReturn` is the new one. With this argument I specify what is the minimum amount of tokens I agree to receive in return. If the exchange rate changed and I'm going to receive less than `minReturn`, the deal got canceled and the transaction is reverted. I just pay for the Gas.
