@@ -29,11 +29,11 @@ At the last chapter we eventually open the market for public. As a recap let's e
 
 You can see that the answer for `supportsToken` is `true`. So we're good. All the tokens that created using the `CurrencyFactory` are supported, and also CLN. After that I put the same address and query the `currencyMap`, you can see above the results. I can get assured that this is indeed the currency I created cause I'm the owner.
 
-This is also a quick way to get MarkerMaker address, it appears as `mmAddress` field. I created a new Ethereum [account](https://ropsten.etherscan.io/address/0x28ef70800b19b3bf15bf8210f351a95f15613aeb) and transferred some CLN and Ether. While my first account was the token issuer, that one represents a community member.
+This is also a quick way to get MarketMaker address, it appears as `mmAddress` field. I created a new Ethereum [account](https://ropsten.etherscan.io/address/0x28ef70800b19b3bf15bf8210f351a95f15613aeb) and transferred some CLN and Ether. While my first account was the token issuer, that one represents a community member.
 
 Now let's interact directly with the `MarketMaker` contract. Opening the contract in Etherscan I see it's not verified and there was no ABI in the "Contract Code" tab, just the bytecode. But if we remember the first part, that contract was created by the `CurrencyFactory` when I created the Community Currency. So we can't expect every Market Maker or Community Currency contract to be verified.
 
-Fortunately, all the logic of this `MarkerMaker` is in the [EllipseMarketMakerLib](../reference/EllipseMarketMakerLib.md) contract. Every concrete `MarketMaker` holds data that related to the concrete Community Currency, but uses the logic of `EllipseMarketMakerLib` to calculate the exchange rate. This makes creation of new currencies relatively inexpensive, because less logic in contract means less data, means less fees. In particular, this means that we can take the ABI of `EllipseMarketMakerLib` [contract](https://ropsten.etherscan.io/address/0x30724fa809d40330eacab9c7ebcfb2a0058c381c) to send transactions to our concrete `MarketMaker`. Here's a screenshot to bear the confusion you might have:
+Fortunately, all the logic of this `MarketMaker` is in the [EllipseMarketMakerLib](../reference/EllipseMarketMakerLib.md) contract. Every concrete `MarketMaker` holds data that related to the concrete Community Currency, but uses the logic of `EllipseMarketMakerLib` to calculate the exchange rate. This makes creation of new currencies relatively inexpensive, because less logic in contract means less data, means less fees. In particular, this means that we can take the ABI of `EllipseMarketMakerLib` [contract](https://ropsten.etherscan.io/address/0x30724fa809d40330eacab9c7ebcfb2a0058c381c) to send transactions to our concrete `MarketMaker`. Here's a screenshot to bear the confusion you might have:
 
 ![mew_MarketMaker](../assets/mew_MarketMaker.png)
 
@@ -72,4 +72,11 @@ To know exactly how much CLN for CC (and vice versa) you get, there's a `quote` 
 
 Now after I know for sure how much CC I'll get for 1000 CLN, let's do the trade. But what if between that time when I checked quote and called `change` function, someone other called changed before me? I'll get different CC amount! Sometime It can be more (which is good), but sometimes less. Do I'm ok with less? If yes how much less I'm ok with? Of course this difference is significant only on some edge cases, but we got that too covered.
 
-First, let's approve that 1000 CLN for the `MarkerMaker`. After this is done we are going to call different implementation of `change`. One that receives 4 arguments, 3 of them are the same and `minReturn` is the new one. With this argument I specify what is the minimum amount of tokens I agree to receive in return. If the exchange rate changed and I'm going to receive less than `minReturn`, the deal got canceled and the transaction is reverted. I just pay for the Gas.
+First, let's approve that 1000 CLN for the `MarketMaker`. After this is done we are going to call different implementation of `change`. One that receives 4 arguments, 3 of them are the same and `minReturn` is the new one. With this argument I specify what is the minimum amount of tokens I agree to receive in return. If the exchange rate changed and I'm going to receive less than `minReturn`, the deal got canceled and the transaction is reverted. I just pay for the Gas.
+
+I want to make sure that I don't get less than the value that was promised by `quote`. I fill in `minReturn` argument with 471765614363247798186 (`quote`'s answer'). After a while, checking the [transaction](https://ropsten.etherscan.io/tx/0x6c711ea96f507a8e71330fb5a3f4b675c81eda3083a2b2b707217802f199e673) I see that this is exactly the amount of tokens I got. Looks solid.
+
+Now I want to try to exchange another 1000 CLN for the same exchange rate. I know this is impossible but for once I want to show you a failed transaction. Actually Ethereum doesn't give a reason why the [transaction](https://ropsten.etherscan.io/tx/0x1bc68cacb5bf67dcb0d3c0ee8eedf124171aadeaaa52f5107f5806649aa31a05) failed, so you should trust me for that one. But when I run again `quote` for 1000 CLN I'm getting a `returnAmount` of ~366 CC, so this makes sense.
+
+
+Well, there's the most of functionality of Market Maker.
