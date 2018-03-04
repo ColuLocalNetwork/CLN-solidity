@@ -23,7 +23,7 @@ It was a crucial issue to solve to make the local economy running. So the autono
 
 After such an introduction, let's talk technical again. In the last chapter we issued a new currency and exchanged CLN to CC calling `insertCLNtoMarketMaker`. Do you remember that [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6)? Here I exchanged 1000 CLN for ~1339 CC. But if you have created your currency with a different supply, the exchange rate is going to be different too. For example Mark [created](https://etherscan.io/tx/0xe444c7b274e937bf97484d480c6eb5d0859e5754164ea911c68138280364234d) a currency with a total supply of 10,000 so when he [inserted](https://etherscan.io/tx/0xb565b4f820efd0298158d023a43ef28b9cfc5caf62b4a1fc17bf0169a324003f) 100 CLN he received only ~3 TAC (his Community Currency). Then he asked me why he got only 3 TAC for 100 CLN. We dive soon into that, but the intuition here is because his currency has much smaller supply, every TAC token is much more valuable than my CC.
 
-At the last chapter we eventually open the market for public. As a recap let's explore `CurrencyFactory` through Etherscan's read contracts [tab](https://ropsten.etherscan.io/address/0x7b2cbec58653aaf79842b80ed184b2ecb4e17d59#readContract). Here you see contract's data and the view functions that can be called because they don't mutate contract's state. My CC address is `0x8611c307F3b88040Aa4E73E8e2c5DB303ca81701`, let's see if `CurrencyFactory` supports this token. I fill this address in the fields next to `supportsToken` function and press query. It supposed to be no screenshot tutorial but because it's the first time I use this tab, I'm providing one :smile:
+At the last chapter we eventually open the market for public. As a recap let's explore `CurrencyFactory` through Etherscan's read contracts [tab](https://ropsten.etherscan.io/address/0x7b2cbec58653aaf79842b80ed184b2ecb4e17d59#readContract). Here you see contract's data and the view functions that can be called because they don't mutate contract's state. My CC address is `0x8611c307F3b88040Aa4E73E8e2c5DB303ca81701`, let's see if `CurrencyFactory` supports this token. I fill this address in the fields next to `supportsToken` function and press query. Here how it looks:
 
 ![etherscan_read](../assets/etherscan_read.png)
 
@@ -31,4 +31,35 @@ You can see that the answer for `supportsToken` is `true`. So we're good. All th
 
 This is also a quick way to get MarkerMaker address, it appears as `mmAddress` field. I created a new Ethereum [account](https://ropsten.etherscan.io/address/0x28ef70800b19b3bf15bf8210f351a95f15613aeb) and transferred some CLN and Ether. While my first account was the token issuer, that one represents a community member.
 
- Now let's interact directly with the `MarketMaker` contract.
+Now let's interact directly with the `MarketMaker` contract. Opening the contract in Etherscan I see it's not verified and there was no ABI in the "Contract Code" tab, just the bytecode. But if we remember the first part, that contract was created by the `CurrencyFactory` when I created the Community Currency. So we can't expect every Market Maker or Community Currency contract to be verified.
+
+Fortunately, all the logic of this `MarkerMaker` is in the [EllipseMarketMakerLib](../reference/EllipseMarketMakerLib.md) contract. Every concrete `MarketMaker` holds data that related to the concrete Community Currency, but uses the logic of `EllipseMarketMakerLib` to calculate the exchange rate. This makes creation of new currencies relatively inexpensive, because less logic in contract means less data, means less fees. In particular, this means that we can take the ABI of `EllipseMarketMakerLib` [contract](https://ropsten.etherscan.io/address/0x30724fa809d40330eacab9c7ebcfb2a0058c381c) to send transactions to our concrete `MarketMaker`. Here's a screenshot to bear the confusion you might have:
+
+![mew_MarketMaker](../assets/mew_MarketMaker.png)
+
+Also you can see that I call contract's function  `openForPublic`, to be sure that I can exchange CLN/CC through this contract. I don't need to send a transaction because it's a `view` (read-only) function, but we already used `view` functions before when we interacted with `CurrencyFactory` on Etherscan. They are using Ethereum's [JSON-RPC](https://github.com/ethereum/wiki/wiki/JSON-RPC) and don't get propagated to every node, so there's no Gas to pay.
+
+Another `view` function I want to try is `getCurrentPrice`, calling it I get an answer of 569672901914775677. This means that for 1 CLN we get 569672901914775677 / 1e18 = ~0.57 CC. It's a bit clumsy, but was implemented that way because Solidity's lacking support of real numbers.
+
+
+Just like we did in part 1, we need to approve `MarketMaker` to use CLN. I call `approve` function of [[ColuLocalNetwork](../reference/ColuLocalNetwork.md) contract, fill in the amount I wish to exchange and specify `MarketMaker` address as the spender. Investigating [transaction's](https://ropsten.etherscan.io/tx/0x4d59b4e0dfe3e853e94e0515bda6a0cac921b5db54ad52b2edf950d7c1c574d4) arguments you can see that the first one is my `MarketMaker` address - `000000000000000000000000b3f9a85d00fcb75be507da5efc0b91ed221e9bb9` and the second is the amount in hex (0xde0b6b3a7640000 = 1e18).
+
+
+The function that exchanges CLN/CC is called, surprisingly, `change`. There's multiple implementations with different arguments, I choose one that takes 3 arguments:
+-  `_fromToken` is [ColuLocalNetwork](../reference/ColuLocalNetwork.md) address.
+-  `_inAmount` in the amount of CLN tokens I want to exchange (in that context).
+-  `_toToken` is the address of my `CommunityCurrency`
+
+![mew_change](../assets/mew_change.png)
+
+Let's sign and send the transaction. Oh, look at [that](https://ropsten.etherscan.io/tx/0x9e3ef01e47e4a1d6af4d1fbcbcca6f0b7ed287476bddd7a26c174e97ae68788d), I did receive ~0.57 CC in exchange of 1 CLN.
+
+Let's check again the CLN/CC exchange rate, I call `getCurrentPrice` again and get a slightly different price! It returns now 569388278636115886, the delta is 569672901914775677 - 569388278636115886 = 284623278659791. We need to divide by 1e18, so it gives a change of 0.00028. This means that now we receive less CC for CLN, that's the Mechanical Market Maker in action. It's small, but we see that our CC it's getting more expensive.
+
+The most observant of you might noticed that in the last transaction I exchanged 1 CLN for 0.56953055471532534 CC. Let's multiply it by 1e18 to align with other values. 0.56953055471532534 * 1e18 = 569530554715325340, I call this `actualRate`. Then:
+
+> 569672901914775677 > 569530554715325340 > 569388278636115886
+
+> getCurrentPrice_before > actualRate > getCurrentPrice_after
+
+This means.
