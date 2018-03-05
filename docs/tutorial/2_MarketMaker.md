@@ -6,7 +6,7 @@ What is a market maker, or should I say who is this? Let's look into [wikipedia]
 
 >A market maker or liquidity provider is a company or an individual that quotes both a buy and a sell price in a financial instrument or commodity held in inventory, hoping to make a profit on the bid-offer spread, or turn
 
-Maybe some of the readers are proficient in economy, but I suppose some are not. So before writing about Colu's marker making I'd like to explain this broad definition.
+Maybe some of the readers are proficient in economy, but I suppose some are not. So before writing about Colu's market making I'd like to explain this broad definition.
 
 To "quote" just means to give a specific price for a commodity. And the market maker gives both buy and sell prices. While most of traders buy or sell a commodity, the market maker willing to do both. Strange, but let's give an example everyone is acquaintance with - the dollar/"your local currency" exchange booth. When I traveled to Mexico I used them multiple times along the way, trading dollars to pesos. Every one of them got a different exchange rate and it was kind of hard to find an optimal one. You can read more about [spread](https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread), but I guess you can imagine how these guys make money.
 
