@@ -92,6 +92,16 @@ Now let's try to exchange another 1000 CLN for the same exchange rate. I know th
 
 ## Formula explanation
 
-Well, there's the most of functionality of Market Maker.
+The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's appendix.
 
-So why are the market maker is called `EllipseMarketMaker`?
+Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN, and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each one of them uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
+
+There is four variables that affects the exchange rate:
+- S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued. So it's a constant for our use case.
+- S2 - total supply of the second currency, the CC. It's defined when the currency is created (remember Mark?).
+- R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
+- R2 - the reservoir of the second currency held by the Market Maker. Initially all the CC's total supply is in the reservoir, so R2 = S2.
+
+These for variables should apply to the formula:
+
+ $$ c^2 = a + b $$
