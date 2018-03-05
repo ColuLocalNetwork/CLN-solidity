@@ -87,7 +87,7 @@ contract('VestingTrustee', (accounts) => {
 
     describe('construction', async () => {
         it('should be initialized with a valid address', async () => {
-            await expectRevert(VestingTrustee.new());
+            await expectRevert(VestingTrustee.new(null, {from: granter}));
         });
 
         it('should be ownable', async () => {
