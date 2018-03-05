@@ -102,6 +102,6 @@ There is four variables that affects the exchange rate:
 - R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
 - R2 - the reservoir of the second currency held by the Market Maker. Initially all the CC's total supply is in the reservoir, so R2 = S2.
 
-These for variables should apply to the formula:
+These four variables should apply to the formula:
 
- $$ c^2 = a + b $$
+![eq1](../assets/formulas/eq1.gif)
