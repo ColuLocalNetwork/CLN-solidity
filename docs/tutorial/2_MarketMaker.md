@@ -94,14 +94,86 @@ Now let's try to exchange another 1000 CLN for the same exchange rate. I know th
 
 The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's appendix.
 
+#### The Ellipse
+
 Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN, and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each one of them uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
 
 There is four variables that affects the exchange rate:
 - S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued. So it's a constant for our use case.
-- S2 - total supply of the second currency, the CC. It's defined when the currency is created (remember Mark?).
+- S2 - total supply of the second currency, the CC. It's defined when the currency is created, and is also a constant.
 - R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
 - R2 - the reservoir of the second currency held by the Market Maker. Initially all the CC's total supply is in the reservoir, so R2 = S2.
 
 These four variables should apply to the formula:
 
-![eq1](../assets/formulas/eq1.gif)
+![ellipse](../assets/formulas/ellipse.gif)
+
+As I said, S1 and S2 are constants. So if denoted x = S1 - R1 and y = S2 - R2, we get an [ellipse equation](https://en.wikipedia.org/wiki/Ellipse#Equation), that's why the contract is called Ellipse Market Maker :open_mouth: !
+
+Let's check if that holds at least for a couple of cases:
+
+##### Issuance
+After the issuance we know that:
+
+```
+R1 = 0
+R2 = S2
+```
+
+Let's substitute this to the formula
+```
+=> (S1 / S1) + (S2 - S2 / S2) = 1
+
+=> 1 = 1
+```
+Q.E.D. :white_check_mark:
+
+##### 1000 CLN inserted
+
+Let's take parameters from the issuance in tutorial's first part. The constants are:
+
+
+```
+S1 = 1540701333592592592592614116
+S2 = 1000000000000000000000000
+ ```
+
+I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reservoir. That's say:
+
+```
+R1 = 1e21
+R2 = 1e24 - 1,139.346173578872162244e18 = 9.988606538264211e+23
+```
+
+
+After substitute we're getting that the first part of the formula really close to 1 and the second part close to 0:
+
+```
+~1 + ~0 = 1
+```
+Q.E.D. :white_check_mark:
+
+
+#### Current Price Formula
+
+Showing you just the derived formula for `getCurrentPrice`, it's:
+
+![price](../assets/formulas/price.gif)
+
+Oh don't ask me how we did this (read the whitepaper).
+
+##### getCurrentPrice_before
+
+That's the first time we checked `getCurrentPrice`. I inserted 1000 CLN before so all variables from last section still hold. I substitute the variables:
+
+```
+price = 0.5696729019147757
+```
+
+Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones, this makes Solidity more accurate that my calculation in python. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
+
+ I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:.
+
+#### Calculating Quote
+
+`quote` function returns the amount of tokens you get in exchange.
