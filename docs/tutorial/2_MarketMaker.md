@@ -94,7 +94,7 @@ Now let's try to exchange another 1000 CLN for the same exchange rate. I know th
 
 The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's appendix.
 
-#### The Ellipse
+### The Ellipse
 
 Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN, and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each one of them uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
 
@@ -110,7 +110,7 @@ These four variables should apply to the formula:
 
 As I said, S1 and S2 are constants. So if denoted x = S1 - R1 and y = S2 - R2, we get an [ellipse equation](https://en.wikipedia.org/wiki/Ellipse#Equation), that's why the contract is called Ellipse Market Maker :open_mouth: !
 
-Let's check if that holds at least for a couple of cases:
+Let's check that the formula holds at least for a couple of cases:
 
 ##### Issuance
 After the issuance we know that:
@@ -154,13 +154,13 @@ After substitute we're getting that the first part of the formula really close t
 Q.E.D. :white_check_mark:
 
 
-#### Current Price Formula
+### Current Price Formula
 
 Showing you just the derived formula for `getCurrentPrice`, it's:
 
 ![price](../assets/formulas/price.gif)
 
-Oh don't ask me how we did this (read the whitepaper).
+Oh don't ask me how we did this (read the whitepaper). The important thing here is because S1 and S2 are constants, price is expressed as a function of R1. And this is great because, as you know, one variable functions are simple and easy to use.
 
 ##### getCurrentPrice_before
 
@@ -172,8 +172,20 @@ price = 0.5696729019147757
 
 Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones, this makes Solidity more accurate that my calculation in python. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
 
- I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:.
+ I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. Let's see some graphs I've drawn.
 
-#### Calculating Quote
+ CC Price with CLN reservoir from 1 to 1000 CLN:
+
+ ![CC_price](../assets/graphs/CC_price.png)
+
+You can see that the price drops sharply for the first 400 CLN, then becomes very stable (and reached the expected 0.56 at 1000 CLN).
+
+And that's the same graph over the domain of 1 to 1e6:
+
+![CC_price2](../assets/graphs/CC_price2.png)
+
+Yep we see the same pattern. I call this pretty stable.
+
+### Calculating Quote
 
 `quote` function returns the amount of tokens you get in exchange.
