@@ -90,7 +90,7 @@ I want to make sure that I don't get less than the value that was promised by `q
 Now let's try to exchange another 1000 CLN for the same exchange rate. I know this is impossible but for once I want to show you a failed transaction. Actually Ethereum doesn't give a reason why the [transaction failed](https://ropsten.etherscan.io/tx/0x1bc68cacb5bf67dcb0d3c0ee8eedf124171aadeaaa52f5107f5806649aa31a05), so you should trust me on that one. But when I run again `quote` for 1000 CLN I'm getting a `returnAmount` of ~366 CC, so this makes sense.
 
 
-## Formula explanation
+## The Math Behind
 
 The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's appendix.
 
@@ -135,18 +135,18 @@ Let's take parameters from the issuance in tutorial's first part. The constants 
 
 ```
 S1 = 1540701333592592592592614116
-S2 = 1000000000000000000000000
+S2 = 1e24
  ```
 
 I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reservoir. That's say:
 
 ```
 R1 = 1e21
-R2 = 1e24 - 1,139.346173578872162244e18 = 9.988606538264211e+23
+R2 = 1e24 - 1,139.346173578872162244e18 = 9.988606538264211e23
 ```
 
 
-After substitute we're getting that the first part of the formula really close to 1 and the second part close to 0:
+After the substitution we see that the first part of the formula really close to 1 and the second part close to 0:
 
 ```
 ~1 + ~0 = 1
@@ -178,9 +178,9 @@ Comparing this price to a `getCurrentPrice` answer, we're getting a really close
 
  ![CC_price](../assets/graphs/CC_price.png)
 
-You can see that the price drops sharply for the first 400 CLN, then becomes very stable (and reached the expected 0.56 at 1000 CLN).
+You can see that the price drops sharply for the first 400 CLN, but then stays the same and reaches the expected 0.56 around 1000 CLN.
 
-And that's the same graph over the domain of 1 to 1e6:
+That's the same function over the domain of 1 to 1e6:
 
 ![CC_price2](../assets/graphs/CC_price2.png)
 
@@ -188,4 +188,42 @@ Yep we see the same pattern. I call this pretty stable.
 
 ### Calculating Quote
 
-`quote` function returns the amount of tokens you get in exchange.
+As we saw before, `quote` function calculates how much of token1 received in exchange for certain amount of token2. For now we are interested in exchange of CLN to CC, but the CC to CLN exchange calculated in the same way. Let's follow `quote` logic and calculate ourselves how much CLN I received in return.
+
+If we poke a little the ellipse equation we can present a formula for R2:
+
+![reservoir2](../assets/formulas/reservoir2.gif)
+
+
+`quote` internally uses this formula, it's even implemented in the smart contract as `calcReserve` function.
+
+I inserter 1000 CLN trough `CurrencyFactory` and 1 CLN through `MarketMaker` directly. So the `MarketMaker` was holding 1001 CLN, when I inserted another 1000 CLN. So we have:
+
+```
+S1 = 1540701333592592592592614116
+S2 = 1e24
+R1 = 2.001e21
+R2_before = 1e24 - 1,139.346173578872162244e18 - 0.56953055471532534e18
+=> R2_before = 9.98860084295866412512416e23
+```
+
+0.56953055471532534
+It turns out we have bounded values for S1, S2 and R1. R2 is the only free variable with an only positive value to satisfy the equation.
+
+I've got tired of working with python because of the accuracy problem, so I'll do the math this time in wolframalpha. As you can <a href="http://www.wolframalpha.com/input/?i=1e24+(1+-+sqrt(1+-+((1540701333592592592592614116+-+2.001e21)+%2F+1540701333592592592592614116)+%5E+2)">see</a>:
+
+```
+R2_after = 9.983883186815031647142304e23
+
+```
+
+Wow that precision is very very good. Let's calculate the delta of R2, this change is the amount of tokens I will receive in exchange, exactly what I was looking for.
+
+
+```
+delta_R2 = R2_before - R2_after = 4.717656143632477981856e20
+```
+
+It's very close to the value retrieved by `quote`. So are we good? I think we are.
+
+That's not all, but that's all for now. See you at part 3 when we learn about the currency crowdfunding of `IssuanceFactory` :smiley:
