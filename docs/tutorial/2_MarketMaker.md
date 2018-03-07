@@ -92,14 +92,14 @@ Now let's try to exchange another 1000 CLN for the same exchange rate. I know th
 
 ## The Math Behind
 
-The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's whitepaper's [appendix](https://cln.network/pdf/cln_whitepaper.pdf).
+The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read the whitepaper's [appendix](https://cln.network/pdf/cln_whitepaper.pdf).
 
 ### The Ellipse
 
 Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each CC uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
 
 There is four variables that affect the exchange rate:
-- S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued. So fo us it's a constant.
+- S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued, we can consider it as a constant.
 - S2 - total supply of the second currency, the CC. It's defined when the currency is created, and is also a constant.
 - R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
 - R2 - the reservoir of the second currency held by the Market Maker. Initially all the CC's total supply is in the reservoir, so R2 = S2.
@@ -112,7 +112,7 @@ As I said, S1 and S2 are constants. So if denoted `x = S1 - R1` and `y = S2 - R2
 
 Let's check that the formula holds at least for a couple of cases:
 
-##### Issuance
+#### Issuance
 After the issuance we know that:
 
 ```
@@ -128,7 +128,7 @@ Let's substitute this to the formula
 ```
 Q.E.D. :white_check_mark:
 
-##### 1000 CLN inserted
+#### 1000 CLN inserted
 
 Let's take parameters from the issuance in tutorial's first part. The constants are:
 
@@ -138,7 +138,7 @@ S1 = 1540701333592592592592614116
 S2 = 1e24
  ```
 
-I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reservoir. That's say:
+I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reserve. That's say:
 
 ```
 R1 = 1e21
@@ -170,21 +170,21 @@ That's the first time we checked `getCurrentPrice`. I inserted 1000 CLN before s
 price = 0.5696729019147757
 ```
 
-Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones. This makes Solidity more accurate that my calculation in python. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
+Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones. This makes Solidity's calculation more accurate than mine. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
 
- I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. Actually `getCurrentPrice` returns the exchange rate of CLN to CC, as we saw that gave us  `1 CLN => ~0.57 CC`. I wish to present a reverse exchange of CC to CLN, to show CC's growth of value. The formula for that is just `1 / getCurrentPrice`, now let's see some graphs I've drawn.
+ I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. `getCurrentPrice` returns the exchange rate of CLN to CC, as we saw that gave us  `1 CLN => ~0.57 CC`. I wish to present a reverse exchange of CC to CLN, to show CC's growth of value. The formula for that is just `1 / getCurrentPrice`, now let's see some graphs I've drawn.
 
  CC Price with CLN reservoir from 1 to 10000 CLN:
 
  ![CC_price](../assets/graphs/CC_price.png)
 
-You can see that the price drops sharply for the first 400 CLN, but then stays the same and reaches the expected 0.56 around 1000 CLN.
+As you see, initially the price climbs steeply, but then the amplitude is kind of stays the same.
 
 That's the same function over the domain of 1 to 1e6:
 
 ![CC_price2](../assets/graphs/CC_price2.png)
 
-Yep we see the same pattern. I call this pretty stable.
+It's important to note that the maximum for CLN reserve is S1 and not 1e6, but you see the pattern. I call this pretty stable.
 
 ### Calculating Quote
 
@@ -195,9 +195,9 @@ If we poke a little the ellipse equation we can present a formula for R2:
 ![reservoir2](../assets/formulas/reservoir2.gif)
 
 
-`quote` internally uses this formula, it's even implemented in the smart contract as `calcReserve` function.
+This is formula that `quote` internally uses, it's even implemented in the smart contract as `calcReserve` function.
 
-I inserter 1000 CLN trough `CurrencyFactory` and 1 CLN through `MarketMaker` directly. So the `MarketMaker` was holding 1001 CLN, when I inserted another 1000 CLN. So we have:
+Before, I inserted 1000 CLN through `CurrencyFactory` and 1 CLN through `MarketMaker` directly. So whereas I want to insert another 1000 CLN, `MarketMaker` was already holding 1001 CLN. So we have:
 
 ```
 S1 = 1540701333592592592592614116
@@ -207,8 +207,7 @@ R2_before = 1e24 - 1,139.346173578872162244e18 - 0.56953055471532534e18
 => R2_before = 9.98860084295866412512416e23
 ```
 
-0.56953055471532534
-It turns out we have bounded values for S1, S2 and R1. R2 is the only free variable with an only positive value to satisfy the equation.
+It turns out we have bounded values for S1, S2 and R1. This leaves R2 the only free variable with one positive value to satisfy the equation.
 
 I've got tired of working with python because of the accuracy problem, so I'll do the math this time in wolframalpha. As you can <a href="http://www.wolframalpha.com/input/?i=1e24+(1+-+sqrt(1+-+((1540701333592592592592614116+-+2.001e21)+%2F+1540701333592592592592614116)+%5E+2)">see</a>:
 
@@ -217,7 +216,7 @@ R2_after = 9.983883186815031647142304e23
 
 ```
 
-Wow that precision is very very good. Let's calculate the delta of R2, this change is the amount of tokens I will receive in exchange, exactly what I was looking for.
+Wow that precision is very very good. Let's calculate the change of R2, this delta is the amount of tokens I will receive in exchange, exactly what I was looking for.
 
 
 ```
