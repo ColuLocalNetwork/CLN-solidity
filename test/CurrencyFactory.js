@@ -201,7 +201,7 @@ contract('CurrencyFactory', (accounts) => {
             await cln.approve(factory.address, 2 * THOUSAND_CLN, {from: owner});
             assert(await factory.insertCLNtoMarketMaker['address,uint256'](tokenAddress, 2 * THOUSAND_CLN, {from: owner}))
 
-            // CLN ammount decreased by 1000
+            // CLN amount decreased by 1000
             assert(BigNumber(await cln.balanceOf(owner)).eq(clnvalue - (2 * THOUSAND_CLN)));
 
             var ccadder = await factory.currencyMap(tokenAddress);

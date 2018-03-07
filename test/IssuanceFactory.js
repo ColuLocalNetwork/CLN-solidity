@@ -386,7 +386,7 @@ contract('IssuanceFactory', (accounts) => {
                     await expectRevert(factory.finalize(tokenAddress, {from: owner}));
                 });
 
-                it('should be able to finalize if owner and sale is successfull', async () => {
+                it('should be able to finalize if owner and sale is successful', async () => {
                     const clnBalance = await cln.balanceOf(owner);
                     const THOUSAND_CLN_3_4 = THOUSAND_CLN / 4 * 3
                     await cln.approve(factory.address, THOUSAND_CLN_3_4, {from: participant});
@@ -488,7 +488,7 @@ contract('IssuanceFactory', (accounts) => {
                     await expectRevert(factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant}))
                 });
 
-                it('should not be able to refund if refund ammount is zero', async () => {
+                it('should not be able to refund if refund amount is zero', async () => {
                     await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
                     assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
                     assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
@@ -498,7 +498,7 @@ contract('IssuanceFactory', (accounts) => {
                     await expectRevert(factory.refund['address,uint256'](tokenAddress, 0, {from: participant}))
                 });
 
-                it('should not be able to refund if refund ammount is zero (transferAndCall)', async () => {
+                it('should not be able to refund if refund amount is zero (transferAndCall)', async () => {
                     await cln.approve(factory.address, THOUSAND_CLN / 5, {from: participant})
                     assert( await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN / 5, {from: participant}))
                     assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
