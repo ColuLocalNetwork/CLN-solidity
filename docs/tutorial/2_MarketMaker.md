@@ -75,7 +75,7 @@ I see that actually I exchanged for a slightly different rate than `getCurrentPr
 The exchange rate of CLN/CC is a function with multiple variables, we get to this later. What's important to grasp is that it defined continuously for every wei (smallest indivisible unit) in the domain. So the exchange rate changes with every inserted wei of CLN. When I inserted 1 CLN It was actually 1e18 wei, and every wei got exchanged for an individual price. If it reminds you of something you're right - it's good old calculus. To calculate the `actualRate`, I need to calculate a definite integral of the `getCurrentPrice` function. I stop myself here and refer you to [whitepaper's appendix](https://cln.network/pdf/cln_whitepaper.pdf) for a complete explanation.
 
 
-The function that performs the integral calculation is `quote`. It gives you the exact amount of CC you will get for the specific amount of CLN (and vice versa). Let's say I want to buy 1000 CLN (1e21), firstly I do:
+But actually there's a simple way. I'll explain how it works in the next section, for now we just use the `quote` function. It calculates the exact amount of CC you will get for the specific amount of CLN (and vice versa). Let's say I want to buy 1000 CLN (1e21 wei), firstly I do:
 
 ![mew_quote](../assets/mew_quote.png)
 
@@ -92,14 +92,14 @@ Now let's try to exchange another 1000 CLN for the same exchange rate. I know th
 
 ## The Math Behind
 
-The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's appendix.
+The last thing I want to cover is the formula itself. If you want to have a deep understanding of the math I advise you to read whitepaper's whitepaper's [appendix](https://cln.network/pdf/cln_whitepaper.pdf).
 
 ### The Ellipse
 
-Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN, and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each one of them uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
+Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each CC uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
 
-There is four variables that affects the exchange rate:
-- S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued. So it's a constant for our use case.
+There is four variables that affect the exchange rate:
+- S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued. So fo us it's a constant.
 - S2 - total supply of the second currency, the CC. It's defined when the currency is created, and is also a constant.
 - R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
 - R2 - the reservoir of the second currency held by the Market Maker. Initially all the CC's total supply is in the reservoir, so R2 = S2.
@@ -108,7 +108,7 @@ These four variables should apply to the formula:
 
 ![ellipse](../assets/formulas/ellipse.gif)
 
-As I said, S1 and S2 are constants. So if denoted x = S1 - R1 and y = S2 - R2, we get an [ellipse equation](https://en.wikipedia.org/wiki/Ellipse#Equation), that's why the contract is called Ellipse Market Maker :open_mouth: !
+As I said, S1 and S2 are constants. So if denoted `x = S1 - R1` and `y = S2 - R2`, we get an [ellipse equation](https://en.wikipedia.org/wiki/Ellipse#Equation), that's why the contract is called Ellipse Market Maker :open_mouth: !
 
 Let's check that the formula holds at least for a couple of cases:
 
@@ -146,7 +146,7 @@ R2 = 1e24 - 1,139.346173578872162244e18 = 9.988606538264211e23
 ```
 
 
-After the substitution we see that the first part of the formula really close to 1 and the second part close to 0:
+After the substitution we see that the first part of the formula is really close to 1 and the second part close to 0:
 
 ```
 ~1 + ~0 = 1
@@ -156,7 +156,7 @@ Q.E.D. :white_check_mark:
 
 ### Current Price Formula
 
-Showing you just the derived formula for `getCurrentPrice`, it's:
+Showing you just the derived formula for `getCurrentPrice`, it is:
 
 ![price](../assets/formulas/price.gif)
 
@@ -164,17 +164,17 @@ Oh don't ask me how we did this (read the whitepaper). The important thing here 
 
 ##### getCurrentPrice_before
 
-That's the first time we checked `getCurrentPrice`. I inserted 1000 CLN before so all variables from last section still hold. I substitute the variables:
+That's the first time we checked `getCurrentPrice`. I inserted 1000 CLN before so all variables from last section still hold. I substitute the variables and calculate:
 
 ```
 price = 0.5696729019147757
 ```
 
-Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones, this makes Solidity more accurate that my calculation in python. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
+Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones. This makes Solidity more accurate that my calculation in python. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
 
- I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. Let's see some graphs I've drawn.
+ I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. Actually `getCurrentPrice` returns the exchange rate of CLN to CC, as we saw that gave us  `1 CLN => ~0.57 CC`. I wish to present a reverse exchange of CC to CLN, to show CC's growth of value. The formula for that is just `1 / getCurrentPrice`, now let's see some graphs I've drawn.
 
- CC Price with CLN reservoir from 1 to 1000 CLN:
+ CC Price with CLN reservoir from 1 to 10000 CLN:
 
  ![CC_price](../assets/graphs/CC_price.png)
 
@@ -226,4 +226,4 @@ delta_R2 = R2_before - R2_after = 4.717656143632477981856e20
 
 It's very close to the value retrieved by `quote`. So are we good? I think we are.
 
-That's not all, but that's all for now. See you at part 3 when we learn about the currency crowdfunding of `IssuanceFactory` :smiley:
+That's not all, but that's all for now. See you at part 3 when we learn about the currency crowdfunding with `IssuanceFactory` :smiley:
