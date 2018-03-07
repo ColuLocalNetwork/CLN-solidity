@@ -31,7 +31,7 @@ At the last tutorial's chapter we eventually open the market for public. As a re
 
 ![etherscan_read](../assets/etherscan_read.png)
 
-You can see that the answer for `supportsToken` is `true`. So we're good. CLN and all tokens that created using the `CurrencyFactory` are supported. After that I put the same address and query the `currencyMap`, and receive a data related to the currency: name, decimals, totalSupply, etc. You can see it above, under "[currencyMap method Response]". I can get assured that this is indeed the currency I created cause I'm the owner. This is also a quick way to get MarketMaker address, it appears as `mmAddress` field.
+You can see that the answer for `supportsToken` is `true`. So we're good. CLN and all tokens that created using the `CurrencyFactory` are supported. After that I put the same address and query the `currencyMap`, and receive a data related to the currency: name, decimals, totalSupply, etc. You can see it above, under "[currencyMap method Response]". I can get assured that this is indeed the currency I created cause I'm the owner. This is also a quick way to get `MarketMaker` address, it appears as `mmAddress` field.
 
 ## Interacting the Market Maker
 
