@@ -38,9 +38,34 @@ So what happened here?
 - `CurrencyFactory` moved all CC supply to the `MarketMaker`. As an exchange provider it's reasonable that the MM will hold all the CC.
 
 
-### Insert CLN into the Community Currency
+### Exchanging CLN to CC
 
 Nice, we created a currency but all of it is locked in some `MarketMaker`. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the `MarketMaker` it will have no slightest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there are two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
+
+
+#### A Few Words About ERC20
+
+Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. This part is hard to grasp for people not acquainted with ERC20 standard. If you understand `approve`, `allowance` and `transferFrom` methods you can skip following paragraphs.
+
+```
+approve(address _spender, uint256 _value) returns (bool success)
+Allow _spender to withdraw from your account, multiple times, up to the _value amount
+```
+
+Basically, it's like saying to contract  "Hey contract, if someone named *spender* will try to use up to *X* of my tokens, it's ok, I approve it". There's also the `allowance` function:
+
+
+```
+allowance (address *_owner*, address *_spender*) constant returns (uint256 remaining)
+Returns the amount which _spender is still allowed to withdraw from _owner
+```
+
+Also, to actually to withdraw these funds, the user (or a contract) will call `transferFrom`:
+
+```
+transferFrom(address _from, address _to, uint256 _value) returns (bool success)
+Send _value amount of tokens from address _from to address _to
+```
 
 Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". You set an allowance for other accounts to use your tokens, this is an ERC20 mechanism.
 
