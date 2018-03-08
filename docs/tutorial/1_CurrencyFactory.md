@@ -45,14 +45,14 @@ Nice, we created a currency but all of it is locked in some `MarketMaker`. We sh
 
 #### A Few Words About ERC20
 
-Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. This part is hard to grasp for people not acquainted with ERC20 standard. If you understand `approve`, `allowance` and `transferFrom` methods you can skip following paragraphs.
+Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. I want to explain the part of ERC20 standard that is relevant for this tutorial. If you understand `approve`, `allowance` and `transferFrom` methods you can skip this section. We start with approve:
 
 ```
 approve(address _spender, uint256 _value) returns (bool success)
 Allow _spender to withdraw from your account, multiple times, up to the _value amount
 ```
 
-Basically, it's like saying to contract  "Hey contract, if someone named *spender* will try to use up to *X* of my tokens, it's ok, I approve it". There's also the `allowance` function:
+Basically, it's like saying to contract  "Hey contract, if someone named *spender* will try to use up to *X* of my tokens, it's ok, I approve it". In our case *spender* is `CurrencyFactory`. There's also the `allowance` function:
 
 
 ```
@@ -60,7 +60,7 @@ allowance (address *_owner*, address *_spender*) constant returns (uint256 remai
 Returns the amount which _spender is still allowed to withdraw from _owner
 ```
 
-Also, to actually to withdraw these funds, the user (or contract) have to call `transferFrom`:
+Also, to withdraw these funds the user (or contract) have to call `transferFrom`:
 
 ```
 transferFrom(address _from, address _to, uint256 _value) returns (bool success)
@@ -72,9 +72,9 @@ Remember how we called `createIssuance`? Now we'll do the same with the `ColuLoc
 
 ![mew_approve](../assets/mew_approve.png)
 
-I check everything is correct and click send, easy. I didn't use it in the screenshots, but MyEtherWallet also supports [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation). It means that instead 1000000000000000000000 you can just write 1e21.
+I check everything is correct and click send, easy. I didn't use it in the screenshots, but MyEtherWallet also supports the [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation). It means that instead 1000000000000000000000 you can just write 1e21.
 
-There's one thing you need to know about `approve`. If you you want to change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value. This is done to prevent a special kind of attack, [look here](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve ) for more info.
+There's one more thing you need to know about `approve`. To change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value. Otherwise your transaction will fail without a reason (like every failed transaction in Ethereum). This is done to prevent a special kind of attack, [look here](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve ) for more info.
 
 #### Inserting CLN to the CurrencyFactory
 
