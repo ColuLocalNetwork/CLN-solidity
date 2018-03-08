@@ -38,7 +38,7 @@ So what happened here?
 - `CurrencyFactory` moved all CC supply to the `MarketMaker`. As an exchange provider it's reasonable that the MM will hold all the CC.
 
 
-### Exchanging CLN to CC
+### Exchanging CLN for CC
 
 Nice, we created a currency but all of it is locked in some `MarketMaker`. We should send CLN to get us some of that crypto-dough. But if we just send CLN to the `MarketMaker` it will have no slightest idea what we want. It will be hard to get this money back, so **don't** do this. Instead, there are two functions on the `CurrencyFactory` that designed exactly for that - `insertCLNtoMarketMaker` and `extractCLNfromMarketMaker`, we need the former.
 
@@ -60,22 +60,26 @@ allowance (address *_owner*, address *_spender*) constant returns (uint256 remai
 Returns the amount which _spender is still allowed to withdraw from _owner
 ```
 
-Also, to actually to withdraw these funds, the user (or a contract) will call `transferFrom`:
+Also, to actually to withdraw these funds, the user (or contract) have to call `transferFrom`:
 
 ```
 transferFrom(address _from, address _to, uint256 _value) returns (bool success)
 Send _value amount of tokens from address _from to address _to
 ```
 
-Before calling this function I need to approve `CurrencyFactory` to use my CLN tokens. It's like saying to CLN contract: "Hey contract, if someone named CurrencyFactory will try to use my tokens, it's ok, I approve this". You set an allowance for other accounts to use your tokens, this is an ERC20 mechanism.
 
- Remember how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. I open again the "Contracts" tab of MyEtherWallet, fill in `ColuLocalNetwork` address and uploads it's ABI. After gaining access to contract's functions, I select `approve` with 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. Here's another screenshot, just for you:
+Remember how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. I open again the "Contracts" tab of MyEtherWallet, fill in `ColuLocalNetwork` address and upload it's ABI. After gaining access to contract's functions, I select `approve`, filling 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. Here's another screenshot, just for you:
 
- ![mew_approve](../assets/mew_approve.png)
+![mew_approve](../assets/mew_approve.png)
 
-  I check everything is correct and click send. Easy, but there's one thing you need to know about `approve`. If you you want to change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value ([more info](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve )).
+I check everything is correct and click send, easy. I didn't use it in the screenshots, but MyEtherWallet also supports [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation). It means that instead 1000000000000000000000 you can just write 1e21.
 
- After the `approve` transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
+There's one thing you need to know about `approve`. If you you want to change the approved amount, first you need to set the allowance to zero (approving zero for this account) and then send approve again with the new value. This is done to prevent a special kind of attack, [look here](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md#approve ) for more info.
+
+#### Inserting CLN to the CurrencyFactory
+
+
+After the `approve` transaction is confirmed I can eventually call `insertCLNtoMarketMaker`. I do the same process again, this time for `CurrencyFactory`, after ABI is loaded I select `insertCLNtoMarketMaker` function. There's actually two functions with the same name (this is Solidity's function overloading feature), and I need the one that received both `token` and `clnAmount`. Maybe we'll talk latter about the second one. In the token field I paste the `CommunityCurrency`'s address, and put the same 1000 * 1e18 for the amount field.
 
 Viewing the [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6) you may think some complex stuff happened there. Well, I'll try to sum it up.
 
