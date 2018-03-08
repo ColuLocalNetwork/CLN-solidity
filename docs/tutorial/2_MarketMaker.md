@@ -48,7 +48,9 @@ Also you can see that I call contract's function  `openForPublic`, to be sure th
 Another `view` function I want to try is `getCurrentPrice`, calling it I get an answer of 569672901914775677. This means that for 1 CLN we get 569672901914775677 / 1e18 = ~0.57 CC. It's a bit clumsy, but was implemented that way because Solidity's lack of support for real numbers.
 
 
-Just like we did in part 1, we need to approve `MarketMaker` to use CLN. I call `approve` function of [ColuLocalNetwork](../reference/ColuLocalNetwork.md) contract, fill in the amount I wish to exchange and specify `MarketMaker` address as the spender. Investigating [transaction's](https://ropsten.etherscan.io/tx/0x4d59b4e0dfe3e853e94e0515bda6a0cac921b5db54ad52b2edf950d7c1c574d4) arguments you can see that the first one is my `MarketMaker` address - `000000000000000000000000b3f9a85d00fcb75be507da5efc0b91ed221e9bb9` and the second is the amount in hex (0xde0b6b3a7640000 = 1e18).
+Just like I did in part one of the tutorial, I need to approve `MarketMaker` to use my CLN. I call `approve` function of [ColuLocalNetwork](../reference/ColuLocalNetwork.md) contract, fill in the amount I wish to exchange and specify `MarketMaker` address as the spender. If you don't sure why we're doing this, please read "A Few Words About ERC20" section of the first part.
+
+Investigating [transaction's](https://ropsten.etherscan.io/tx/0x4d59b4e0dfe3e853e94e0515bda6a0cac921b5db54ad52b2edf950d7c1c574d4) arguments you can see that the first one is my `MarketMaker` address - `000000000000000000000000b3f9a85d00fcb75be507da5efc0b91ed221e9bb9` and the second is the amount in hex (0xde0b6b3a7640000 = 1e18).
 
 
 The function that exchanges CLN/CC is called, surprisingly, `change`. There's multiple implementations with different arguments, I choose one that takes 3 arguments:
@@ -83,7 +85,7 @@ It means that now for 1000 CLN I'm getting 471765614363247798186 / 1e18 = ~471.7
 
 Now after I know for sure how much CC I'll get for 1000 CLN, let's do the trade. But what if between the time when I checked the quote and called `change` function, someone other exchanged CLN to CC before me? I'll get different CC amount! Sometime It can be more (if CC is traded for CLN), but sometimes less. Do I'm ok with less? If yes how much less I'm ok with? Of course this difference is significant only on some edge cases, but we got that covered too.
 
-Firstly, let's approve 1000 CLN for the `MarketMaker`'s allowance. After this is done I'm going to call different implementation of `change`. One that receives 4 arguments, 3 of them are the same and `minReturn` is the new one. With this argument I specify the minimum amount of tokens I agree to receive in return. If the exchange rate changed and I'm going to receive less than `minReturn`, the deal is canceled and the transaction is reverted. I just pay for the Gas.
+Firstly, let's approve 1000 CLN for the `MarketMaker`'s allowance. After this is done I'll take again `EllipseMarketMakerLib` ABI to contact with my dedicated `MarketMaker`. Now I'm going to call different implementation of `change`. One that receives 4 arguments, 3 of them are the same and `minReturn` is the new one. With this argument I specify the minimum amount of tokens I agree to receive in return. If the exchange rate changed and I'm going to receive less than `minReturn`, the deal is canceled and the transaction is reverted. I just pay for the Gas.
 
 I want to make sure that I don't get less than the value that was promised by `quote`. So I fill 471765614363247798186 (`quote`'s answer') in `minReturn` argument. After a while, checking the [transaction](https://ropsten.etherscan.io/tx/0x6c711ea96f507a8e71330fb5a3f4b675c81eda3083a2b2b707217802f199e673) I see that this is exactly the amount of tokens I got. Looks solid.
 
