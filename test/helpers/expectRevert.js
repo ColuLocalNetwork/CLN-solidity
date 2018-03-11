@@ -1,42 +1,17 @@
-const web3GetFirstTransactionHashFromLastBlock = () => {
-    return new Promise((resolve, reject) => {
-      web3.eth.getBlock("latest", true, (err, res) => {
-        if (err !== null) return reject(err);
-        return resolve(res.transactions[0].hash);
-      });
-    });
-}
-
-const web3GetTransactionReceipt = (txid) => {
-    return new Promise((resolve, reject) => {
-      web3.eth.getTransactionReceipt(txid, (err, res) => {
-        if (err !== null) return reject(err);
-        return resolve(res);
-      });
-    });
-}
-
 module.exports = async (promise) => {
-    let txHash;
-     try {
-       const tx = await promise;
-       txHash = tx.tx;
-     } catch (err) {
-       // Make sure this is a revert (returned from EtherRouter)
-       if ((err.message.indexOf("VM Exception while processing transaction: revert") === -1) &&
-            err.message.indexOf("The contract code couldn't be stored, please check your gas amount")) {
+    try {
+        await promise;
+    } catch (error) {
+        const invalidOpcode = error.message.search('invalid opcode') > -1;
+        const outOfGas = error.message.search('out of gas') > -1;
+        const revert = error.message.search('revert') > -1;
+        const cantStore = error.message.search('couldn\'t be stored') > -1;
+        const invalidJSON = error.message.search('Invalid JSON RPC response') > -1;
 
-            if (err.message.indexOf("invalid opcode") !== -1 || err.message.indexOf("Invalid JSON RPC response") !== -1) {
-                return assert(true);
-            }
-            throw err;
-       }
+        assert(invalidOpcode || outOfGas || revert || cantStore || invalidJSON, `Expected throw, got ${error} instead`);
 
+        return;
+    }
 
-       txHash = await web3GetFirstTransactionHashFromLastBlock();
-     }
-
-     const receipt = await web3GetTransactionReceipt(txHash);
-     // Check the receipt `status` to ensure transaction failed.
-     assert.equal(receipt.status, 0x00, "Expected throw wasn't received");
+    assert(false, "Expected throw wasn't received");
 };

@@ -8,10 +8,10 @@ What is a market maker, or should I say who is this? Let's look into [wikipedia]
 
 Maybe some of the readers are proficient in economy, but I suppose some are not. So before writing about Colu's market making I'd like to explain this broad definition.
 
-To "quote" just means to give a specific price for a commodity. And the market maker gives both buy and sell prices. While most of traders buy or sell a commodity, the market maker willing to do both. Strange, but let's give an example everyone is acquaintance with - the dollar/"your local currency" exchange booth. When I traveled to Mexico I used them multiple times along the way, trading dollars to pesos. Every one of them got a different exchange rate and it was kind of hard to find an optimal one. You can read more about [spread](https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread), but I guess you can imagine how these guys make money.
+To "quote" just means to give a specific price for a commodity. And the market maker gives both buy and sell prices. While most of the traders buy or sell a commodity, the market maker is willing to do both. Strange, but let's give an example everyone is acquainted with - the dollar/"your local currency" exchange booth. When I traveled to Mexico I used them multiple times along the way, trading dollars to pesos. Each one of them have provided a different exchange rate and it was kind of hard to find an optimal one. You can read more about [spread](https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread), but I guess you can imagine how these guys make money.
 
 
-Giving both buy and sell prices is what "builds the market", making the commodity easily tradable. Without such exchange booths, it would be pretty hard to exchange currencies. Especially for tourist who don't have much connections in the country. This leads to the notion of [liquidity](https://www.investopedia.com/terms/l/liquidity.asp):
+Giving both buy and sell prices is what "builds the market", making the commodity easily tradable. Without such exchange booths, it would be pretty hard to exchange currencies. Especially for tourists who don't have much connections in the country. This leads to the notion of [liquidity](https://www.investopedia.com/terms/l/liquidity.asp):
 
 > Degree to which an asset or security can be quickly bought or sold (Investopedia)
 
@@ -19,19 +19,19 @@ Currencies and stocks have got high liquidity that supported by various market p
 
 It was a crucial issue to solve to get the local economy running. So the autonomous liquidity provider, or how we call it - a Mechanical Market Maker, was initiated. Mechanical Market Maker provides immediate exchange between CLN and the Community Currency, while the exchange rate is calculated by a mathematical formula. With every Community Currency issued, a dedicated Market Maker is created. In contrast to market maker's definition, this Market Maker doesn't make profit, but solely provides liquidity. As we saw in the previous part, extracting CLN from the `CurrencyFactory` resulted in the initial amount of CLN. Implemented as smart contract you only pay for Gas to subsist the Ethereum platform.
 
-Colu is not the only one in the autonomous liquidity domain, with the evolution of smart contracts many others, like [Bancor](https://www.bancor.network/) or [Stablecoin](http://cdetr.io/smart-markets/), presented their ideas, formulas and liquidity providers. Though every technology must be viewed in the context of the problem it solves. Infinite number of formulas are possible, but our aim was to conceive one that assist in the development of local communities.
+Colu is not the only one in the autonomous liquidity domain. With the evolution of smart contracts, many others like [Bancor](https://www.bancor.network/) or [Stablecoin](http://cdetr.io/smart-markets/), have presented their ideas, formulas and liquidity providers. Though every technology must be viewed in the context of the problem it solves. Infinite number of formulas are possible, but our aim was to conceive one that assist in the development of local communities.
 
 
 ### Recap
 
-After such an introduction, let's get back technical. In the last chapter we issued a new currency and exchanged CLN to CC calling `insertCLNtoMarketMaker`. Do you remember that [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6)? Here I exchanged 1000 CLN for ~1339 CC. But if the currency was created with a different supply, the exchange rate is going to be different too. [Mark](https://twitter.com/smargon), for example, [created](https://etherscan.io/tx/0xe444c7b274e937bf97484d480c6eb5d0859e5754164ea911c68138280364234d) a currency with a total supply of 10,000. So for 100 CLN he [received](https://etherscan.io/tx/0xb565b4f820efd0298158d023a43ef28b9cfc5caf62b4a1fc17bf0169a324003f) only ~3 TAC (his Community Currency). We dive soon into the "why", but the intuition here is because his currency has much smaller supply, every TAC token is much more valuable than my CC.
+After such an introduction, let's get back technical. In the last chapter we issued a new currency and exchanged CLN to CC calling `insertCLNtoMarketMaker`. Do you remember that [transaction](https://ropsten.etherscan.io/tx/0x350fe7bad490baa8a0446c8f5f76bb913b8238fcd882832bb7b4b3e354d1b9c6)? Here I exchanged 1000 CLN for ~1339 CC. But if the currency was created with a different supply, the exchange rate is going to be different too. [Mark](https://twitter.com/smargon), for example, [created](https://etherscan.io/tx/0xe444c7b274e937bf97484d480c6eb5d0859e5754164ea911c68138280364234d) a currency with a total supply of 10,000. So for 100 CLN he [received](https://etherscan.io/tx/0xb565b4f820efd0298158d023a43ef28b9cfc5caf62b4a1fc17bf0169a324003f) only ~3 TAC (his Community Currency). We will dive soon into the "why", but the intuition here is because his currency has much smaller supply, every TAC token is much more valuable than my CC.
 
 
-At the last tutorial's chapter we eventually open the market for public. As a recap let's explore `CurrencyFactory` through Etherscan's [Read Smart Contract](https://ropsten.etherscan.io/address/0x7b2cbec58653aaf79842b80ed184b2ecb4e17d59#readContract) tab. Here you see contract's data and the read-only functions that can be called because they don't mutate contract's state. My CC address is `0x8611c307F3b88040Aa4E73E8e2c5DB303ca81701`, let's see if `CurrencyFactory` supports this token. I fill this address in the field next to `supportsToken` function and press query. Here how it looks:
+In the last tutorial's chapter we eventually open the market for public. As a recap let's explore `CurrencyFactory` through Etherscan's [Read Smart Contract](https://ropsten.etherscan.io/address/0x7b2cbec58653aaf79842b80ed184b2ecb4e17d59#readContract) tab. Here you see contract's data and the read-only functions that can be called because they don't mutate the contract's state. My CC address is `0x8611c307F3b88040Aa4E73E8e2c5DB303ca81701`, let's see if `CurrencyFactory` supports this token. I fill this address in the field next to `supportsToken` function and press query. Here's how it looks:
 
 ![etherscan_read](../assets/etherscan_read.png)
 
-You can see that the answer for `supportsToken` is `true`. So we're good. CLN and all tokens that created using the `CurrencyFactory` are supported. After that I put the same address and query the `currencyMap`, and receive a data related to the currency: name, decimals, totalSupply, etc. You can see it above, under "[currencyMap method Response]". I can get assured that this is indeed the currency I created cause I'm the owner. This is also a quick way to get `MarketMaker` address, it appears as `mmAddress` field.
+You can see that the answer for `supportsToken` is `true`. So we're good. CLN and all tokens that were created using the `CurrencyFactory` are supported. After that I put the same address and query the `currencyMap`, and receive data related to the currency: name, decimals, totalSupply, etc. You can see it above, under "[currencyMap method Response]". I can be assured that this is indeed the currency I created cause I'm the owner. This is also a quick way to get `MarketMaker` address, it appears as `mmAddress` field.
 
 ## Interacting the Market Maker
 
@@ -100,7 +100,7 @@ The last thing I want to cover is the formula itself. If you want to have a deep
 
 Theoretically, the Market Maker can work with any pair of currencies, but for our use case the first currency is always CLN and the second one is the Community Currency. As I explained before, there are multiple Community Currencies with a dedicated Market Maker for each one. But each CC uses CLN as backup currency, so through CLN you can exchange CC1 for CC2 in two hops.
 
-There is four variables that affect the exchange rate:
+There are four variables that affect the exchange rate:
 - S1 - total supply of the first currency, the CLN. Namely, the number of CLN tokens issued, we can consider it as a constant.
 - S2 - total supply of the second currency, the CC. It's defined when the currency is created, and is also a constant.
 - R1 - the reservoir of the first currency held by the Market Maker. Initially it's zero cause no CLN is inserted.
@@ -132,7 +132,7 @@ Q.E.D. :white_check_mark:
 
 #### 1000 CLN inserted
 
-Let's take parameters from the issuance in tutorial's first part. The constants are:
+Let's take the parameters from the issuance in tutorial's first part. The constants are:
 
 
 ```
@@ -140,7 +140,7 @@ S1 = 1540701333592592592592614116
 S2 = 1e24
  ```
 
-I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reserve. That's say:
+I inserted 1000 CLN to the R1 reservoir and got back ~1139 CC from R2 reserve. That say:
 
 ```
 R1 = 1e21
@@ -172,7 +172,7 @@ That's the first time we checked `getCurrentPrice`. I inserted 1000 CLN before s
 price = 0.5696729019147757
 ```
 
-Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones. This makes Solidity's calculation more accurate than mine. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate that mine :sweat_smile:.
+Comparing this price to a `getCurrentPrice` answer, we're getting a really close numbers. I did my calculations using python, which uses floating point to store real numbers, while Solidity stores all numbers as natural ones. This makes Solidity's calculation more accurate than mine. Python even doesn't see the difference between the two results, but calculating the diff in [wolframalpha](http://www.wolframalpha.com/input/?i=569672901914775677+%2F+1e18+-+0.5696729019147757) I can see that the diff is `-2.3e-17`. I hope it shows that the contract's calculations are more accurate than mine :sweat_smile:.
 
  I think you're getting the point and can calculate `getCurrentPrice_after` by yourself :wink:. But I want to assure you that the price is much more stable than we saw. `getCurrentPrice` returns the exchange rate of CLN to CC, as we saw that gave us  `1 CLN => ~0.57 CC`. I wish to present a reverse exchange of CC to CLN, to show CC's growth of value. The formula for that is just `1 / getCurrentPrice`, now let's see some graphs I've drawn.
 
@@ -180,7 +180,7 @@ Comparing this price to a `getCurrentPrice` answer, we're getting a really close
 
  ![CC_price](../assets/graphs/CC_price.png)
 
-As you see, initially the price climbs steeply, but then the amplitude is kind of stays the same.
+As you see, initially the price climbs steeply, but then the amplitude kind of stays the same.
 
 That's the same function over the domain of 1 to 1e6:
 
@@ -190,14 +190,14 @@ It's important to note that the maximum for CLN reserve is S1 and not 1e6, but y
 
 ### Calculating Quote
 
-As we saw before, `quote` function calculates how much of token1 received in exchange for certain amount of token2. For now we are interested in exchange of CLN to CC, but the CC to CLN exchange calculated in the same way. Let's follow `quote` logic and calculate ourselves how much CLN I received in return.
+As we saw before, `quote` function calculates how much of token1 received in exchange for certain amount of token2. For now we are interested in exchange of CLN to CC, but the CC to CLN exchange is calculated in the same way. Let's follow `quote` logic and calculate ourselves how much CLN I received in return.
 
 If we poke a little the ellipse equation we can present a formula for R2:
 
 ![reservoir2](../assets/formulas/reservoir2.gif)
 
 
-This is formula that `quote` internally uses, it's even implemented in the smart contract as `calcReserve` function.
+This is the formula that `quote` internally uses, it's even implemented in the smart contract as `calcReserve` function.
 
 Before, I inserted 1000 CLN through `CurrencyFactory` and 1 CLN through `MarketMaker` directly. So whereas I want to insert another 1000 CLN, `MarketMaker` was already holding 1001 CLN. So we have:
 

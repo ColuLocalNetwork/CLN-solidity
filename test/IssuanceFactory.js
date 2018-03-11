@@ -187,7 +187,7 @@ contract('IssuanceFactory', (accounts) => {
         describe('Participate in the CC issuance.', async () => {
             it('should not be able to participate with 0 CLN', async () => {
                 await time.increaseTime(SALE_TIME_TILL_START);
-                await expectRevert(factory.participate(tokenAddress, 0, {from: participant}));
+                await expectRevert(factory.participate['address,uint256'](tokenAddress, 0, {from: participant}));
             });
 
             it('should not be able to participate with bad contract address (transferAndCall)', async () => {
@@ -235,7 +235,7 @@ contract('IssuanceFactory', (accounts) => {
                 });
 
                 it('should not be able to participate with CLN if no allowance was given', async () => {
-                    await expectRevert(factory.participate(tokenAddress, THOUSAND_CLN, {from: owner}));
+                    await expectRevert(factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner}));
                 });
 
                 it('should be able to participate with CLN as owner if sale is open (approve, transfer)', async () => {
@@ -457,7 +457,7 @@ contract('IssuanceFactory', (accounts) => {
 
             context('When sale not ended', () => {
                 it('should not be able to refund before sale started(approve, transfer)', async () => {
-                    await expectRevert(factory.refund(participant, await cc.balanceOf(participant), {from: participant}));
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant}));
                 });
 
                 it('should not be able to refund (approve, transfer)', async () => {
@@ -469,7 +469,7 @@ contract('IssuanceFactory', (accounts) => {
                     assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
 
                     await cc.approve(factory.address, await cc.balanceOf(participant), {from: participant});
-                    await expectRevert(factory.refund(participant, await cc.balanceOf(participant), {from: participant}));
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant}));
                 });
             });
 
@@ -485,7 +485,7 @@ contract('IssuanceFactory', (accounts) => {
                     assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
                     await time.increaseTime(SALE_ENDED_TIME);
                     await cc.approve(factory.address, await cc.balanceOf(participant), {from: participant})
-                    await expectRevert(factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant}))
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant}))
                 });
 
                 it('should not be able to refund if refund amount is zero', async () => {
@@ -495,7 +495,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     await time.increaseTime(SALE_ENDED_TIME);
 
-                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, 0, {from: participant}))
                 });
 
                 it('should not be able to refund if refund amount is zero (transferAndCall)', async () => {
@@ -505,7 +505,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     await time.increaseTime(SALE_ENDED_TIME);
 
-                    await expectRevert(factory.refund(tokenAddress, 0, {from: participant}))
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, 0, {from: participant}))
 
                     changeData = encodeRefundMessage();
                     await expectRevert(cc.transferAndCall(factory.address, 0, changeData, {from: participant}));
@@ -519,7 +519,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     await time.increaseTime(SALE_ENDED_TIME);
 
-                    await expectRevert(factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant}));
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant}));
                     assert(!(await cc.balanceOf(participant)).isZero());
                 });
 
@@ -530,7 +530,7 @@ contract('IssuanceFactory', (accounts) => {
                     assert.notEqual(BigNumber(await cc.balanceOf(participant)).toNumber(), 0);
                     await time.increaseTime(SALE_ENDED_TIME);
                     await cc.approve(factory.address, await cc.balanceOf(participant), {from: participant});
-                    await factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant});
+                    await factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant});
                     assert.equal(clnBalance.toNumber(), BigNumber(await cln.balanceOf(participant)).toNumber());
                 });
 
@@ -555,7 +555,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     await time.increaseTime(SALE_ENDED_TIME);
                     await cc.approve(factory.address, ccBalance / 2, {from: participant});
-                    await factory.refund(tokenAddress, ccBalance / 2, {from: participant});
+                    await factory.refund['address,uint256'](tokenAddress, ccBalance / 2, {from: participant});
                     const clnAfterRefund = await cln.balanceOf(participant);
 
                     // Half of participated CLN refunded
@@ -563,7 +563,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     // Refunding second half
                     await cc.approve(factory.address, await cc.balanceOf(participant), {from: participant});
-                    await factory.refund(tokenAddress, await cc.balanceOf(participant), {from: participant});
+                    await factory.refund['address,uint256'](tokenAddress, await cc.balanceOf(participant), {from: participant});
                     assert.equal(clnBalance.toNumber(),(await cln.balanceOf(participant)).toNumber());
                 });
 
@@ -580,7 +580,7 @@ contract('IssuanceFactory', (accounts) => {
 
                     await time.increaseTime(SALE_ENDED_TIME);
                     await cc.approve(factory.address, ccBalance, {from: thirdParty});
-                    await factory.refund(tokenAddress, ccBalance, {from: thirdParty});
+                    await factory.refund['address,uint256'](tokenAddress, ccBalance, {from: thirdParty});
                     const clnAfterRefund = await cln.balanceOf(thirdParty);
 
                     // third party perform a refund and got refunded CLN tokens
@@ -608,14 +608,14 @@ contract('IssuanceFactory', (accounts) => {
 
                     // First participant CLN refunded
                     await cc.approve(factory.address, ccBalanceParticipant, {from: participant});
-                    await factory.refund(tokenAddress, ccBalanceParticipant, {from: participant});
+                    await factory.refund['address,uint256'](tokenAddress, ccBalanceParticipant, {from: participant});
                     const clnAfterRefund = await cln.balanceOf(participant);
                     assert(clnBalanceParticipant.eq(clnAfterRefund),
                         `${clnBalanceParticipant} not equal to ${clnAfterRefund}`);
 
                     // Second participant CLN refunded
                     await cc.approve(factory.address, ccBalanceParticipant2, {from: participant2});
-                    await factory.refund(tokenAddress, ccBalanceParticipant2, {from: participant2});
+                    await factory.refund['address,uint256'](tokenAddress, ccBalanceParticipant2, {from: participant2});
                     const clnAfterRefund2 = await cln.balanceOf(participant2);
                     assert(clnBalanceParticipant.eq(clnAfterRefund2),
                         `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
@@ -630,7 +630,7 @@ contract('IssuanceFactory', (accounts) => {
                     await time.increaseTime(SALE_ENDED_TIME);
 
                     await cc.approve(factory.address, ccBalance * 2, {from: participant});
-                    await expectRevert(factory.refund(tokenAddress, ccBalance * 2, {from: participant}))
+                    await expectRevert(factory.refund['address,uint256'](tokenAddress, ccBalance * 2, {from: participant}))
                 });
             });
         });
@@ -721,7 +721,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 // Second participant CLN refunded
                 await cc2.approve(factory.address, cc2BalanceParticipant2, {from: participant2});
-                await factory.refund(tokenAddress2, cc2BalanceParticipant2, {from: participant2});
+                await factory.refund['address,uint256'](tokenAddress2, cc2BalanceParticipant2, {from: participant2});
                 const clnAfterRefund2 = await cln.balanceOf(participant2);
                 assert(clnBalanceParticipant.eq(clnAfterRefund2),
                     `${clnBalanceParticipant2} not equal to ${clnAfterRefund2}`);
@@ -897,11 +897,12 @@ contract('IssuanceFactory', (accounts) => {
         describe('getIssuanceIds.', () => {
 
             it('should revert if limit is zero', async () => {
-                await expectRevert(factory.getIssuanceIds(false, false, false, false, 0, 0));
+                const emptyFactory = await IssuanceFactory.new(mmLib.address, cln.address, {from: owner} );
+                await expectRevert(emptyFactory.getIssuanceIds(false, false, false, false, 0, 0, {from: owner}));
             });
 
             it('should revert is limit is greater than max page size', async () => {
-                await expectRevert(factory.getIssuanceIds(true, false, false, false, 0, 1001));
+                await expectRevert(factory.getIssuanceIds(true, false, false, false, 0, 1001, {from: owner}));
             });
 
             it('should return empty array if no currencies have been issuenced', async () => {
