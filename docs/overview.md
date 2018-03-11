@@ -8,8 +8,7 @@ ColuLocalNetwork is the CLN Token, used for currency issuance, mechanical Market
 
  ## [CurrencyFactory](reference/CurrencyFactory.md)
 
-CurrencyFactory provides a simple mechanism for creation of community currencies. With this contract a sole issuer creates a currency that is backed by CLN tokens from issuer's funds  as a reservoir. Amount of the CLN tokens in reservoir affects the price of the new currency. When desired price (or CLN reservoir) is reached the issuer can open the mechanical market maker for public. After that anyone can change their CLN tokens to the new community currency and vice versa. Refer to EllipseMarketMaker for more information.
-
+The CurrencyFactory provides a simple mechanism for the creation of community currencies. With this contract a sole issuer creates a currency, that is backed by CLN tokens, from the issuer's funds as a reservoir. The amount of CLN tokens in the reservoir affects the price of the new currency. When the desired price (or CLN reservoir) has been reached the issuer can open the mechanical market maker to the public. After that anyone can change their CLN tokens to the new community currency and vice versa. Refer to the EllipseMarketMaker for more information
 
 
 ## [IssuanceFactory](reference/IssuanceFactory.md)
