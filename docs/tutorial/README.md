@@ -1,7 +1,7 @@
 
 # CLN Tutorial
 
-This tutorial will guide you through the issuance, interaction, and exchange of Community Currencies, abbreviated as CC. To follow this tutorial you should have a basic understanding of Ethereum and blockchain technologies. You can start from the [Ethereum wiki](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) or this [awesome list](https://github.com/ethereum/wiki/wiki/Ethereum-introduction) of links curated by the community. [This overview](../overview.md) gives a high level explanation of the CLN contracts, and a [contract reference](../reference) provides a self generated documentation similar to REST API docs.
+This tutorial will guide you through the issuance, interaction, and exchange of Community Currencies, abbreviated as CC. To follow this tutorial you should have a basic understanding of Ethereum and blockchain technologies, [Ethereum wiki](https://github.com/ethereum/wiki/wiki) is a great place to start. [This overview](../overview.md) gives a high level explanation of the CLN contracts, and a [contract reference](../reference) provides a self generated documentation similar to REST API docs.
 
 
 From a practical side you will need an ERC20 compatible wallet to send and sign transactions. I will use [MyEtherWallet](https://www.myetherwallet.com/) because of its ability to generate transactions from ABI. If you don't familiar with MyEtherWallet, there's a [tutorial](https://myetherwallet.github.io/knowledge-base/getting-started/accessing-your-new-eth-wallet.html) how to open a wallet and send ETH.

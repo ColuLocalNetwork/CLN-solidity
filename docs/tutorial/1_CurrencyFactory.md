@@ -68,7 +68,7 @@ Send _value amount of tokens from address _from to address _to
 ```
 
 
-Remember how we called `createIssuance`? Now we'll do the same with the `ColuLocalNetwork` token. I open again the "Contracts" tab of MyEtherWallet, fill in `ColuLocalNetwork` address and upload its ABI. After gaining access to contract's functions, I select `approve`, filling 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. Here's another screenshot, just for you:
+Remember how we called `createCurrency`? Now we'll do the same with the `ColuLocalNetwork` token. I open again the "Contracts" tab of MyEtherWallet, fill in `ColuLocalNetwork` address and upload its ABI. After gaining access to contract's functions, I select `approve`, filling 1000 * 1e18 = 1000000000000000000000 (1000 CLN) as value and `CurrencyFactory` address as the spender. Here's another screenshot, just for you:
 
 ![mew_approve](../assets/mew_approve.png)
 
