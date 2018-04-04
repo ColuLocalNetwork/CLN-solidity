@@ -53,7 +53,7 @@ const encodeExtractData = () => {
 };
 
 const createAndValidateCurrency = async (factory, name, symbol, ownerAddress) => {
-  let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: ownerAddress});
+  let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: ownerAddress});
   assert.lengthOf(result.logs, 1);
   let event = result.logs[0];
   assert.equal(event.event, 'TokenCreated');
@@ -86,7 +86,7 @@ contract('CurrencyFactory', (accounts) => {
         await cln.transfer(notOwner, THOUSAND_CLN * 1000);
     });
 
-    describe('Construction.', async () => {
+    describe.only('Construction.', async () => {
 
         it('should not construct without market making lib address', async () => {
             await expectRevert(CurrencyFactory.new(null, cln.address,  {from: owner} ));
@@ -104,26 +104,26 @@ contract('CurrencyFactory', (accounts) => {
          });
     });
 
-    describe('Creating Local Currency and its MarketMaker.', async () => {
+    describe.only('Creating Local Currency and its MarketMaker.', async () => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, {from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, '', {from: owner}));
         });
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, {from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, '',{from: owner}));
         });
 
         it('should be able to create with correct parameters', async () => {
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
             // assert.equal(result.owner, owner);
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
@@ -136,23 +136,23 @@ contract('CurrencyFactory', (accounts) => {
         });
 
         it('should allow to create two tokens with same name', async () => {
-            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, {from: owner}));
-            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, '', {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, '', {from: owner}));
         });
 
         it('should allow to create two tokens with same symbol', async () => {
-            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
-            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, {from: owner}));
+            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
+            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
         });
     });
 
-    describe('Interact with MarketMaker through factory before opening market.', async () => {
+    describe.only('Interact with MarketMaker through factory before opening market.', async () => {
         let cc;
 
         beforeEach(async () => {
             factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
             assert.equal(await factory.clnAddress() ,cln.address);
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner});
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -295,7 +295,7 @@ contract('CurrencyFactory', (accounts) => {
 
               // insert 2000 CLN to CC2
               tokenAddress2 = (await factory.createCurrency(
-                'Other Name', 'ON', 18, CC_MAX_TOKENS, {from: owner})).logs[0].args.token;
+                'Other Name', 'ON', 18, CC_MAX_TOKENS, '', {from: owner})).logs[0].args.token;
               const cc2 = await ColuLocalCurrency.at(tokenAddress2);
               insertCLNtoMarketMakerMessage = encodeInsertData(tokenAddress2);
               await cln.transferAndCall(factory.address, 2 * THOUSAND_CLN, insertCLNtoMarketMakerMessage);
@@ -354,7 +354,7 @@ contract('CurrencyFactory', (accounts) => {
     });
 
 
-    describe('Create two different currencies one after another.', async () => {
+    describe.only('Create two different currencies one after another.', async () => {
       let tokenAddress1;
       let tokenAddress2;
 
@@ -363,11 +363,11 @@ contract('CurrencyFactory', (accounts) => {
 
       beforeEach(async () => {
           factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
-          let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, {from: owner1});
+          let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner1});
           let event = result.logs[0];
           tokenAddress1 = event.args.token;
 
-          result = await factory.createCurrency('Other Name', 'ON', 18, CC_MAX_TOKENS, {from: owner2});
+          result = await factory.createCurrency('Other Name', 'ON', 18, CC_MAX_TOKENS, '', {from: owner2});
           event = result.logs[0];
           tokenAddress2 = event.args.token;
       });
@@ -416,7 +416,7 @@ contract('CurrencyFactory', (accounts) => {
           assert.equal(cc1Balance.div(TOKEN_DECIMALS).toFixed(0), 17321);
 
           // Create another currency
-          result = await factory.createCurrency('Other Name', 'ON', 18, CC_MAX_TOKENS, {from: owner1});
+          result = await factory.createCurrency('Other Name', 'ON', 18, CC_MAX_TOKENS, '', {from: owner1});
           event = result.logs[0];
           tokenAddress3 = event.args.token;
 

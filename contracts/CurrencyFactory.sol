@@ -17,6 +17,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     uint256 totalSupply;
     address owner;
     address mmAddress;
+    string data;
   }
 
 
@@ -31,6 +32,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
 
   event MarketOpen(address indexed marketMaker);
   event TokenCreated(address indexed token, address indexed owner);
+  event TokenDataChanged(address indexed token, string data);
 
   // modifier to check if called by issuer of the token
   modifier tokenIssuerOnly(address token, address owner) {
@@ -58,10 +60,12 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _symbol string symbol for CC token that is created.
   /// @param _decimals uint8 percison for CC token that is created.
   /// @param _totalSupply uint256 total supply of the CC token that is created.
+  /// @param _data string IPFS hash for the CC token data.
   function createCurrency(string _name,
                           string _symbol,
                           uint8 _decimals,
-                          uint256 _totalSupply) public
+                          uint256 _totalSupply,
+                          string _data) public
                           returns (address) {
 
   	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
@@ -69,7 +73,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
   	require(IEllipseMarketMaker(newMarketMaker).initializeAfterTransfer());
-  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply, mmAddress: newMarketMaker, owner: msg.sender});
+  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply, mmAddress: newMarketMaker, data: _data, owner: msg.sender});
     tokens.push(subToken);
   	TokenCreated(subToken, msg.sender);
   	return subToken;
@@ -149,6 +153,22 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _token address of the token used with transferAndCall.
   function supportsToken(address _token) public constant returns (bool) {
   	return (clnAddress == _token || currencyMap[_token].totalSupply > 0);
+  }
+
+  /// @dev helper function to get the data of the currency
+  /// @param _token address of the token used with transferAndCall
+  function getCurrencyData(address _token) public view returns (string) {
+    return currencyMap[_token].data;
+  }
+
+  /// @dev helper function to get the data of the currency
+  /// @param _token address of the token used with transferAndCall
+  function updateCurrencyData(address _token, string _data) public
+                              tokenIssuerOnly(_token, msg.sender)
+                              returns (bool) {
+    currencyMap[_token].data = _data;
+    TokenDataChanged(_token, _data);
+    return true;
   }
 
   /// @dev helper function to get the market maker address form token
