@@ -17,7 +17,6 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     uint256 totalSupply;
     address owner;
     address mmAddress;
-    string data;
   }
 
 
@@ -60,20 +59,20 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _symbol string symbol for CC token that is created.
   /// @param _decimals uint8 percison for CC token that is created.
   /// @param _totalSupply uint256 total supply of the CC token that is created.
-  /// @param _data string IPFS hash for the CC token data.
+  /// @param _metadata string IPFS hash for the CC token data.
   function createCurrency(string _name,
                           string _symbol,
                           uint8 _decimals,
                           uint256 _totalSupply,
-                          string _data) public
+                          string _metadata) public
                           returns (address) {
 
-  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
+  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply, _metadata);
   	EllipseMarketMaker newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
   	require(IEllipseMarketMaker(newMarketMaker).initializeAfterTransfer());
-  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply, mmAddress: newMarketMaker, data: _data, owner: msg.sender});
+  	currencyMap[subToken] = CurrencyStruct({ name: _name, decimals: _decimals, totalSupply: _totalSupply, mmAddress: newMarketMaker, owner: msg.sender});
     tokens.push(subToken);
   	TokenCreated(subToken, msg.sender);
   	return subToken;
@@ -157,19 +156,19 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
 
   /// @dev helper function to get the data of the currency
   /// @param _token address of the token used with transferAndCall
-  function getCurrencyData(address _token) public view returns (string) {
+  /* function getCurrencyData(address _token) public view returns (string) {
     return currencyMap[_token].data;
-  }
+  } */
 
   /// @dev helper function to get the data of the currency
   /// @param _token address of the token used with transferAndCall
-  function updateCurrencyData(address _token, string _data) public
+  /* function updateCurrencyData(address _token, string _data) public
                               tokenIssuerOnly(_token, msg.sender)
                               returns (bool) {
     currencyMap[_token].data = _data;
     TokenDataChanged(_token, _data);
     return true;
-  }
+  } */
 
   /// @dev helper function to get the market maker address form token
   /// @param _token address of the token used with transferAndCall.
