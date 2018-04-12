@@ -86,7 +86,7 @@ contract('CurrencyFactory', (accounts) => {
         await cln.transfer(notOwner, THOUSAND_CLN * 1000);
     });
 
-    describe.only('Construction.', async () => {
+    describe('Construction.', async () => {
 
         it('should not construct without market making lib address', async () => {
             await expectRevert(CurrencyFactory.new(null, cln.address,  {from: owner} ));

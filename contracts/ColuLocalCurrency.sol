@@ -14,6 +14,8 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
     uint8 public decimals;
     string public metadata;
 
+    event MetadataChanged(string metadata);
+
     /// @dev cotract to use when issuing a CC (Local Currency)
     /// @param _name string name for CC token that is created.
     /// @param _symbol string symbol for CC token that is created.
@@ -30,5 +32,10 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
         decimals = _decimals;
         metadata = _metadata;
         balances[msg.sender] = totalSupply;
+    }
+
+    function setMetadata(string _metadata) public onlyOwner {
+      metadata = _metadata;
+      MetadataChanged(_metadata);
     }
 }
