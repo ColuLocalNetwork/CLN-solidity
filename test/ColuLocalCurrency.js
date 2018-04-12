@@ -63,8 +63,8 @@ contract('ColuLocalCurrency', (accounts) => {
         assert.equal(result.logs[0].args.metadata, 'newmetadatahash')
       })
 
-      it('owner should be able to update metadata', async () => {
-        await expectRevert(cc.setMetadata('newmetadata', {from: notOwner}))
+      it('not owner should not be able to update metadata', async () => {
+        await expectRevert(cc.setMetadata('newmetadatahash', {from: notOwner}))
       })
     })
   })

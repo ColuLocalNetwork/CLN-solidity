@@ -1,6 +1,8 @@
 const expectRevert = require('./helpers/expectRevert');
 const coder = require('web3-eth-abi');
 const expect = require('chai').expect;
+const assert = require('chai').assert;
+
 const BigNumber = require('bignumber.js');
 BigNumber.config({ ERRORS: false });
 
@@ -111,42 +113,62 @@ contract('CurrencyFactory', (accounts) => {
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
+            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, '', {from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
         });
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, '',{from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, 'metadatahash',{from: owner}));
         });
 
         it('should be able to create with correct parameters', async () => {
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
-            // assert.equal(result.owner, owner);
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+
+            // Check correct events
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
             tokenAddress = event.args.token;
 
+            // check correct struct
             var currencyStruct = await factory.currencyMap(tokenAddress);
-            // check the currency owner
+            assert.equal(currencyStruct[0], 'Some Name');
+            assert.equal(currencyStruct[1], 18);
+            assert.equal(currencyStruct[2], CC_MAX_TOKENS);
             assert.equal(currencyStruct[3], owner);
+            assert(expect(currencyStruct[4]).to.be.a('String'));
+
+            // check that CC was created properly
+            cc = await ColuLocalCurrency.at(tokenAddress);
+            assert.equal((await cc.name()), 'Some Name')
+            assert.equal((await cc.symbol()), 'SON')
+            assert.equal((await cc.decimals()), 18)
+            assert.equal((await cc.totalSupply()), CC_MAX_TOKENS)
+            assert.equal((await cc.metadata()), 'metadatahash')
+            assert.equal((await cc.owner()), factory.address)
         });
 
+        it('should be able to create a token withouth the metadata', async () => {
+          let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
+          cc = await ColuLocalCurrency.at(result.logs[0].args.token)
+          assert.equal((await cc.metadata()), '')
+        })
+
         it('should allow to create two tokens with same name', async () => {
-            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, '', {from: owner}));
-            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, '', {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
         });
 
         it('should allow to create two tokens with same symbol', async () => {
-            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
-            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, '', {from: owner}));
+            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
         });
     });
 
-    describe.only('Interact with MarketMaker through factory before opening market.', async () => {
+    describe('Interact with MarketMaker through factory before opening market.', async () => {
         let cc;
 
         beforeEach(async () => {
@@ -354,7 +376,7 @@ contract('CurrencyFactory', (accounts) => {
     });
 
 
-    describe.only('Create two different currencies one after another.', async () => {
+    describe('Create two different currencies one after another.', async () => {
       let tokenAddress1;
       let tokenAddress2;
 
