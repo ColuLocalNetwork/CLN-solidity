@@ -106,7 +106,7 @@ contract('CurrencyFactory', (accounts) => {
          });
     });
 
-    describe.only('Creating Local Currency and its MarketMaker.', async () => {
+    describe('Creating Local Currency and its MarketMaker.', async () => {
         beforeEach(async () => {
             await cln.makeTokensTransferable();
             factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
@@ -174,7 +174,7 @@ contract('CurrencyFactory', (accounts) => {
         beforeEach(async () => {
             factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
             assert.equal(await factory.clnAddress() ,cln.address);
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -372,6 +372,18 @@ contract('CurrencyFactory', (accounts) => {
             it('should not support other contracts', async () => {
                 assert.isNotOk(await factory.supportsToken(mmLib.address));
             });
+
+            describe('Updating the storage', () => {
+              it('should allow to update storage if owner', async () => {
+                const result = await factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: owner})
+                assert(await cc.metadata(), 'newmetadatahash')
+              })
+
+              it('should not allow to update storage if not owner', async () => {
+                await expectRevert(factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: notOwner}))
+                assert(await cc.metadata(), 'metadatahash')
+              })
+            })
         });
     });
 

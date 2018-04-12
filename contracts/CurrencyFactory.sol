@@ -31,7 +31,6 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
 
   event MarketOpen(address indexed marketMaker);
   event TokenCreated(address indexed token, address indexed owner);
-  event TokenDataChanged(address indexed token, string data);
 
   // modifier to check if called by issuer of the token
   modifier tokenIssuerOnly(address token, address owner) {
@@ -154,21 +153,16 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	return (clnAddress == _token || currencyMap[_token].totalSupply > 0);
   }
 
-  /// @dev helper function to get the data of the currency
-  /// @param _token address of the token used with transferAndCall
-  /* function getCurrencyData(address _token) public view returns (string) {
-    return currencyMap[_token].data;
-  } */
-
-  /// @dev helper function to get the data of the currency
-  /// @param _token address of the token used with transferAndCall
-  /* function updateCurrencyData(address _token, string _data) public
+  /// @dev helper function to set metadata for the currency
+  /// @param _token address address of the token to update
+  /// @param _metadata string hash of the metadata of the token, this
+  /// hash can be accessed through IPFS
+  function setCurrencyMetadata(address _token, string _metadata) public
                               tokenIssuerOnly(_token, msg.sender)
                               returns (bool) {
-    currencyMap[_token].data = _data;
-    TokenDataChanged(_token, _data);
+    ColuLocalCurrency(_token).setMetadata(_metadata);
     return true;
-  } */
+  }
 
   /// @dev helper function to get the market maker address form token
   /// @param _token address of the token used with transferAndCall.
