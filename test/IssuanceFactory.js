@@ -211,7 +211,7 @@ contract('IssuanceFactory', (accounts) => {
             assert(expect(tokenAddress).to.be.a('String'));
         });
 
-        describe.only('Storage functionality.', () => {
+        describe('Storage functionality.', () => {
           it('should allow to update storage if owner', async () => {
             const result = await factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: owner})
             assert.equal(await cc.metadata(), 'newmetadatahash')
