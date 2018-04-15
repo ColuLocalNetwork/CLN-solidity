@@ -88,7 +88,7 @@ contract IssuanceFactory is CurrencyFactory {
 	/// @param _symbol string symbol of the token
 	/// @param _decimals uint8 ERC20 decimals of local currency
 	/// @param _totalSupply uint total supply of the local currency
-	/// @param _data string IPFS hash for the CC token data.
+	/// @param _metadata string IPFS hash for the CC token data.
   function createIssuance( uint256 _startTime,
                             uint256 _durationTime,
                             uint256 _hardcap,
@@ -97,7 +97,7 @@ contract IssuanceFactory is CurrencyFactory {
                             string _symbol,
                             uint8 _decimals,
                             uint256 _totalSupply,
-														string _data) public
+														string _metadata) public
                             returns (address) {
     require(_startTime > now);
     require(_durationTime > 0);
@@ -106,7 +106,7 @@ contract IssuanceFactory is CurrencyFactory {
     uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
     uint256 targetPrice = IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
     require(isValidIssuance(_hardcap, targetPrice, _totalSupply, R2));
-    address tokenAddress = super.createCurrency(_name, _symbol, _decimals, _totalSupply, _data);
+    address tokenAddress = super.createCurrency(_name, _symbol, _decimals, _totalSupply, _metadata);
     addToMap(tokenAddress, _startTime, _durationTime, _hardcap, _reserveAmount, targetPrice);
 
     return tokenAddress;

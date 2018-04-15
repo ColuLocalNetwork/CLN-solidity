@@ -373,15 +373,15 @@ contract('CurrencyFactory', (accounts) => {
                 assert.isNotOk(await factory.supportsToken(mmLib.address));
             });
 
-            describe('Updating the storage', () => {
+            describe('Storage functionality.', () => {
               it('should allow to update storage if owner', async () => {
                 const result = await factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: owner})
-                assert(await cc.metadata(), 'newmetadatahash')
+                assert.equal(await cc.metadata(), 'newmetadatahash')
               })
 
               it('should not allow to update storage if not owner', async () => {
                 await expectRevert(factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: notOwner}))
-                assert(await cc.metadata(), 'metadatahash')
+                assert.equal(await cc.metadata(), 'metadatahash')
               })
             })
         });
