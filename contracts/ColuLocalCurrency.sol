@@ -13,8 +13,15 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
     string public symbol;
     uint8 public decimals;
     string public metadata;
+    address public issuer;
 
     event MetadataChanged(string metadata);
+
+    // modifier to check if called by issuer of the token
+    modifier issuerOnly() {
+      require(msg.sender == issuer);
+      _;
+    }
 
     /// @dev cotract to use when issuing a CC (Local Currency)
     /// @param _name string name for CC token that is created.
@@ -22,7 +29,7 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
     /// @param _decimals uint8 percison for CC token that is created.
     /// @param _totalSupply uint256 total supply of the CC token that is created.
     /// @param _metadata string hash of the metadata of the token
-    function ColuLocalCurrency(string _name, string _symbol, uint8 _decimals, uint256 _totalSupply, string _metadata) public {
+    function ColuLocalCurrency(string _name, string _symbol, uint8 _decimals, uint256 _totalSupply, string _metadata, address _issuer) public {
         require(_totalSupply != 0);
         require(bytes(_name).length != 0);
         require(bytes(_symbol).length != 0);
@@ -33,9 +40,10 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
         decimals = _decimals;
         metadata = _metadata;
         balances[msg.sender] = totalSupply;
+        issuer = _issuer;
     }
 
-    function setMetadata(string _metadata) public onlyOwner {
+    function setMetadata(string _metadata) public issuerOnly {
       metadata = _metadata;
       MetadataChanged(_metadata);
     }

@@ -66,7 +66,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
                           string _metadata) public
                           returns (address) {
 
-  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply, _metadata);
+  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply, _metadata, msg.sender);
   	EllipseMarketMaker newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
@@ -157,12 +157,12 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _token address address of the token to update
   /// @param _metadata string hash of the metadata of the token, this
   /// hash can be accessed through IPFS
-  function setCurrencyMetadata(address _token, string _metadata) public
+  /* function setCurrencyMetadata(address _token, string _metadata) public
                               tokenIssuerOnly(_token, msg.sender)
                               returns (bool) {
     ColuLocalCurrency(_token).setMetadata(_metadata);
     return true;
-  }
+  } */
 
   /// @dev helper function to get the market maker address form token
   /// @param _token address of the token used with transferAndCall.

@@ -343,8 +343,6 @@ contract('CurrencyFactory', (accounts) => {
               const clnBalance = BigNumber(await cln.balanceOf(owner));
               assert(clnBalance.eq(initialClnBalance.minus(2 * THOUSAND_CLN)));
           });
-
-
         })
 
         it('should not be able to open market if not owner', async () => {
@@ -352,12 +350,21 @@ contract('CurrencyFactory', (accounts) => {
         });
 
         it('should be able to open market if owner', async () => {
+
+            assert.equal(await cc.owner(), factory.address)
             let result = await factory.openMarket(tokenAddress, {from: owner});
             let event = result.logs[1];
             assert.equal(event.event, 'MarketOpen');
             const marketMakerAddress = await factory.getMarketMakerAddressFromToken(tokenAddress);
             const marketMaker = await EllipseMarketMaker.at(marketMakerAddress);
-            assert(marketMaker.owner, owner);
+
+            assert.equal(await marketMaker.newOwnerCandidate(), owner)
+
+            // accepting the ownership
+            await marketMaker.acceptOwnership({from: owner})
+            assert.equal(await marketMaker.owner(), owner)
+
+            assert.equal(await cc.newOwnerCandidate(), owner)
         });
 
         describe('Miscellaneous methods.', async () => {
