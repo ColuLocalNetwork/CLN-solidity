@@ -113,19 +113,19 @@ contract('CurrencyFactory', (accounts) => {
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createCurrency('', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', '', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, 'metadatahash',{from: owner}));
+            await expectRevert(factory.createCurrency('Some Name', 'SON', 18, 0, 'ipfs://hash',{from: owner}));
         });
 
         it('should be able to create with correct parameters', async () => {
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
             // Check correct events
             assert.lengthOf(result.logs, 1);
@@ -147,24 +147,24 @@ contract('CurrencyFactory', (accounts) => {
             assert.equal((await cc.symbol()), 'SON')
             assert.equal((await cc.decimals()), 18)
             assert.equal((await cc.totalSupply()), CC_MAX_TOKENS)
-            assert.equal((await cc.metadata()), 'metadatahash')
+            assert.equal((await cc.tokenURI()), 'ipfs://hash')
             assert.equal((await cc.owner()), factory.address)
         });
 
         it('should be able to create a token withouth the metadata', async () => {
           let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, '', {from: owner});
           cc = await ColuLocalCurrency.at(result.logs[0].args.token)
-          assert.equal((await cc.metadata()), '')
+          assert.equal((await cc.tokenURI()), '')
         })
 
         it('should allow to create two tokens with same name', async () => {
-            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
-            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON1', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
+            assert(await factory.createCurrency('Some Name', 'SON2', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should allow to create two tokens with same symbol', async () => {
-            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
-            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            assert(await factory.createCurrency('Some Name1', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
+            assert(await factory.createCurrency('Some Name2', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
     });
 
@@ -174,7 +174,7 @@ contract('CurrencyFactory', (accounts) => {
         beforeEach(async () => {
             factory = await CurrencyFactory.new(mmLib.address, cln.address,  {from: factoryOwner} )
             assert.equal(await factory.clnAddress() ,cln.address);
-            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+            let result = await factory.createCurrency('Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -343,8 +343,6 @@ contract('CurrencyFactory', (accounts) => {
               const clnBalance = BigNumber(await cln.balanceOf(owner));
               assert(clnBalance.eq(initialClnBalance.minus(2 * THOUSAND_CLN)));
           });
-
-
         })
 
         it('should not be able to open market if not owner', async () => {
@@ -353,11 +351,20 @@ contract('CurrencyFactory', (accounts) => {
 
         it('should be able to open market if owner', async () => {
             let result = await factory.openMarket(tokenAddress, {from: owner});
-            let event = result.logs[1];
-            assert.equal(event.event, 'MarketOpen');
+
+            assert.equal(result.logs[0].event, 'OwnershipRequested');
+            assert.equal(result.logs[1].event, 'OwnershipRequested');
+            assert.equal(result.logs[2].event, 'MarketOpen');
+
             const marketMakerAddress = await factory.getMarketMakerAddressFromToken(tokenAddress);
             const marketMaker = await EllipseMarketMaker.at(marketMakerAddress);
-            assert(marketMaker.owner, owner);
+            assert.equal(await marketMaker.newOwnerCandidate(), owner);
+            assert.equal(await cc.newOwnerCandidate(), owner);
+
+            await marketMaker.acceptOwnership({from: owner})
+            await cc.acceptOwnership({from: owner})
+            assert.equal(await marketMaker.owner(), owner);
+            assert.equal(await cc.owner(), owner);
         });
 
         describe('Miscellaneous methods.', async () => {
@@ -373,15 +380,42 @@ contract('CurrencyFactory', (accounts) => {
                 assert.isNotOk(await factory.supportsToken(mmLib.address));
             });
 
-            describe('Storage functionality.', () => {
-              it('should allow to update storage if owner', async () => {
-                const result = await factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: owner})
-                assert.equal(await cc.metadata(), 'newmetadatahash')
+            describe('Metadata functionality.', () => {
+              it('should allow to update tokenURI if owner', async () => {
+                const result = await factory.setTokenURI(cc.address, 'ipfs://newhash', {from: owner})
+                assert.equal(await cc.tokenURI(), 'ipfs://newhash')
               })
 
-              it('should not allow to update storage if not owner', async () => {
-                await expectRevert(factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: notOwner}))
-                assert.equal(await cc.metadata(), 'metadatahash')
+              it('should not allow to update tokenURI if not owner', async () => {
+                await expectRevert(factory.setTokenURI(cc.address, 'ipfs://newhash', {from: notOwner}))
+                assert.equal(await cc.tokenURI(), 'ipfs://hash')
+              })
+
+              it('should not allow to update tokenURI if not owner', async () => {
+                await expectRevert(factory.setTokenURI(cc.address, 'ipfs://newhash', {from: notOwner}))
+                assert.equal(await cc.tokenURI(), 'ipfs://hash')
+              })
+
+              context('After the issuance.', () => {
+                beforeEach(async () => {
+                  await factory.openMarket(tokenAddress, {from: owner})
+                  await cc.acceptOwnership({from: owner})
+                })
+
+                it('should allow to update tokenURI if owner', async () => {
+                  await cc.setTokenURI('ipfs://newhash', {from: owner})
+                  assert.equal(await cc.tokenURI(), 'ipfs://newhash')
+                })
+
+                it('should not allow to update tokenURI if not owner', async () => {
+                  await expectRevert(cc.setTokenURI('ipfs://newhash', {from: notOwner}))
+                  assert.equal(await cc.tokenURI(), 'ipfs://hash')
+                })
+
+                it('should not allow to update tokenURI via the issuance', async () => {
+                  await expectRevert(factory.setTokenURI(tokenAddress, 'ipfs://newhash', {from: notOwner}))
+                  assert.equal(await cc.tokenURI(), 'ipfs://hash')
+                })
               })
             })
         });

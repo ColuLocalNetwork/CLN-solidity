@@ -71,16 +71,16 @@ contract('Ownable', (accounts) => {
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'OwnershipRequested');
-            assert.equal(event.args._by, owner);
-            assert.equal(event.args._to, newOwner);
+            assert.equal(event.args.by, owner);
+            assert.equal(event.args.to, newOwner);
 
             result = await ownable.acceptOwnership({from: newOwner});
 
             assert.lengthOf(result.logs, 1);
             event = result.logs[0];
             assert.equal(event.event, 'OwnershipTransferred');
-            assert.equal(event.args._from, owner);
-            assert.equal(event.args._to, newOwner);
+            assert.equal(event.args.from, owner);
+            assert.equal(event.args.to, newOwner);
         });
     });
 });

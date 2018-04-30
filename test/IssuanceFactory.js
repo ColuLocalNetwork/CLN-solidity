@@ -107,36 +107,36 @@ contract('IssuanceFactory', (accounts) => {
         });
 
         it('should not be able to create without name', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,'', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create without symbol', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', '', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with zero supply', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, 0, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with too small reserve', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with start time in past', async () => {
-            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with hardcap zero', async () => {
-            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, 0, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() - SALE_TIME_TILL_START, SALE_DURATION_TIME, 0, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should not be able to create with duration zero', async () => {
-            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, 0, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner}));
+            await expectRevert(factory.createIssuance(Date.now() + SALE_TIME_TILL_START, 0, THOUSAND_CLN, THOUSAND_CLN / 1000, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner}));
         });
 
         it('should be able to create with correct parameters', async () => {
             now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
-            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -164,11 +164,11 @@ contract('IssuanceFactory', (accounts) => {
             assert.equal((await cc.symbol()), 'SON')
             assert.equal((await cc.decimals()), 18)
             assert.equal((await cc.totalSupply()), CC_MAX_TOKENS)
-            assert.equal((await cc.metadata()), 'metadatahash')
+            assert.equal((await cc.tokenURI()), 'ipfs://hash')
             assert.equal((await cc.owner()), factory.address)
         });
 
-        it('should be able to create without metadaha', async () => {
+        it('should be able to create without tokenURI', async () => {
           now = await (web3.eth.getBlock(web3.eth.blockNumber)).timestamp;
           let result = await factory.createIssuance(
             now + SALE_TIME_TILL_START,
@@ -183,7 +183,7 @@ contract('IssuanceFactory', (accounts) => {
 
           const tokenAddress = result.logs[0].args.token
           cc = await ColuLocalCurrency.at(tokenAddress)
-          assert.equal((await cc.metadata()), '')
+          assert.equal((await cc.tokenURI()), '')
         })
     });
 
@@ -197,13 +197,13 @@ contract('IssuanceFactory', (accounts) => {
 
             tokenAddress = (await factory.createIssuance(
                 now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner})).logs[0].args.token;
+                'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner})).logs[0].args.token;
 
             cc = await ColuLocalCurrency.at(tokenAddress);
         });
 
         it('should create currency in a correct way', async () => {
-            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+            let result = await factory.createIssuance(now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2, 'Some Name', 'SON', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
             assert.lengthOf(result.logs, 1);
             let event = result.logs[0];
             assert.equal(event.event, 'TokenCreated');
@@ -211,15 +211,49 @@ contract('IssuanceFactory', (accounts) => {
             assert(expect(tokenAddress).to.be.a('String'));
         });
 
-        describe('Storage functionality.', () => {
-          it('should allow to update storage if owner', async () => {
-            const result = await factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: owner})
-            assert.equal(await cc.metadata(), 'newmetadatahash')
+        describe('Metadata functionality.', () => {
+          it('should allow to update tokenURI if owner', async () => {
+            const result = await factory.setTokenURI(cc.address, 'ipfs://newhash', {from: owner})
+            assert.equal(await cc.tokenURI(), 'ipfs://newhash')
           })
 
-          it('should not allow to update storage if not owner', async () => {
-            await expectRevert(factory.setCurrencyMetadata(cc.address, 'newmetadatahash', {from: participant}))
-            assert.equal(await cc.metadata(), 'metadatahash')
+          it('should not allow to update tokenURI if not owner', async () => {
+            await expectRevert(factory.setTokenURI(cc.address, 'ipfs://newhash', {from: participant}))
+            assert.equal(await cc.tokenURI(), 'ipfs://hash')
+          })
+
+          it('should not allow to update tokenURI via cc', async () => {
+            await expectRevert(cc.setTokenURI('ipfs://newhash', {from: owner}))
+            assert.equal(await cc.tokenURI(), 'ipfs://hash')
+          })
+
+          context('After the issuance.', () => {
+            beforeEach(async () => {
+              await time.increaseTime(SALE_TIME_TILL_START);
+
+              await cln.approve(factory.address, THOUSAND_CLN, {from: owner});
+              await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN, {from: owner});
+
+              // reaching end of sale
+              await time.increaseTime(SALE_ENDED_TIME);
+              await factory.finalize(tokenAddress, {from: owner});
+              await cc.acceptOwnership({from: owner})
+            })
+
+            it('should allow to update tokenURI directly if owner', async () => {
+              await cc.setTokenURI('ipfs://newhash', {from: owner})
+              assert.equal(await cc.tokenURI(), 'ipfs://newhash')
+            })
+
+            it('should not allow to update tokenURI if not owner', async () => {
+              await expectRevert(cc.setTokenURI('ipfs://newhash', {from: participant}))
+              assert.equal(await cc.tokenURI(), 'ipfs://hash')
+            })
+
+            it('should not allow to update tokenURI via the issuance', async () => {
+              await expectRevert(factory.setTokenURI(tokenAddress, 'ipfs://newhash', {from: participant}))
+              assert.equal(await cc.tokenURI(), 'ipfs://hash')
+            })
           })
         })
 
@@ -429,28 +463,46 @@ contract('IssuanceFactory', (accounts) => {
                     const clnBalance = await cln.balanceOf(owner);
                     const THOUSAND_CLN_3_4 = THOUSAND_CLN / 4 * 3
                     await cln.approve(factory.address, THOUSAND_CLN_3_4, {from: participant});
-                    const result = await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN_3_4, {from: participant});
+                    await factory.participate['address,uint256'](tokenAddress, THOUSAND_CLN_3_4, {from: participant});
                     assert((await factory.totalCLNcustodian()).eq(THOUSAND_CLN_3_4));
                     assert.equal((await cc.balanceOf(participant)).div(10 ** 8).toNumber(), 91855842390401.25);
-
 
                     // reaching end of sale
                     await time.increaseTime(SALE_ENDED_TIME);
 
                     // finalizing
-                    const logs = (await factory.finalize(tokenAddress, {from: owner})).logs;
-
-                    assert.lengthOf(logs, 1);
-                    const event = logs[0];
-                    assert.equal(event.event, 'SaleFinalized');
-
-                    assert.equal(tokenAddress, event.args.token);
-                    assert.equal(THOUSAND_CLN_3_4, event.args.clnRaised);
+                    const result = await factory.finalize(tokenAddress, {from: owner});
 
                     // owner of the currency receives CLN raised above the specified reserve amount
                     assert((await factory.totalCLNcustodian()).eq(THOUSAND_CLN / 2));
                     const finalClnBalance = await cln.balanceOf(owner);
                     assert(finalClnBalance.eq(clnBalance.plus(THOUSAND_CLN / 4)));
+
+                    const logs = result.logs
+                    assert.lengthOf(logs, 3);
+
+                    assert.equal(logs[0].event, 'OwnershipRequested');
+                    assert.equal(factory.address, logs[0].args.by);
+                    assert.equal(owner, logs[0].args.to);
+
+                    assert.equal(logs[1].event, 'OwnershipRequested');
+                    assert.equal(factory.address, logs[1].args.by);
+                    assert.equal(owner, logs[1].args.to);
+
+                    assert.equal(logs[2].event, 'SaleFinalized');
+                    assert.equal(tokenAddress, logs[2].args.token);
+                    assert.equal(THOUSAND_CLN_3_4, logs[2].args.clnRaised);
+
+
+                    const marketMakerAddress = await factory.getMarketMakerAddressFromToken(tokenAddress);
+                    const marketMaker = await EllipseMarketMaker.at(marketMakerAddress);
+                    assert.equal(await marketMaker.newOwnerCandidate(), owner);
+                    assert.equal(await cc.newOwnerCandidate(), owner);
+
+                    await marketMaker.acceptOwnership({from: owner})
+                    await cc.acceptOwnership({from: owner})
+                    assert.equal(await marketMaker.owner(), owner);
+                    assert.equal(await cc.owner(), owner);
                 });
 
                 it('should not be able to finalize twice', async () => {
@@ -733,7 +785,7 @@ contract('IssuanceFactory', (accounts) => {
                 const owner2 = accounts[3]
                 tokenAddress2 = (await factory.createIssuance(
                     now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner2})).logs[0].args.token;
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner2})).logs[0].args.token;
                 const cc2 = await ColuLocalCurrency.at(tokenAddress2);
 
                 const clnBalanceParticipant = await cln.balanceOf(participant)
@@ -854,7 +906,7 @@ contract('IssuanceFactory', (accounts) => {
             it('should return correct number of issuances when running two issuances simultaneously', async () => {
                 await factory.createIssuance(
                     now + 2 * SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 let count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(2), count.toNumber().toString());
@@ -908,7 +960,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 await factory.createIssuance(
                     now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 count = await factory.getIssuanceCount(true, false, true, true);
                 assert(count.eq(3), count.toNumber().toString());
@@ -920,7 +972,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 await factory.createIssuance(
                     now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 count = await factory.getIssuanceCount(true, false, false, false);
                 assert(count.eq(1), count.toNumber().toString());
@@ -1041,7 +1093,7 @@ contract('IssuanceFactory', (accounts) => {
             it('should return correct number of issuances when running two issuances simultaneously', async () => {
                 await factory.createIssuance(
                     now + 2 * SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name2', 'SON2', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 let issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                 assert.equal(issuanceIds.length, 2);
@@ -1095,7 +1147,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 await factory.createIssuance(
                     now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name3', 'SON3', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 issuanceIds = await factory.getIssuanceIds(true, false, true, true, 0, 10);
                 assert.equal(issuanceIds.length, 3);
@@ -1107,7 +1159,7 @@ contract('IssuanceFactory', (accounts) => {
 
                 await factory.createIssuance(
                     now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, 'metadatahash', {from: owner});
+                    'Some Name4', 'SON4', 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner});
 
                 issuanceIds = await factory.getIssuanceIds(true, false, false, false, 0, 10);
                 assert.equal(issuanceIds.length, 1);
@@ -1127,7 +1179,7 @@ contract('IssuanceFactory', (accounts) => {
                     for (let i = 0; i < 19; i++) {
                         const tokenAddressTmp = (await factory.createIssuance(
                             now + SALE_TIME_TILL_START, SALE_DURATION_TIME, THOUSAND_CLN, THOUSAND_CLN / 2,
-                            `Some Name ${i}`, `SON${i}`, 18, CC_MAX_TOKENS, 'metadatahash', {from: owner})).logs[0].args.token;
+                            `Some Name ${i}`, `SON${i}`, 18, CC_MAX_TOKENS, 'ipfs://hash', {from: owner})).logs[0].args.token;
                         tokenAddressArray.push(tokenAddressTmp)
                     }
                     assert.equal(tokenAddressArray.length, 20);
