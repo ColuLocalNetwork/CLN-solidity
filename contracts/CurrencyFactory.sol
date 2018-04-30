@@ -72,7 +72,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _symbol string symbol for CC token that is created.
   /// @param _decimals uint8 percison for CC token that is created.
   /// @param _totalSupply uint256 total supply of the CC token that is created.
-  /// @param _tokenURI string IPFS hash for the CC token data.
+  /// @param _tokenURI string the URI may point to a JSON file that conforms to the "Metadata JSON Schema".
   function createCurrency(string _name,
                           string _symbol,
                           uint8 _decimals,
@@ -168,10 +168,9 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	return (clnAddress == _token || currencyMap[_token].totalSupply > 0);
   }
 
-  /// @dev sets tokenURI for the given currency, can be used only during the sell only
+  /// @dev sets tokenURI for the given currency, can be used during the sell only
   /// @param _token address address of the token to update
-  /// @param _tokenURI string hash of the metadata of the token, this
-  /// hash can be accessed through IPFS
+  /// @param _tokenURI string the URI may point to a JSON file that conforms to the "Metadata JSON Schema".
   function setTokenURI(address _token, string _tokenURI) public
                               tokenIssuerOnly(_token, msg.sender)
                               marketClosed(_token)

@@ -83,7 +83,7 @@ contract IssuanceFactory is CurrencyFactory {
 	/// @param _symbol string symbol of the token
 	/// @param _decimals uint8 ERC20 decimals of local currency
 	/// @param _totalSupply uint total supply of the local currency
-	/// @param _tokenURI string IPFS hash for the CC token data.
+	/// @param _tokenURI string the URI may point to a JSON file that conforms to the "Metadata JSON Schema".
   function createIssuance( uint256 _startTime,
                             uint256 _durationTime,
                             uint256 _hardcap,
