@@ -88,6 +88,7 @@ contract IssuanceFactory is CurrencyFactory {
 	/// @param _symbol string symbol of the token
 	/// @param _decimals uint8 ERC20 decimals of local currency
 	/// @param _totalSupply uint total supply of the local currency
+	/// @param _metadata string IPFS hash for the CC token data.
   function createIssuance( uint256 _startTime,
                             uint256 _durationTime,
                             uint256 _hardcap,
@@ -95,17 +96,18 @@ contract IssuanceFactory is CurrencyFactory {
                             string _name,
                             string _symbol,
                             uint8 _decimals,
-                            uint256 _totalSupply) public
+                            uint256 _totalSupply,
+														string _metadata) public
                             returns (address) {
     require(_startTime > now);
     require(_durationTime > 0);
-	require(_hardcap > 0);
+		require(_hardcap > 0);
 
     uint256 R2 = IEllipseMarketMaker(mmLibAddress).calcReserve(_reserveAmount, CLNTotalSupply, _totalSupply);
     uint256 targetPrice = IEllipseMarketMaker(mmLibAddress).getPrice(_reserveAmount, R2, CLNTotalSupply, _totalSupply);
     require(isValidIssuance(_hardcap, targetPrice, _totalSupply, R2));
-    address tokenAddress = super.createCurrency(_name,  _symbol,  _decimals,  _totalSupply);
-    addToMap(tokenAddress, _startTime, _startTime + _durationTime, _hardcap, _reserveAmount, targetPrice);
+    address tokenAddress = super.createCurrency(_name, _symbol, _decimals, _totalSupply, _metadata);
+    addToMap(tokenAddress, _startTime, _durationTime, _hardcap, _reserveAmount, targetPrice);
 
     return tokenAddress;
   }
@@ -113,20 +115,20 @@ contract IssuanceFactory is CurrencyFactory {
   /// @dev internal helper to add currency data to the issuance map
   /// @param _token address token address for this issuance (same as CC adress)
   /// @param _startTime uint256 blocktime for sale start
-  /// @param _endTime uint256 blocktime for sale end
+  /// @param _durationTime uint256 seconds for sale's durationTime
   /// @param _hardcap uint256 sale hardcap
   /// @param _reserveAmount uint256 sale softcap
   /// @param _targetPrice uint256 sale CC price per CLN if it were to pass the softcap
   function addToMap(address _token,
                     uint256 _startTime,
-                    uint256 _endTime,
+                    uint256 _durationTime,
                     uint256 _hardcap,
                     uint256 _reserveAmount,
                     uint256 _targetPrice) private {
   	issueMap[_token] = IssuanceStruct({ hardcap: _hardcap,
 										reserve: _reserveAmount,
 										startTime: _startTime,
-										endTime: _endTime,
+										endTime: _startTime + _durationTime,
 										clnRaised: 0,
 										targetPrice: _targetPrice});
   }
