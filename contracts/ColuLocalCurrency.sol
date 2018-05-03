@@ -14,7 +14,7 @@ contract ColuLocalCurrency is Ownable, Standard677Token, TokenHolder {
     uint8 public decimals;
     string public tokenURI;
 
-    event TokenURIChanged(string tokenURI);
+    event TokenURIChanged(string newTokenURI);
 
     /// @dev cotract to use when issuing a CC (Local Currency)
     /// @param _name string name for CC token that is created.
