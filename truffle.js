@@ -1,24 +1,24 @@
 module.exports = {
   networks: {
     development: {
-      host: "localhost",
+      host: 'localhost',
       port: 8545,
-      network_id: "*", // Match any network id
+      network_id: '*', // Match any network id
       gas: 8000029
     },
-    migrations: {
-      host: "localhost",
+    ropsten: {
+      host: 'localhost',
       port: 8545,
-      network_id: "3", // Match any network id
+      network_id: '3',
       gas: 4000029
     }
   },
   mocha: {
-  	//grep: "presaleAllocation"
+    //grep: 'presaleAllocation'
   },
   rpc: {
-    host: "localhost",
-    gas: 8000029 ,
+    host: 'localhost',
+    gas: 8000029,
     port: 8545
   },
   solc: {
@@ -27,4 +27,4 @@ module.exports = {
       runs: 200
     }
   }
-};
+}

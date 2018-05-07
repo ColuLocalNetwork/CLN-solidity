@@ -91,6 +91,19 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	return subToken;
   }
 
+  /// @dev create the MarketMaker and the CC token put all the CC token in the Market Maker reserve
+  /// @param _name string name for CC token that is created.
+  /// @param _symbol string symbol for CC token that is created.
+  /// @param _decimals uint8 percison for CC token that is created.
+  /// @param _totalSupply uint256 total supply of the CC token that is created.
+  function createCurrency(string _name,
+                          string _symbol,
+                          uint8 _decimals,
+                          uint256 _totalSupply) public
+                          returns (address) {
+    return createCurrency(_name, _symbol, _decimals, _totalSupply, '');
+  }
+
   /// @dev normal send cln to the market maker contract, sender must approve() before calling method. can only be called by owner
   /// @dev sending CLN will return CC from the reserve to the sender.
   /// @param _token address address of the cc token managed by this factory.

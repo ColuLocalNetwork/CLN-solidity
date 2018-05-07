@@ -60,7 +60,7 @@ contract('ColuLocalCurrency', (accounts) => {
 
         assert.equal(result.logs.length, 1)
         assert.equal(result.logs[0].event, 'TokenURIChanged')
-        assert.equal(result.logs[0].args.tokenURI, 'ipfs://newhash')
+        assert.equal(result.logs[0].args.newTokenURI, 'ipfs://newhash')
       })
 
       it('not owner should not be able to update metadata', async () => {

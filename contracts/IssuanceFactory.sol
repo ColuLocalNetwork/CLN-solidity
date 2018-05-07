@@ -107,6 +107,27 @@ contract IssuanceFactory is CurrencyFactory {
     return tokenAddress;
   }
 
+	/// @dev createIssuance create local currency issuance sale
+	/// @param _startTime uint256 blocktime for sale start
+	/// @param _durationTime uint 256 duration of the sale
+	/// @param _hardcap uint CLN hardcap for issuance
+	/// @param _reserveAmount uint CLN reserve amount
+	/// @param _name string name of the token
+	/// @param _symbol string symbol of the token
+	/// @param _decimals uint8 ERC20 decimals of local currency
+	/// @param _totalSupply uint total supply of the local currency
+	function createIssuance( uint256 _startTime,
+														uint256 _durationTime,
+														uint256 _hardcap,
+														uint256 _reserveAmount,
+														string _name,
+														string _symbol,
+														uint8 _decimals,
+														uint256 _totalSupply) public
+														returns (address) {
+		return createIssuance(_startTime, _durationTime, _hardcap, _reserveAmount, _name, _symbol, _decimals, _totalSupply, '');
+	}
+
   /// @dev internal helper to add currency data to the issuance map
   /// @param _token address token address for this issuance (same as CC adress)
   /// @param _startTime uint256 blocktime for sale start
