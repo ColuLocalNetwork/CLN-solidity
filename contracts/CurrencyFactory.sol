@@ -43,6 +43,20 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     _;
   }
 
+  /// @dev checks if the instance of market maker contract is closed for public
+  /// @param _token address address of the CC token.
+  modifier marketClosed(address _token) {
+  	require(!MarketMaker(currencyMap[_token].mmAddress).isOpenForPublic());
+  	_;
+  }
+
+  /// @dev checks if the instance of market maker contract is open for public
+  /// @param _token address address of the CC token.
+  modifier marketOpen(address _token) {
+    require(MarketMaker(currencyMap[_token].mmAddress).isOpenForPublic());
+    _;
+  }
+
   /// @dev constructor only reuires the address of the CLN token which must use the ERC20 interface
   /// @param _mmLib address for the deployed market maker elipse contract
   /// @param _clnAddress address for the deployed ERC20 CLN token
@@ -58,13 +72,15 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _symbol string symbol for CC token that is created.
   /// @param _decimals uint8 percison for CC token that is created.
   /// @param _totalSupply uint256 total supply of the CC token that is created.
+  /// @param _tokenURI string the URI may point to a JSON file that conforms to the "Metadata JSON Schema".
   function createCurrency(string _name,
                           string _symbol,
                           uint8 _decimals,
-                          uint256 _totalSupply) public
+                          uint256 _totalSupply,
+                          string _tokenURI) public
                           returns (address) {
 
-  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply);
+  	ColuLocalCurrency subToken = new ColuLocalCurrency(_name, _symbol, _decimals, _totalSupply, _tokenURI);
   	EllipseMarketMaker newMarketMaker = new EllipseMarketMaker(mmLibAddress, clnAddress, subToken);
   	//set allowance
   	require(subToken.transfer(newMarketMaker, _totalSupply));
@@ -73,6 +89,19 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
     tokens.push(subToken);
   	TokenCreated(subToken, msg.sender);
   	return subToken;
+  }
+
+  /// @dev create the MarketMaker and the CC token put all the CC token in the Market Maker reserve
+  /// @param _name string name for CC token that is created.
+  /// @param _symbol string symbol for CC token that is created.
+  /// @param _decimals uint8 percison for CC token that is created.
+  /// @param _totalSupply uint256 total supply of the CC token that is created.
+  function createCurrency(string _name,
+                          string _symbol,
+                          uint8 _decimals,
+                          uint256 _totalSupply) public
+                          returns (address) {
+    return createCurrency(_name, _symbol, _decimals, _totalSupply, '');
   }
 
   /// @dev normal send cln to the market maker contract, sender must approve() before calling method. can only be called by owner
@@ -141,6 +170,7 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   	address marketMakerAddress = getMarketMakerAddressFromToken(_token);
   	require(MarketMaker(marketMakerAddress).openForPublicTrade());
   	Ownable(marketMakerAddress).requestOwnershipTransfer(msg.sender);
+    Ownable(_token).requestOwnershipTransfer(msg.sender);
   	MarketOpen(marketMakerAddress);
   	return true;
   }
@@ -149,6 +179,17 @@ contract CurrencyFactory is Standard223Receiver, TokenHolder {
   /// @param _token address of the token used with transferAndCall.
   function supportsToken(address _token) public constant returns (bool) {
   	return (clnAddress == _token || currencyMap[_token].totalSupply > 0);
+  }
+
+  /// @dev sets tokenURI for the given currency, can be used during the sell only
+  /// @param _token address address of the token to update
+  /// @param _tokenURI string the URI may point to a JSON file that conforms to the "Metadata JSON Schema".
+  function setTokenURI(address _token, string _tokenURI) public
+                              tokenIssuerOnly(_token, msg.sender)
+                              marketClosed(_token)
+                              returns (bool) {
+    ColuLocalCurrency(_token).setTokenURI(_tokenURI);
+    return true;
   }
 
   /// @dev helper function to get the market maker address form token

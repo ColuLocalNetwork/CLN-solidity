@@ -9,8 +9,8 @@ contract Ownable {
     address public owner;
     address public newOwnerCandidate;
 
-    event OwnershipRequested(address indexed _by, address indexed _to);
-    event OwnershipTransferred(address indexed _from, address indexed _to);
+    event OwnershipRequested(address indexed by, address indexed to);
+    event OwnershipTransferred(address indexed from, address indexed to);
 
     /// @dev Constructor sets the original `owner` of the contract to the sender account.
     function Ownable() public {
