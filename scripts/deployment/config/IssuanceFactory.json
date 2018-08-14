@@ -4,8 +4,8 @@
 		"clnAddress": ""
 	},
 	"https://ropsten.infura.io": {
-		"mmLib": "0xA8bae1a26A983ada54777be27c4D4CC6EAEEBe44",
-		"clnAddress": "0x7C1D93f1643e0551b142Ab17Ff9F303a0A02CD6f"
+		"mmLib": "0x30724fa809d40330eacab9c7ebcfb2a0058c381c",
+		"clnAddress": "0x41c9d91e96b933b74ae21bcbb617369cbe022530"
 	},
 	"https://mainnet.infura.io": {
 		"mmLib": "0xc70636e0886eC4a4F2B7e42aC57ccD1B976352d0",

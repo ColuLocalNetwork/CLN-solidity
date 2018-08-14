@@ -13,7 +13,7 @@
 		"communityPoolAddress": "0x1Bb8c3606A4528CA7C3dA385A59F16B32E3B8e12",
 		"futureDevelopmentPoolAddress": "0xb498b0981aF40f022E556dCEEc0Bb767e76f9Bc0",
 		"stakeholdersPoolAddress": "0xCE31425A5fd1a46FbE3c3A01A64A85C99ba82Fe9",
-		"startTime": ""
+		"startTime": 1519113600
 	},
 	"https://mainnet.infura.io": {
 		"owner": "0xA76e676C9CdC7AA2ab12B3eC4Dd4c2BE9a6774AA",
