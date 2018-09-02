@@ -1,5 +1,5 @@
 {
-  "name": "CLN-solidity",
+  "name": "cln-solidity",
   "version": "1.0.0",
   "description": "",
   "main": "truffle.js",
@@ -30,16 +30,16 @@
     "chai": "^4.1.2",
     "csv-parse": "^2.0.0",
     "ethereumjs-abi": "^0.6.4",
-    "ganache-cli": "^7.0.0-beta.0",
     "solc": "0.4.18",
-    "truffle": "git+https://github.com/colucom/truffle.git",
     "web3": "^1.0.0-beta.22",
     "yargs": "^9.0.1",
     "zeppelin-solidity": "^1.5.0"
   },
   "devDependencies": {
+    "chai": "^4.1.2",
+    "ganache-cli": "^7.0.0-beta.0",
+    "truffle": "git+https://github.com/colucom/truffle.git",
     "solidity-coverage": "^0.2.7",
-    "solmd": "git+https://github.com/cag/solmd.git",
-    "chai": "^4.1.2"
+    "solmd": "git+https://github.com/cag/solmd.git"
   }
 }
