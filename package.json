@@ -31,15 +31,15 @@
     "csv-parse": "^2.0.0",
     "ethereumjs-abi": "^0.6.4",
     "solc": "0.4.18",
-    "web3": "^1.0.0-beta.22",
+    "web3": "^1.0.0-beta.36",
     "yargs": "^9.0.1",
     "zeppelin-solidity": "^1.5.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
     "ganache-cli": "^7.0.0-beta.0",
-    "truffle": "git+https://github.com/colucom/truffle.git",
-    "solidity-coverage": "^0.2.7",
-    "solmd": "git+https://github.com/cag/solmd.git"
+    "solidity-coverage": "^0.5.11",
+    "solmd": "git+https://github.com/cag/solmd.git",
+    "truffle": "git+https://github.com/colucom/truffle.git"
   }
 }
